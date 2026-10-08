@@ -121,7 +121,7 @@ export const CATEGORIES = [
   { slug: 'laptops-computers', name: 'Laptops & Computers', te: 'ల్యాప్‌టాప్‌లు & కంప్యూటర్లు', hi: 'लैपटॉप और कंप्यूटर', icon: 'laptop', shop_type: 'computers_laptops', children: [
     { slug: 'laptops', name: 'Laptops', te: 'ల్యాప్‌టాప్‌లు', hi: 'लैपटॉप', icon: 'laptop' },
     { slug: 'desktops', name: 'Desktops', te: 'డెస్క్‌టాప్‌లు', hi: 'डेस्कटॉप', icon: 'desktop-tower' },
-    { slug: 'all-in-ones', name: 'All-in-Ones', te: 'ఆల్-ఇన్-వన్', hi: 'ऑल-इन-वन', icon: 'desktop-mac' },
+    { slug: 'all-in-ones', name: 'All-in-Ones', te: 'ఆల్-ఇన్-వన్', hi: 'ऑल-इन-वन', icon: 'monitor-dashboard' },
     { slug: 'monitors', name: 'Monitors', te: 'మానిటర్లు', hi: 'मॉनिटर', icon: 'monitor' },
   ] },
   { slug: 'components', name: 'Components', te: 'కాంపోనెంట్స్', hi: 'कंपोनेंट्स', icon: 'expansion-card', shop_type: 'components_peripherals', children: [

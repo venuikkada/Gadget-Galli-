@@ -97,7 +97,7 @@ insert into public.categories (id, slug, name, name_te, name_hi, icon, parent_id
   (20, 'laptops-computers', 'Laptops & Computers', 'ల్యాప్‌టాప్‌లు & కంప్యూటర్లు', 'लैपटॉप और कंप्यूटर', 'laptop', null, 'computers_laptops', 2),
   (21, 'laptops', 'Laptops', 'ల్యాప్‌టాప్‌లు', 'लैपटॉप', 'laptop', 20, 'computers_laptops', 0),
   (22, 'desktops', 'Desktops', 'డెస్క్‌టాప్‌లు', 'डेस्कटॉप', 'desktop-tower', 20, 'computers_laptops', 1),
-  (23, 'all-in-ones', 'All-in-Ones', 'ఆల్-ఇన్-వన్', 'ऑल-इन-वन', 'desktop-mac', 20, 'computers_laptops', 2),
+  (23, 'all-in-ones', 'All-in-Ones', 'ఆల్-ఇన్-వన్', 'ऑल-इन-वन', 'monitor-dashboard', 20, 'computers_laptops', 2),
   (24, 'monitors', 'Monitors', 'మానిటర్లు', 'मॉनिटर', 'monitor', 20, 'computers_laptops', 3),
   (25, 'components', 'Components', 'కాంపోనెంట్స్', 'कंपोनेंट्स', 'expansion-card', null, 'components_peripherals', 3),
   (26, 'graphics-cards', 'Graphics Cards', 'గ్రాఫిక్స్ కార్డులు', 'ग्राफ़िक्स कार्ड', 'expansion-card', 25, 'components_peripherals', 0),
