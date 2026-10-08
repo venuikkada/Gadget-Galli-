@@ -521,6 +521,8 @@ export const en = {
   },
   time: {
     justNow: 'just now',
+    today: 'Today, {{time}}',
+    yesterday: 'Yesterday, {{time}}',
     minsAgo: '{{n}} min ago',
     hourAgo: '1 hr ago',
     hoursAgo: '{{n}} hrs ago',
@@ -685,8 +687,8 @@ export const en = {
       reviewBody: 'Our team verifies new shops within 24 hours. You can add products while we review.',
       submit: 'Submit for review',
       missing: 'Please complete: {{fields}}',
-      areasSelected: '{{count}} areas selected',
-      zonesSelected: '{{count}} zones selected',
+      areasSelected: 'Areas: {{count}}',
+      zonesSelected: 'Whole zones: {{count}}',
     },
     field: {
       name: 'Shop name',
@@ -874,6 +876,8 @@ export const en = {
       save: 'Save product',
       variantHint: 'To add another storage or colour, use Duplicate and pick the other variant.',
       priceRequired: 'Enter the selling price',
+      byBrand: 'Brand',
+      byShop: 'Shop',
     },
     custom: {
       title: 'Custom product',

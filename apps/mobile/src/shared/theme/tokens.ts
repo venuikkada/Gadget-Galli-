@@ -102,6 +102,9 @@ export const darkColors: ThemeColors = {
 export const radius = { xs: 6, sm: 10, md: 12, lg: 16, xl: 20, pill: 999 } as const;
 export const space = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;
 
+/** RN-web draws the browser focus ring inside our rounded inputs; turn it off (the field border shows focus). */
+export const webNoOutline = { outlineStyle: 'none', outlineWidth: 0 } as unknown as object;
+
 export const fonts = {
   heading: 'Poppins_600SemiBold',
   headingBold: 'Poppins_700Bold',
@@ -111,7 +114,21 @@ export const fonts = {
   bodyBold: 'Inter_700Bold',
   telugu: 'NotoSansTelugu_400Regular',
   teluguBold: 'NotoSansTelugu_600SemiBold',
+  devanagari: 'NotoSansDevanagari_400Regular',
+  devanagariBold: 'NotoSansDevanagari_600SemiBold',
 } as const;
+
+/**
+ * Poppins and Inter have no Telugu or Devanagari letters. In Telugu or Hindi, swap to Noto Sans
+ * Telugu / Devanagari (regular or semi-bold to match the weight). Digits and Latin text fall back
+ * to the system font, which renders them correctly.
+ */
+export function scriptFamily(family: string, lang: string): string {
+  if (lang !== 'te' && lang !== 'hi') return family;
+  const bold = /Bold|Semi/.test(family);
+  if (lang === 'te') return bold ? fonts.teluguBold : fonts.telugu;
+  return bold ? fonts.devanagariBold : fonts.devanagari;
+}
 
 export const fontAssets = {
   Poppins_600SemiBold: require('@expo-google-fonts/poppins/600SemiBold/Poppins_600SemiBold.ttf'),
@@ -122,6 +139,8 @@ export const fontAssets = {
   Inter_700Bold: require('@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf'),
   NotoSansTelugu_400Regular: require('@expo-google-fonts/noto-sans-telugu/400Regular/NotoSansTelugu_400Regular.ttf'),
   NotoSansTelugu_600SemiBold: require('@expo-google-fonts/noto-sans-telugu/600SemiBold/NotoSansTelugu_600SemiBold.ttf'),
+  NotoSansDevanagari_400Regular: require('@expo-google-fonts/noto-sans-devanagari/400Regular/NotoSansDevanagari_400Regular.ttf'),
+  NotoSansDevanagari_600SemiBold: require('@expo-google-fonts/noto-sans-devanagari/600SemiBold/NotoSansDevanagari_600SemiBold.ttf'),
 };
 
 export function shadow(level: 1 | 2 | 3, dark: boolean) {

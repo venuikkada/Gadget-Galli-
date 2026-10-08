@@ -10,7 +10,7 @@ import { errorText } from '@/shared/api/rpc';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts } from '@/shared/theme/tokens';
+import { fonts, webNoOutline } from '@/shared/theme/tokens';
 import { AppText, Button, Card, Chip, confirmDialog, EmptyState, IconButton, Input, Loading, ProductImage, QtyStepper, Row, Tag, toast } from '@/shared/ui';
 
 import { productActions, useMyListings, useMyShop } from '../api';
@@ -61,7 +61,7 @@ function QuickRow({ l }: { l: Listing }) {
         {editing ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingHorizontal: 10, height: 40, minWidth: 130 }}>
             <AppText variant="title">₹</AppText>
-            <TextInput autoFocus value={price} onChangeText={(v) => setPrice(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" onBlur={savePrice} onSubmitEditing={savePrice} style={{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text, marginLeft: 4 }} />
+            <TextInput autoFocus value={price} onChangeText={(v) => setPrice(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" onBlur={savePrice} onSubmitEditing={savePrice} style={[{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text, marginLeft: 4 }, webNoOutline]} />
           </View>
         ) : (
           <Pressable onPress={() => setEditing(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.surfaceAlt }}>
@@ -70,9 +70,9 @@ function QuickRow({ l }: { l: Listing }) {
           </Pressable>
         )}
         {l.stock_qty != null ? (
-          <Row gap={6}>
-            <AppText variant="caption" color={l.stock_qty > 0 ? 'success' : 'error'}>{l.stock_qty > 0 ? `${l.stock_qty}` : t('p.products.outOfStock')}</AppText>
-            <QtyStepper qty={l.stock_qty} onChange={(q) => setStock(null, Math.max(0, q))} compact />
+          <Row gap={8}>
+            <AppText variant="caption" color={l.stock_qty > 0 ? 'success' : 'error'} weight="semibold">{l.stock_qty > 0 ? t('p.products.inStock') : t('p.products.outOfStock')}</AppText>
+            <QtyStepper qty={l.stock_qty} onChange={(q) => setStock(null, Math.max(0, q))} compact stock max={9999} />
           </Row>
         ) : (
           <Row gap={6}>

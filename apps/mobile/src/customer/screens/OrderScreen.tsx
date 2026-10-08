@@ -5,23 +5,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import {
-  buildWhatsAppOrderMessage,
-  canReportIssue,
-  customerCanCancel,
-  effectiveStatus,
-  formatDateTimeIST,
-  formatINR,
-  formatPhone,
-  formatTimeIST,
-  upiPaymentUrl,
-  variantText,
-} from '@gg/shared';
+import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, upiPaymentUrl, variantText } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { publicUrl, signedUrl } from '@/shared/api/storage';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
+import { tDateTime } from '@/shared/i18n/format';
 import { callPhone, copyText, openInBrowser, openMaps, openUpi, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
@@ -123,7 +113,7 @@ export default function OrderScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen header={<Header title={t('order.title', { no: o.order_no })} subtitle={formatDateTimeIST(o.requested_at)} />} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
+      <Screen header={<Header title={t('order.title', { no: o.order_no })} subtitle={tDateTime(o.requested_at)} />} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
         {/* Status headline */}
         <Card style={{ gap: 10 }}>
           <Row justify="space-between">

@@ -9,7 +9,7 @@ import { formatINR } from '@gg/shared';
 import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts, shadow } from '@/shared/theme/tokens';
+import { shadow } from '@/shared/theme/tokens';
 import { AppText, confirmDialog, Row, toast } from '@/shared/ui';
 
 import { cartAdd, cartSetQty, useCart } from '../api';
@@ -81,7 +81,7 @@ export function StickyCartBar({ inline = false }: { inline?: boolean }) {
         ]}
       >
         <View>
-          <AppText variant="title" color="#FFFFFF" style={{ fontFamily: fonts.bodyBold }}>
+          <AppText variant="title" color="#FFFFFF" weight="bold">
             {count === 1 ? t('cart.barOne', { amount: formatINR(data?.totals.grand_total) }) : t('cart.bar', { count, amount: formatINR(data?.totals.grand_total) })}
           </AppText>
           {data?.shop ? <AppText variant="caption" color="#FFFFFFD0" numberOfLines={1}>{t('cart.from', { shop: data.shop.name })}</AppText> : null}

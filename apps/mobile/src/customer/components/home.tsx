@@ -11,7 +11,7 @@ import { publicUrl } from '@/shared/api/storage';
 import { useLocationStore } from '@/shared/hooks/location';
 import { localName, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts, shadow } from '@/shared/theme/tokens';
+import { shadow } from '@/shared/theme/tokens';
 import { AppText, Icon, Row } from '@/shared/ui';
 
 export function LocationBar({ right }: { right?: React.ReactNode }) {
@@ -157,7 +157,7 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
               ) : (
                 <LinearGradient colors={[b.bg_color, shade(b.bg_color)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, padding: 18, justifyContent: 'center' }}>
                   <Ionicons name="sparkles" size={84} color="rgba(255,255,255,0.12)" style={{ position: 'absolute', right: 12, bottom: -6 }} />
-                  <AppText variant="h3" color="#FFFFFF" numberOfLines={2} style={{ maxWidth: '80%', fontFamily: fonts.headingBold }}>{b.title}</AppText>
+                  <AppText variant="h3" weight="bold" color="#FFFFFF" numberOfLines={2} style={{ maxWidth: '80%' }}>{b.title}</AppText>
                   {b.subtitle ? <AppText variant="bodySmall" color="#FFFFFFDD" numberOfLines={2} style={{ marginTop: 4, maxWidth: '85%' }}>{b.subtitle}</AppText> : null}
                 </LinearGradient>
               )}

@@ -8,7 +8,7 @@ import { supabase } from '@/shared/api/supabase';
 import { refreshProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts } from '@/shared/theme/tokens';
+import { fonts, webNoOutline } from '@/shared/theme/tokens';
 import { AppText, Button, Header, Row, Screen } from '@/shared/ui';
 
 export default function OtpScreen() {
@@ -88,7 +88,7 @@ export default function OtpScreen() {
           autoComplete="sms-otp"
           autoFocus
           maxLength={6}
-          style={{ position: 'absolute', opacity: 0.01, height: 58, width: '100%' }}
+          style={[{ position: 'absolute', opacity: 0.01, height: 58, width: '100%' }, webNoOutline]}
         />
       </View>
       {error ? <AppText variant="bodySmall" color="error" align="center">{error}</AppText> : null}

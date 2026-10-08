@@ -523,6 +523,8 @@ export const hi: Translations = {
   },
   time: {
     justNow: 'अभी-अभी',
+    today: 'आज, {{time}}',
+    yesterday: 'कल, {{time}}',
     minsAgo: '{{n}} मिनट पहले',
     hourAgo: '1 घंटा पहले',
     hoursAgo: '{{n}} घंटे पहले',
@@ -876,6 +878,8 @@ export const hi: Translations = {
       save: 'प्रोडक्ट सेव करें',
       variantHint: 'दूसरा स्टोरेज या रंग जोड़ने के लिए "कॉपी बनाएं" इस्तेमाल करें और दूसरा वेरिएंट चुनें।',
       priceRequired: 'बेचने की कीमत डालें',
+      byBrand: 'ब्रांड',
+      byShop: 'दुकान',
     },
     custom: {
       title: 'कस्टम प्रोडक्ट',

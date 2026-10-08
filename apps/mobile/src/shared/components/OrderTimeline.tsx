@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 
-import { effectiveStatus, flowIndex, formatDateTimeIST, ORDER_FLOW, type Order, type OrderStatus } from '@gg/shared';
+import { effectiveStatus, flowIndex, ORDER_FLOW, type Order, type OrderStatus } from '@gg/shared';
 
 import { useTranslation } from '@/shared/i18n';
+import { tDateTime } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Row } from '@/shared/ui';
 
@@ -89,7 +90,7 @@ export function OrderTimeline({ order }: { order: Order }) {
             </Animated.View>
             <View style={{ flex: 1, paddingTop: 2 }}>
               <AppText variant="title" color={done ? 'text' : 'textSubtle'}>{label}</AppText>
-              {at ? <AppText variant="caption" color="textMuted">{formatDateTimeIST(at)}</AppText> : null}
+              {at ? <AppText variant="caption" color="textMuted">{tDateTime(at)}</AppText> : null}
             </View>
           </Row>
         );
@@ -102,7 +103,7 @@ export function OrderTimeline({ order }: { order: Order }) {
           <View>
             <AppText variant="title" color="error">{t(`status.${order.status}`)}</AppText>
             <AppText variant="caption" color="textMuted">
-              {formatDateTimeIST((order.rejected_at ?? order.cancelled_at ?? order.expired_at ?? order.updated_at) as string)}
+              {tDateTime((order.rejected_at ?? order.cancelled_at ?? order.expired_at ?? order.updated_at) as string)}
             </AppText>
           </View>
         </Row>

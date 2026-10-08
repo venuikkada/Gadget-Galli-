@@ -16,7 +16,8 @@ import {
 
 import { useTranslation } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
-import { fonts, shadow, type ThemeColors } from '../theme/tokens';
+import { fonts, scriptFamily, shadow, webNoOutline, type ThemeColors } from '../theme/tokens';
+import { useFont } from '../theme/useFont';
 
 // ---------------------------------------------------------------------------
 // Icon
@@ -74,9 +75,8 @@ export function AppText({ children, variant = 'body', color = 'text', weight, al
   if (weight === 'medium') family = fonts.bodyMedium;
   if (weight === 'semibold') family = v.family.startsWith('heading') ? fonts.heading : fonts.bodySemi;
   if (weight === 'bold') family = v.family.startsWith('heading') ? fonts.headingBold : fonts.bodyBold;
-  if (i18n.language === 'te') {
-    family = /Bold|Semi/.test(family) ? fonts.teluguBold : fonts.telugu;
-  }
+  family = scriptFamily(family, i18n.language);
+  const indic = i18n.language === 'te' || i18n.language === 'hi';
   const resolved = color in colors ? colors[color as ColorKey] : color;
   const { family: _f, ...rest } = v;
   return (
@@ -88,7 +88,7 @@ export function AppText({ children, variant = 'body', color = 'text', weight, al
       style={[
         rest,
         { fontFamily: family, color: resolved, textAlign: align },
-        i18n.language === 'te' ? { lineHeight: (rest.lineHeight ?? 20) + 4 } : null,
+        indic ? { lineHeight: (rest.lineHeight ?? 20) + 4 } : null,
         strike ? { textDecorationLine: 'line-through' } : null,
         style,
       ]}
@@ -120,6 +120,7 @@ export interface ButtonProps {
 
 export function Button({ title, onPress, variant = 'primary', size = 'md', icon, iconRight, loading, disabled, full, style, subtitle, testID }: ButtonProps) {
   const { colors, dark } = useTheme();
+  const ff = useFont();
   const palette: Record<ButtonVariant, { bg: string; fg: string; border?: string; pressed: string }> = {
     primary: { bg: colors.primary, fg: colors.onPrimary, pressed: colors.primaryPressed },
     action: { bg: colors.action, fg: colors.onAction, pressed: colors.actionPressed },
@@ -163,10 +164,10 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
     >
       {loading ? <ActivityIndicator color={p.fg} /> : icon ? <Ionicons name={icon} size={fontSizes[size] + 4} color={p.fg} /> : null}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <Text style={{ color: p.fg, fontFamily: fonts.bodySemi, fontSize: fontSizes[size] }} numberOfLines={1}>
+        <Text style={{ color: p.fg, fontFamily: ff(fonts.bodySemi), fontSize: fontSizes[size], textAlign: 'center' }} numberOfLines={2}>
           {title}
         </Text>
-        {subtitle ? <Text style={{ color: p.fg, opacity: 0.85, fontFamily: fonts.body, fontSize: 12 }} numberOfLines={1}>{subtitle}</Text> : null}
+        {subtitle ? <Text style={{ color: p.fg, opacity: 0.85, fontFamily: ff(fonts.body), fontSize: 12 }} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
       {iconRight && !loading ? <Ionicons name={iconRight} size={fontSizes[size] + 2} color={p.fg} /> : null}
     </Pressable>
@@ -256,6 +257,7 @@ export function SectionHeader({ title, action, onAction, style }: { title: strin
 // ---------------------------------------------------------------------------
 export function Chip({ label, selected, onPress, icon, count, testID }: { label: string; selected?: boolean; onPress?: () => void; icon?: IoniconName; count?: number; testID?: string }) {
   const { colors, dark } = useTheme();
+  const ff = useFont();
   return (
     <Pressable
       testID={testID}
@@ -273,7 +275,7 @@ export function Chip({ label, selected, onPress, icon, count, testID }: { label:
       })}
     >
       {icon ? <Ionicons name={icon} size={15} color={selected ? '#fff' : colors.textMuted} /> : null}
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: selected ? '#fff' : colors.text }}>{label}</Text>
+      <Text style={{ fontFamily: ff(fonts.bodySemi), fontSize: 13, color: selected ? '#fff' : colors.text }}>{label}</Text>
       {count != null ? (
         <View style={{ backgroundColor: selected ? 'rgba(255,255,255,0.25)' : dark ? colors.surfaceAlt : colors.primarySoft, borderRadius: 9, paddingHorizontal: 6, minWidth: 20, alignItems: 'center' }}>
           <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: selected ? '#fff' : colors.primary }}>{count}</Text>
@@ -285,6 +287,7 @@ export function Chip({ label, selected, onPress, icon, count, testID }: { label:
 
 export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'action'; icon?: IoniconName }) {
   const { colors } = useTheme();
+  const ff = useFont();
   const map = {
     neutral: [colors.surfaceAlt, colors.textMuted],
     primary: [colors.primarySoft, colors.primary],
@@ -297,7 +300,7 @@ export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: '
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start' }}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
-      <Text style={{ color: fg, fontFamily: fonts.bodySemi, fontSize: 11.5 }}>{label}</Text>
+      <Text style={{ color: fg, fontFamily: ff(fonts.bodySemi), fontSize: 11.5 }}>{label}</Text>
     </View>
   );
 }
@@ -317,6 +320,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
 
 export function Input({ label, error, hint, icon, prefix, right, style, multiline, ...rest }: InputProps) {
   const { colors } = useTheme();
+  const ff = useFont();
   return (
     <View style={[{ gap: 6 }, style]}>
       {label ? <AppText variant="label" color="textMuted">{label}</AppText> : null}
@@ -339,7 +343,7 @@ export function Input({ label, error, hint, icon, prefix, right, style, multilin
         <TextInput
           placeholderTextColor={colors.textSubtle}
           multiline={multiline}
-          style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.text, minHeight: multiline ? 72 : 48, textAlignVertical: multiline ? 'top' : 'center' }}
+          style={[{ flex: 1, fontFamily: ff(fonts.body), fontSize: 15, color: colors.text, minHeight: multiline ? 72 : 48, textAlignVertical: multiline ? 'top' : 'center' }, webNoOutline]}
           {...rest}
         />
         {right}
@@ -364,6 +368,7 @@ export function SwitchRow({ label, value, onValueChange, hint }: { label: string
 
 export function Segmented<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   const { colors } = useTheme();
+  const ff = useFont();
   return (
     <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 4 }}>
       {options.map((o) => {
@@ -374,7 +379,7 @@ export function Segmented<T extends string>({ options, value, onChange }: { opti
             onPress={() => onChange(o.value)}
             style={{ flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.surface : 'transparent' }}
           >
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: active ? colors.primary : colors.textMuted }}>{o.label}</Text>
+            <Text style={{ fontFamily: ff(fonts.bodySemi), fontSize: 14, color: active ? colors.primary : colors.textMuted }}>{o.label}</Text>
           </Pressable>
         );
       })}

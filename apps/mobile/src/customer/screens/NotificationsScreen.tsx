@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { formatDateTimeIST } from '@gg/shared';
+
 
 import { rpc } from '@/shared/api/rpc';
 import { refreshProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
+import { tDateTime } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Card, EmptyState, Header, Loading, Row, Screen } from '@/shared/ui';
 
@@ -37,7 +38,7 @@ export default function NotificationsScreen() {
             <View style={{ flex: 1, gap: 2 }}>
               <AppText variant="title">{n.title}</AppText>
               <AppText variant="bodySmall" color="textMuted">{n.body}</AppText>
-              <AppText variant="caption" color="textSubtle">{formatDateTimeIST(n.created_at)}</AppText>
+              <AppText variant="caption" color="textSubtle">{tDateTime(n.created_at)}</AppText>
             </View>
           </Row>
         </Card>

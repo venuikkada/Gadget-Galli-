@@ -64,6 +64,7 @@ const ORDER: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 /** Opening hours for each day, a weekly holiday and 24-hour days. */
 export function HoursEditor({ hours, holiday, onChange }: { hours: ShopHours; holiday: string | null; onChange: (h: ShopHours, holiday: string | null) => void }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const set = (d: Weekday, patch: Partial<{ open: string; close: string; closed: boolean }>) => {
     const cur = hours[d] ?? { open: '10:00', close: '21:00' };
     onChange({ ...hours, [d]: { ...cur, ...patch } }, holiday);
@@ -82,24 +83,26 @@ export function HoursEditor({ hours, holiday, onChange }: { hours: ShopHours; ho
         const h = hours[d] ?? { open: '10:00', close: '21:00' };
         const allDay = h.open === h.close;
         return (
-          <Row key={d} justify="space-between" gap={8}>
-            <AppText variant="label" style={{ width: 86 }}>{tWeekday(d)}</AppText>
+          <View key={d} style={{ gap: 6, paddingBottom: 8, borderBottomWidth: d === 'sun' ? 0 : 1, borderBottomColor: colors.divider }}>
+            <Row justify="space-between" gap={8}>
+              <AppText variant="label" style={{ flex: 1 }}>{tWeekday(d)}</AppText>
+              <Chip label={t('p.reg.allDay')} selected={allDay && !h.closed} onPress={() => set(d, allDay ? { open: '10:00', close: '21:00', closed: false } : { open: '00:00', close: '00:00', closed: false })} />
+              <Pressable onPress={() => set(d, { closed: !h.closed })} hitSlop={6} accessibilityLabel={h.closed ? t('p.reg.closedDay') : t('common.open')}>
+                <Ionicons name={h.closed ? 'close-circle' : 'checkmark-circle'} size={26} color={h.closed ? colors.error : colors.success} />
+              </Pressable>
+            </Row>
             {h.closed ? (
-              <AppText variant="bodySmall" color="error" style={{ flex: 1 }}>{t('p.reg.closedDay')}</AppText>
+              <AppText variant="bodySmall" color="error">{t('p.reg.closedDay')}</AppText>
             ) : allDay ? (
-              <AppText variant="bodySmall" color="success" style={{ flex: 1 }}>{t('p.reg.allDay')}</AppText>
+              <AppText variant="bodySmall" color="success">{t('time.allDay')}</AppText>
             ) : (
-              <Row gap={6} style={{ flex: 1 }}>
+              <Row gap={8}>
                 <TimeSelect value={h.open} onChange={(v) => set(d, { open: v })} />
                 <AppText color="textMuted">–</AppText>
                 <TimeSelect value={h.close} onChange={(v) => set(d, { close: v })} />
               </Row>
             )}
-            <Chip label={t('p.reg.allDay')} selected={allDay && !h.closed} onPress={() => set(d, allDay ? { open: '10:00', close: '21:00', closed: false } : { open: '00:00', close: '00:00', closed: false })} />
-            <Pressable onPress={() => set(d, { closed: !h.closed })} hitSlop={6}>
-              <Ionicons name={h.closed ? 'close-circle' : 'checkmark-circle'} size={24} color={h.closed ? '#DC2626' : '#16A34A'} />
-            </Pressable>
-          </Row>
+          </View>
         );
       })}
       <Button title={t('p.reg.copyToAll')} icon="copy-outline" variant="ghost" size="sm" onPress={copyMonday} style={{ alignSelf: 'flex-start' }} />

@@ -10,6 +10,7 @@ import { publicUrl, thumbUrl, type Bucket } from '../api/storage';
 import { useTranslation } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
+import { useFont } from '../theme/useFont';
 import { AppText, Icon, Row } from './primitives';
 
 // Category -> icon (MaterialCommunityIcons) for product placeholders when no photo exists.
@@ -186,12 +187,13 @@ export function StarInput({ value, onChange, size = 40 }: { value: number; onCha
 
 export function StatusChip({ status, label }: { status: OrderStatus; label?: string }) {
   const { t } = useTranslation();
+  const ff = useFont();
   const { dark } = useTheme();
   const c = STATUS_COLORS[status];
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: dark ? `${c.dot}26` : c.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start' }}>
       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.dot }} />
-      <Text style={{ color: dark ? c.dot : c.fg, fontFamily: fonts.bodySemi, fontSize: 12 }}>{label ?? t(`status.${status}`)}</Text>
+      <Text style={{ color: dark ? c.dot : c.fg, fontFamily: ff(fonts.bodySemi), fontSize: 12 }}>{label ?? t(`status.${status}`)}</Text>
     </View>
   );
 }
@@ -219,7 +221,8 @@ export function OpenDot({ open }: { open: boolean }) {
 }
 
 /** − qty + stepper with a small bounce whenever the quantity changes. */
-export function QtyStepper({ qty, onChange, max = 99, compact, loading }: { qty: number; onChange: (q: number) => void; max?: number; compact?: boolean; loading?: boolean }) {
+/** + / − stepper. In a cart the minus turns into a bin at 1; for stock counts (`stock`) it stays a minus and stops at 0. */
+export function QtyStepper({ qty, onChange, max = 99, compact, loading, stock }: { qty: number; onChange: (q: number) => void; max?: number; compact?: boolean; loading?: boolean; stock?: boolean }) {
   const { colors } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const prev = useRef(qty);
@@ -235,8 +238,8 @@ export function QtyStepper({ qty, onChange, max = 99, compact, loading }: { qty:
   const h = compact ? 32 : 38;
   return (
     <Animated.View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.action, borderRadius: 10, height: h, opacity: loading ? 0.7 : 1, transform: [{ scale }] }}>
-      <Pressable accessibilityLabel="decrease" onPress={() => onChange(qty - 1)} style={{ width: h, height: h, alignItems: 'center', justifyContent: 'center' }} hitSlop={4}>
-        <Ionicons name={qty <= 1 ? 'trash-outline' : 'remove'} size={17} color="#fff" />
+      <Pressable accessibilityLabel="decrease" onPress={() => (stock ? qty > 0 && onChange(qty - 1) : onChange(qty - 1))} style={{ width: h, height: h, alignItems: 'center', justifyContent: 'center', opacity: stock && qty <= 0 ? 0.5 : 1 }} hitSlop={4}>
+        <Ionicons name={!stock && qty <= 1 ? 'trash-outline' : 'remove'} size={17} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontFamily: fonts.bodyBold, fontSize: 15, minWidth: 18, textAlign: 'center' }}>{qty}</Text>
       <Pressable accessibilityLabel="increase" onPress={() => qty < max && onChange(qty + 1)} style={{ width: h, height: h, alignItems: 'center', justifyContent: 'center', opacity: qty >= max ? 0.5 : 1 }} hitSlop={4}>
@@ -248,6 +251,7 @@ export function QtyStepper({ qty, onChange, max = 99, compact, loading }: { qty:
 
 export function AddButton({ onPress, label, disabled, compact }: { onPress: () => void; label: string; disabled?: boolean; compact?: boolean }) {
   const { colors } = useTheme();
+  const ff = useFont();
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
@@ -265,7 +269,7 @@ export function AddButton({ onPress, label, disabled, compact }: { onPress: () =
         opacity: disabled ? 0.45 : 1,
       })}
     >
-      <Text style={{ color: colors.action, fontFamily: fonts.bodyBold, fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: colors.action, fontFamily: ff(fonts.bodyBold), fontSize: 14 }}>{label}</Text>
       <Ionicons name="add" size={16} color={colors.action} />
     </Pressable>
   );

@@ -12,7 +12,8 @@ import { useRecent } from '@/shared/hooks/recent';
 import { useCategories } from '@/shared/hooks/reference';
 import { localName, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts } from '@/shared/theme/tokens';
+import { fonts, webNoOutline } from '@/shared/theme/tokens';
+import { useFont } from '@/shared/theme/useFont';
 import { AppText, Badge, Button, Chip, EmptyState, ErrorState, IconButton, Loading, ProductImage, Row, ShopAvatar, SkeletonCard } from '@/shared/ui';
 
 import { useSearch, useSuggest } from '../api';
@@ -33,10 +34,11 @@ function useDebounced<T>(value: T, ms = 250) {
 
 function Highlight({ text, query }: { text: string; query: string }) {
   const { colors } = useTheme();
+  const ff = useFont();
   return (
-    <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 15, color: colors.text }}>
+    <Text numberOfLines={1} style={{ fontFamily: ff(fonts.body), fontSize: 15, color: colors.text }}>
       {highlightParts(text, query).map((p, i) => (
-        <Text key={i} style={p.match ? { fontFamily: fonts.bodyBold } : undefined}>{p.text}</Text>
+        <Text key={i} style={p.match ? { fontFamily: ff(fonts.bodyBold) } : undefined}>{p.text}</Text>
       ))}
     </Text>
   );
@@ -45,6 +47,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 export default function SearchScreen() {
   const { t } = useTranslation();
   const { colors, dark } = useTheme();
+  const ff = useFont();
   const params = useLocalSearchParams<{ q?: string; category?: string; title?: string; brand?: string }>();
   const { data: categories = [] } = useCategories();
   const recent = useRecent();
@@ -122,7 +125,7 @@ export default function SearchScreen() {
               placeholderTextColor={colors.textSubtle}
               autoCorrect={false}
               autoCapitalize="none"
-              style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.text, height: 48 }}
+              style={[{ flex: 1, fontFamily: ff(fonts.body), fontSize: 15, color: colors.text, height: 48 }, webNoOutline]}
             />
             {text ? (
               <IconButton

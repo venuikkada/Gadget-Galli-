@@ -80,7 +80,8 @@ export default function DashboardScreen() {
         </Row>
         {d ? (
           <Row gap={10} style={{ marginTop: 6 }}>
-            <Rating value={d.shop.rating_avg} count={d.shop.rating_count} />
+            <Rating value={d.shop.rating_avg} />
+            {d.shop.rating_count ? <AppText variant="caption" color="#FFFFFFDD">({d.shop.rating_count})</AppText> : null}
             <AppText variant="caption" color="#FFFFFFDD">{d.shop.orders_delivered} {t('p.dash.delivered').toLowerCase()}</AppText>
           </Row>
         ) : null}

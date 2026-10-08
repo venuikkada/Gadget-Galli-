@@ -65,6 +65,15 @@ async function phoneLogin(page, digits) {
 
 const shot = (page, name) => page.screenshot({ path: join(OUT, `${name}.png`) });
 
+/** Dismisses any loud new-order alerts that pop up on the shop side ("Later"). */
+async function dismissAlerts(page) {
+  const later = page.getByText('Later', { exact: true });
+  for (let i = 0; i < 10 && (await later.isVisible()); i++) {
+    await later.click();
+    await page.waitForTimeout(300);
+  }
+}
+
 /** Adds a photo through PhotoPicker (Add photo → Gallery → file chooser). */
 async function addPhoto(page, nth = 0) {
   await page.getByTestId('add-photo').nth(nth).click();
@@ -146,12 +155,14 @@ try {
   });
 
   await step('shop accepts the order', async () => {
+    await dismissAlerts(shop);
     await shop.getByTestId('step-accept').click();
     await shop.getByTestId('confirm-order').click();
     await shop.getByTestId('step-paid').waitFor({ timeout: 15000 });
   });
 
   await step('shop records UPI payment with a proof photo', async () => {
+    await dismissAlerts(shop);
     await shop.getByTestId('step-paid').click();
     await addPhoto(shop, 0);
     await shot(shop, '08-shop-payment-sheet');
@@ -160,6 +171,7 @@ try {
   });
 
   await step('shop marks packed and sends with Rapido', async () => {
+    await dismissAlerts(shop);
     await shop.getByTestId('step-packed').click();
     await shop.getByTestId('mark-packed').click();
     await shop.getByTestId('step-send').waitFor({ timeout: 15000 });
@@ -195,6 +207,56 @@ try {
   });
 
   // -------------------------------------------------------------------------
+  // New shop owner registers through the 8-step wizard
+  // -------------------------------------------------------------------------
+  const owner = await newMobilePage('new-owner');
+  await step('new owner switches to "I own a shop" and fills shop details, contacts and address', async () => {
+    await phoneLogin(owner, '9000019999'); // Lakshmi Prasanna, no shop yet
+    await owner.waitForURL(/\/(location|home)/, { timeout: 20000 });
+    if (owner.url().includes('/location')) {
+      await owner.getByTestId('area-search').fill('Nizam');
+      await owner.getByTestId('area-Nizampet').click();
+      await owner.waitForURL('**/home');
+    }
+    await owner.goto(`${MOBILE}/profile`);
+    await owner.getByTestId('switch-to-shop').click();
+    await owner.waitForURL('**/partner/register', { timeout: 15000 });
+    await owner.getByTestId('shop-name').fill('Lakshmi Mobiles & CCTV');
+    await owner.getByTestId('type-mobiles').click();
+    await owner.getByTestId('type-cctv_security').click();
+    await shot(owner, '19-register-step1');
+    await owner.getByTestId('wizard-next').click();
+    await owner.getByTestId('owner-name').waitFor();
+    if (!(await owner.getByTestId('owner-name').inputValue())) await owner.getByTestId('owner-name').fill('Lakshmi Prasanna');
+    if (!(await owner.getByTestId('contact-phone').inputValue())) await owner.getByTestId('contact-phone').fill('9000019999');
+    await owner.getByTestId('wizard-next').click();
+    await owner.getByTestId('shop-address').fill('Shop No. 4, Pragathi Nagar Road');
+    await owner.getByTestId('shop-area').click();
+    await owner.getByTestId('area-Nizampet').last().click();
+    await owner.getByTestId('wizard-next').click();
+  });
+
+  await step('new owner sets delivery zones, photos, UPI and private documents, then submits', async () => {
+    await owner.getByTestId('zone-1').click(); // West Hyderabad, whole zone
+    await owner.getByTestId('wizard-next').click();
+    await addPhoto(owner, 0); // shop front (required)
+    await owner.getByTestId('wizard-next').click();
+    await owner.getByTestId('upi-id').fill('lakshmimobiles@ybl');
+    await owner.getByTestId('wizard-next').click();
+    for (const id of ['upload-licence', 'upload-id']) {
+      const [chooser] = await Promise.all([owner.waitForEvent('filechooser'), owner.getByTestId(id).click()]);
+      await chooser.setFiles(PHOTO);
+      await owner.getByText('Saved', { exact: true }).nth(id === 'upload-licence' ? 0 : 1).waitFor({ timeout: 20000 });
+    }
+    await shot(owner, '20-register-documents');
+    await owner.getByTestId('wizard-next').click();
+    await owner.getByTestId('wizard-submit').click();
+    await owner.waitForURL('**/partner/status', { timeout: 15000 });
+    await owner.getByText('Under review').first().waitFor();
+    await shot(owner, '21-register-under-review');
+  });
+
+  // -------------------------------------------------------------------------
   // Admin: order is delivered, approve the pending shop and custom product
   // -------------------------------------------------------------------------
   const adminCtx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
@@ -213,16 +275,21 @@ try {
     await shot(admin, '15-admin-order');
   });
 
-  await step('admin approves the shop waiting for review', async () => {
+  await step('admin reviews the new shop (documents, photos) and approves it', async () => {
     await admin.goto(`${ADMIN}/shops?status=under_review`);
-    const row = admin.getByText('Sai Ganesh Electronics');
-    if (await row.waitFor({ timeout: 8000 }).then(() => true, () => false)) {
-      await row.click();
-      await admin.getByTestId('approve-shop').click();
-      await admin.getByText('Shop approved').waitFor({ timeout: 10000 });
-      await admin.getByText('Live', { exact: true }).first().waitFor();
-    }
-    await shot(admin, '16-admin-shop-approved');
+    await admin.getByText('Lakshmi Mobiles & CCTV').click();
+    await admin.getByText('Documents (private)').waitFor();
+    await admin.getByText('Owner ID proof').waitFor();
+    await shot(admin, '16-admin-shop-review');
+    await admin.getByTestId('approve-shop').click();
+    await admin.getByText('Shop approved').waitFor({ timeout: 10000 });
+    await admin.getByText('Live', { exact: true }).first().waitFor();
+  });
+
+  await step('the approved owner sees their shop is live', async () => {
+    await owner.goto(`${MOBILE}/partner/status`);
+    await owner.getByText('Your shop is live!').first().waitFor({ timeout: 15000 });
+    await shot(owner, '22-shop-live');
   });
 
   await step('admin approves the pending custom product', async () => {
@@ -235,7 +302,17 @@ try {
     await shot(admin, '17-admin-catalog');
   });
 
-  await step('public share page for the shop opens without login', async () => {
+  await step('customer switches the app to Telugu', async () => {
+    await customer.goto(`${MOBILE}/settings`);
+    await customer.getByTestId('lang-te').click();
+    await customer.goto(`${MOBILE}/home`);
+    await customer.getByText('హోమ్').first().waitFor({ timeout: 15000 });
+    await shot(customer, '23-telugu-home');
+    await customer.goto(`${MOBILE}/settings`);
+    await customer.getByTestId('lang-en').click();
+  });
+
+  await step('public share page for the product opens without login', async () => {
     const anon = await (await browser.newContext(phone)).newPage();
     await anon.goto(`${ADMIN}/s/product/33333333-0000-4000-8000-00000000006d`);
     await anon.getByTestId('open-app').waitFor({ timeout: 15000 });

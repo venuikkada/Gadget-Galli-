@@ -141,15 +141,23 @@ export function formatDateIST(date: Date | string | number, withYear = true): st
   return `${p.day} ${MONTHS[p.month - 1]}${withYear ? ` ${p.year}` : ''}`;
 }
 
-/** 8 Oct, 3:45 PM — or "Today, 3:45 PM" / "Yesterday, 3:45 PM" (IST). */
-export function formatDateTimeIST(date: Date | string | number, now: Date = new Date()): string {
+/** Which day a timestamp falls on (IST), so apps can say "Today" / "Yesterday" in any language. */
+export function dayParts(date: Date | string | number, now: Date = new Date()): { day: 'today' | 'yesterday' | 'other'; time: string; date: string } {
   const p = istParts(date);
   const today = istParts(now);
   const yesterday = istParts(now.getTime() - 86_400_000);
   const time = formatClock(p.hour, p.minute);
-  if (p.year === today.year && p.month === today.month && p.day === today.day) return `Today, ${time}`;
-  if (p.year === yesterday.year && p.month === yesterday.month && p.day === yesterday.day) return `Yesterday, ${time}`;
-  return `${p.day} ${MONTHS[p.month - 1]}${p.year !== today.year ? ` ${p.year}` : ''}, ${time}`;
+  if (p.year === today.year && p.month === today.month && p.day === today.day) return { day: 'today', time, date: '' };
+  if (p.year === yesterday.year && p.month === yesterday.month && p.day === yesterday.day) return { day: 'yesterday', time, date: '' };
+  return { day: 'other', time, date: `${p.day} ${MONTHS[p.month - 1]}${p.year !== today.year ? ` ${p.year}` : ''}` };
+}
+
+/** 8 Oct, 3:45 PM — or "Today, 3:45 PM" / "Yesterday, 3:45 PM" (IST). */
+export function formatDateTimeIST(date: Date | string | number, now: Date = new Date()): string {
+  const d = dayParts(date, now);
+  if (d.day === 'today') return `Today, ${d.time}`;
+  if (d.day === 'yesterday') return `Yesterday, ${d.time}`;
+  return `${d.date}, ${d.time}`;
 }
 
 /** "just now", "5 min ago", "2 hrs ago", "3 days ago" */

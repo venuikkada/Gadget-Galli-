@@ -6,6 +6,7 @@ import { create } from 'zustand';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
+import { useFont } from '../theme/useFont';
 import { AppText, Button, IconButton, Row } from './primitives';
 
 // ---------------------------------------------------------------------------
@@ -114,6 +115,7 @@ export function toast(text: string, tone: ToastTone = 'info') {
 
 export function ToastHost() {
   const { colors } = useTheme();
+  const ff = useFont();
   const insets = useSafeAreaInsets();
   const current = useToastStore((s) => s.toast);
   const opacity = useRef(new Animated.Value(0)).current;
@@ -136,7 +138,7 @@ export function ToastHost() {
     <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 90, opacity, alignItems: 'center' }}>
       <View style={{ backgroundColor: bg, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 480 }}>
         <Ionicons name={icon} size={18} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: fonts.bodyMedium, fontSize: 14, flexShrink: 1 }}>{current.text}</Text>
+        <Text style={{ color: '#fff', fontFamily: ff(fonts.bodyMedium), fontSize: 14, flexShrink: 1 }}>{current.text}</Text>
       </View>
     </Animated.View>
   );

@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
+import { useFont } from '../theme/useFont';
 import { Badge } from '../ui';
 
 export interface TabItem {
@@ -18,6 +19,7 @@ export interface TabItem {
 /** Bottom navigation with large touch targets, a badge and an optional element floating above it (cart bar). */
 export function AppTabBar({ state, navigation, insets, items, above }: BottomTabBarProps & { items: TabItem[]; above?: ReactNode }) {
   const { colors } = useTheme();
+  const ff = useFont();
   return (
     <View>
       {above}
@@ -45,7 +47,7 @@ export function AppTabBar({ state, navigation, insets, items, above }: BottomTab
                 <Ionicons name={focused ? item.iconActive : item.icon} size={24} color={focused ? colors.primary : colors.textSubtle} />
                 {item.badge ? <Badge count={item.badge} style={{ position: 'absolute', top: -4, right: -10 }} /> : null}
               </View>
-              <Text style={{ fontSize: 11, fontFamily: focused ? fonts.bodySemi : fonts.bodyMedium, color: focused ? colors.primary : colors.textSubtle }}>{item.label}</Text>
+              <Text style={{ fontSize: 11, fontFamily: ff(focused ? fonts.bodySemi : fonts.bodyMedium), color: focused ? colors.primary : colors.textSubtle }}>{item.label}</Text>
             </Pressable>
           );
         })}

@@ -111,7 +111,7 @@ export default function ShopQrScreen() {
             toast(t('common.copied'), 'success');
           }}
         />
-        <Button title={t('p.qr.more')} icon="share-social-outline" variant="outline" style={{ flex: 1 }} onPress={() => shareText(message)} />
+        <Button title={t('common.share')} icon="share-social-outline" variant="outline" style={{ flex: 1 }} onPress={() => shareText(message)} />
       </Row>
 
       <Card style={{ gap: 10 }}>

@@ -3,11 +3,11 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { formatDateIST, formatDateTimeIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
+import { formatDateIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
 
 import { thumbUrl } from '@/shared/api/storage';
 import { useTranslation } from '@/shared/i18n';
-import { tDeliversIn, tDuration } from '@/shared/i18n/format';
+import { tDateTime, tDeliversIn, tDuration } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AddButton,
@@ -214,7 +214,7 @@ export function OrderRow({ o, onPress }: { o: OrderCard; onPress?: () => void })
             {o.item_count > 1 ? ` +${o.item_count - 1}` : ''}
           </AppText>
           <Row justify="space-between">
-            <AppText variant="caption" color="textSubtle">{o.order_no} · {formatDateTimeIST(o.requested_at)}</AppText>
+            <AppText variant="caption" color="textSubtle">{o.order_no} · {tDateTime(o.requested_at)}</AppText>
             <AppText variant="price" style={{ fontSize: 15 }}>{formatINR(o.grand_total)}</AppText>
           </Row>
           {o.status === 'DELIVERED' && !o.has_review ? (

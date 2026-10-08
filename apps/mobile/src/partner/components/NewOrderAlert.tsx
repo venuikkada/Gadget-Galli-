@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Platform, Vibration, View } from 'react-native';
 
@@ -63,12 +63,17 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
 
   // Orders already rung for in this app session (so "Later" does not ring again every poll)
   const seen = useRef(new Set<string>());
+  const pathname = usePathname();
+  const pathRef = useRef(pathname);
+  pathRef.current = pathname;
 
   const push = useCallback(
     (o: Incoming) => {
       seen.current.add(o.id);
-      setQueue((q) => (q.some((x) => x.id === o.id) ? q : [...q, o]));
       queryClient.invalidateQueries({ queryKey: ['partner'] });
+      // No need to ring for an order the owner is already looking at
+      if (pathRef.current === `/partner/order/${o.id}`) return;
+      setQueue((q) => (q.some((x) => x.id === o.id) ? q : [...q, o]));
     },
     [],
   );

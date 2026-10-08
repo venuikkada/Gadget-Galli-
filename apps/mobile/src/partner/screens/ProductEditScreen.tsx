@@ -176,7 +176,7 @@ export default function ProductEditScreen() {
       </Row>
       <View style={{ gap: 8 }}>
         <AppText variant="label" color="textMuted">{t('p.edit.warrantyType')}</AppText>
-        <Segmented value={warrantyType} onChange={setWarrantyType} options={[{ value: 'brand', label: t('product.warrantyBrand') }, { value: 'shop', label: t('product.warrantyShop') }, { value: 'none', label: t('common.none') }]} />
+        <Segmented value={warrantyType} onChange={setWarrantyType} options={[{ value: 'brand', label: t('p.edit.byBrand') }, { value: 'shop', label: t('p.edit.byShop') }, { value: 'none', label: t('common.none') }]} />
         {warrantyType !== 'none' ? <Input label={t('p.edit.warranty')} keyboardType="number-pad" value={warranty} onChangeText={setWarranty} /> : null}
       </View>
       <Card style={{ gap: 10 }}>

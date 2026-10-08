@@ -1,5 +1,6 @@
 import {
   agoParts,
+  dayParts,
   durationParts,
   openingState,
   trimNumber,
@@ -63,4 +64,12 @@ export function tOpening(hours: ShopHours | null | undefined, manualOpen: boolea
     default:
       return t('time.closed');
   }
+}
+
+/** "Today, 3:45 PM" / "Yesterday, …" / "8 Oct, 3:45 PM" in the app language (IST). */
+export function tDateTime(date: Date | string | number): string {
+  const d = dayParts(date);
+  if (d.day === 'today') return t('time.today', { time: d.time });
+  if (d.day === 'yesterday') return t('time.yesterday', { time: d.time });
+  return `${d.date}, ${d.time}`;
 }

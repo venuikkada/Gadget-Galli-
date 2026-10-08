@@ -75,6 +75,9 @@ importers:
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/noto-sans-devanagari':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo-google-fonts/noto-sans-telugu':
         specifier: ^0.4.2
         version: 0.4.2
@@ -800,6 +803,9 @@ packages:
 
   '@expo-google-fonts/material-symbols@0.4.49':
     resolution: {integrity: sha512-HtoaXYCk7A9kOjwoxrjq6i0iDtAoQnOPm31zUn+TgmKlHVUU+yyqvQDxN830MvGmBQV8eINv/SK7JRtWhB2xcg==}
+
+  '@expo-google-fonts/noto-sans-devanagari@0.4.1':
+    resolution: {integrity: sha512-26boYPNKGP1r4R5MxsMAY/zCQOwiXLOJzX8sh1a2oEWyQurQsyniaCv4992c+9jjwshEEt2NNVv5GcnyzaL7QQ==}
 
   '@expo-google-fonts/noto-sans-telugu@0.4.2':
     resolution: {integrity: sha512-t5wZI1/2u69ugVr2v9P4Qqt9BHHwDQ/26+1p9MLrwf1lNSW64Mw16AIRzGWIOcRMd0drYWeZzZO1DqoFts3KiA==}
@@ -5067,6 +5073,8 @@ snapshots:
 
   '@expo-google-fonts/material-symbols@0.4.49': {}
 
+  '@expo-google-fonts/noto-sans-devanagari@0.4.1': {}
+
   '@expo-google-fonts/noto-sans-telugu@0.4.2': {}
 
   '@expo-google-fonts/poppins@0.4.1': {}
@@ -5844,9 +5852,7 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

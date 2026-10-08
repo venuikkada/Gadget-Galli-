@@ -523,6 +523,8 @@ export const te: Translations = {
   },
   time: {
     justNow: 'ఇప్పుడే',
+    today: 'ఈరోజు, {{time}}',
+    yesterday: 'నిన్న, {{time}}',
     minsAgo: '{{n}} నిమిషాల క్రితం',
     hourAgo: '1 గంట క్రితం',
     hoursAgo: '{{n}} గంటల క్రితం',
@@ -876,6 +878,8 @@ export const te: Translations = {
       save: 'ప్రొడక్ట్ సేవ్ చేయండి',
       variantHint: 'వేరే స్టోరేజ్ లేదా రంగు జోడించాలంటే, "కాపీ చేయండి" నొక్కి ఆ వేరియంట్ ఎంచుకోండి.',
       priceRequired: 'అమ్మకం ధర ఎంటర్ చేయండి',
+      byBrand: 'బ్రాండ్',
+      byShop: 'షాప్',
     },
     custom: {
       title: 'కస్టమ్ ప్రొడక్ట్',
