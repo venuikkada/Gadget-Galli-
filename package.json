@@ -1,0 +1,20 @@
+{
+  "name": "gadget-galli",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Gadget Galli: Hyderabad electronics shops, delivered in hours",
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "db:seed:generate": "node supabase/seed/generate-seed.mjs",
+    "db:test": "bash supabase/tests/run-tests.sh",
+    "mobile": "pnpm --filter @gg/mobile start",
+    "admin": "pnpm --filter @gg/admin dev",
+    "admin:build": "pnpm --filter @gg/admin build",
+    "dev-stack": "node scripts/dev-stack/server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

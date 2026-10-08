@@ -1,0 +1,107 @@
+# Supabase CLI config for Gadget Galli (local development with `supabase start`).
+project_id = "gadget-galli"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:8081"
+additional_redirect_urls = ["gadgetgalli://", "http://localhost:5173", "http://localhost:8081"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+# Admins sign in with email + password (accounts are created by a super admin, not by sign-up)
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = false
+
+# Customers and shop owners sign in with phone number + OTP
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "{{ .Code }} is your Gadget Galli login code. Do not share it with anyone."
+max_frequency = "30s"
+
+# Demo numbers (seed.sql) log in with OTP 123456 without sending an SMS
+[auth.sms.test_otp]
+919000000001 = "123456"
+919000000002 = "123456"
+919000000003 = "123456"
+919000000004 = "123456"
+919000000005 = "123456"
+919000000006 = "123456"
+919000000007 = "123456"
+919000000008 = "123456"
+919000000009 = "123456"
+919000000010 = "123456"
+919000000011 = "123456"
+919000000012 = "123456"
+919000010001 = "123456"
+919000010002 = "123456"
+919000010003 = "123456"
+919000010004 = "123456"
+919000010005 = "123456"
+919000010006 = "123456"
+919000010007 = "123456"
+919000010008 = "123456"
+919000010009 = "123456"
+919000010010 = "123456"
+919000010011 = "123456"
+919000010012 = "123456"
+919000010013 = "123456"
+919000010014 = "123456"
+919000010015 = "123456"
+919000010016 = "123456"
+919000019999 = "123456"
+
+# Real SMS: enable one provider (Twilio, Textlocal for India, Vonage or MessageBird) in the dashboard.
+[auth.sms.twilio]
+enabled = false
+account_sid = ""
+message_service_sid = ""
+auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.order-jobs]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
