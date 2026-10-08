@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { Pressable, Switch, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Platform, Pressable, Switch, View } from 'react-native';
 
 import { formatINR, formatINRCompact } from '@gg/shared';
 
@@ -35,6 +37,18 @@ export default function DashboardScreen() {
   const { data: shop } = useMyShop();
   const dash = useDashboard(shop?.id);
   const d = dash.data;
+  // Android can silence apps in the background; remind owners once to allow loud order alerts.
+  const [showAlertTip, setShowAlertTip] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    AsyncStorage.getItem('gg.alertTipDone')
+      .then((v) => setShowAlertTip(v !== '1'))
+      .catch(() => setShowAlertTip(true));
+  }, []);
+  const doneAlertTip = () => {
+    setShowAlertTip(false);
+    AsyncStorage.setItem('gg.alertTipDone', '1').catch(() => undefined);
+  };
 
   const toggleOpen = async (v: boolean) => {
     if (!shop) return;
@@ -67,6 +81,19 @@ export default function DashboardScreen() {
         <Pressable onPress={() => router.push('/partner/status')}>
           <InfoBanner tone={shop.status === 'under_review' ? 'info' : 'warning'} text={`${t('p.dash.notLive')} · ${t(`p.status.${shop.status}`)}${shop.status_reason ? ` · ${shop.status_reason}` : ''}`} />
         </Pressable>
+      ) : null}
+
+      {showAlertTip ? (
+        <Card style={{ gap: 10, backgroundColor: colors.warningSoft }} testID="alert-tip">
+          <Row align="flex-start" gap={10}>
+            <Ionicons name="notifications" size={20} color={colors.warning} />
+            <AppText variant="bodySmall" style={{ flex: 1 }}>{t('p.dash.alertTip')}</AppText>
+          </Row>
+          <Row gap={10}>
+            <Button title={t('p.dash.openSettings')} size="sm" variant="outline" icon="settings-outline" onPress={() => Linking.openSettings().catch(() => undefined)} />
+            <Button title={t('p.dash.gotIt')} size="sm" variant="ghost" onPress={doneAlertTip} />
+          </Row>
+        </Card>
       ) : null}
 
       {/* Open / Closed switch */}
