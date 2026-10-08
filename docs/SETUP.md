@@ -126,7 +126,8 @@ Every new row in `notifications` (order updates, the new-order alert for shops, 
 3. Host it on Vercel, Netlify or Cloudflare Pages.
    - It is a single-page app, so every path must be served by `index.html`. The rewrite files are included: `apps/admin/public/_redirects` for Netlify and Cloudflare Pages, and `apps/admin/vercel.json` for Vercel (set the project root to `apps/admin`).
    - Point `gadgetgalli.in` at it. `/` is the admin login, and `/s/...` serves the public share pages.
-4. **WhatsApp link previews** use the generic Gadget Galli title, description and logo from `index.html`, because the share page is rendered in the browser. If you later want per-product previews (photo and price in the WhatsApp card), add a small edge or serverless function that returns OG tags for `/s/*` before the SPA loads.
+4. **The customer and Shop Partner apps as websites:** the same app also runs in a browser. [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md) builds all three websites (customer, Shop Partner, admin) with a `config.js` you fill in after uploading, and walks through Hostinger step by step.
+5. **WhatsApp link previews** use the generic Gadget Galli title, description and logo from `index.html`, because the share page is rendered in the browser. If you later want per-product previews (photo and price in the WhatsApp card), add a small edge or serverless function that returns OG tags for `/s/*` before the SPA loads.
 
 ## 6. Before launch: checklist
 

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { errorText, rpc } from '@/shared/api/rpc';
+import { config } from '@/shared/config';
 import { refreshProfile, useProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
-import { copyText, SHARE_BASE, shareOnWhatsApp } from '@/shared/lib/linking';
+import { copyText, shareOnWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Header, Input, Row, Screen, toast } from '@/shared/ui';
 
@@ -18,7 +19,8 @@ export default function ReferralScreen() {
   const [code, setCode] = useState('');
   const [applying, setApplying] = useState(false);
   const mine = q.data?.code ?? profile?.user.referral_code ?? '';
-  const text = t('referral.shareText', { code: mine, link: SHARE_BASE });
+  // Friends join on the customer website when there is one, otherwise from the Play Store.
+  const text = t('referral.shareText', { code: mine, link: config.customerAppUrl || config.playStoreUrl });
 
   const apply = async () => {
     setApplying(true);

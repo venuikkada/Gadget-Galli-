@@ -6,9 +6,11 @@ import { View } from 'react-native';
 import { formatPhone } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
+import { config } from '@/shared/config';
 import { useProfile, useUpdateProfile } from '@/shared/hooks/profile';
 import { LANGUAGES, useTranslation } from '@/shared/i18n';
 import { deleteAccount, signOut } from '@/shared/lib/auth';
+import { openUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, confirmDialog, Divider, Header, Input, ListItem, Row, Screen, Sheet, toast } from '@/shared/ui';
 
@@ -77,11 +79,20 @@ export default function ProfileScreen() {
         <ListItem icon="lock-closed-outline" title={t('profile.privacy')} onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} />
       </Card>
 
-      <Card style={{ backgroundColor: colors.actionSoft, gap: 8 }}>
-        <AppText variant="title">{t('profile.ownShop')}</AppText>
-        <AppText variant="bodySmall" color="textMuted">{t('profile.ownShopBody')}</AppText>
-        <Button testID="switch-to-shop" title={t('profile.switchToShop')} icon="storefront" variant="action" onPress={switchRole} loading={update.isPending} />
-      </Card>
+      {config.app === 'all' || config.partnerAppUrl ? (
+        <Card style={{ backgroundColor: colors.actionSoft, gap: 8 }}>
+          <AppText variant="title">{t('profile.ownShop')}</AppText>
+          <AppText variant="bodySmall" color="textMuted">{t('profile.ownShopBody')}</AppText>
+          <Button
+            testID="switch-to-shop"
+            title={t('profile.switchToShop')}
+            icon="storefront"
+            variant="action"
+            onPress={config.app === 'all' ? switchRole : () => openUrl(config.partnerAppUrl)}
+            loading={update.isPending}
+          />
+        </Card>
+      ) : null}
 
       <Card padded={false} style={{ paddingHorizontal: 10 }}>
         <ListItem

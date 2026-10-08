@@ -4,10 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+import { config } from '../config';
 
-/** False until apps/mobile/.env has the Supabase URL and anon key. */
+const url = config.supabaseUrl;
+const anonKey = config.supabaseAnonKey;
+
+/** False until apps/mobile/.env (or a website's config.js) has the Supabase URL and anon key. */
 export const isConfigured = url.length > 0 && anonKey.length > 0;
 
 export const supabase = createClient(url || 'http://localhost:54321', anonKey || 'missing-anon-key', {

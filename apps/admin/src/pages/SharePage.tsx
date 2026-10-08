@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { BadgeCheck, MapPin, Smartphone, Star, Truck } from 'lucide-react';
+import { BadgeCheck, Globe, MapPin, Smartphone, Star, Truck } from 'lucide-react';
 import { useEffect } from 'react';
 import { useParams } from 'react-router';
 
@@ -7,10 +7,11 @@ import { formatDuration, formatINR, openingHint, percentOff, type ProductPage, t
 
 import { Spinner } from '@/components/ui';
 import { publicUrl, rpc } from '@/lib/api';
+import { config } from '@/lib/config';
 
 const SCHEME = (import.meta.env.VITE_APP_SCHEME as string | undefined) || 'gadgetgalli';
-const PLAY = (import.meta.env.VITE_PLAY_STORE_URL as string | undefined) || 'https://play.google.com/store/apps/details?id=in.gadgetgalli.app';
-const APPSTORE = (import.meta.env.VITE_APP_STORE_URL as string | undefined) || '';
+const PLAY = config.playStoreUrl;
+const APPSTORE = config.appStoreUrl;
 
 function setMeta(title: string, description: string, image?: string | null) {
   document.title = `${title} · Gadget Galli`;
@@ -51,6 +52,11 @@ function AppButtons({ path }: { path: string }) {
       <button type="button" onClick={() => openApp(path)} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-action text-base font-semibold text-white shadow-lg shadow-orange-500/20 hover:bg-action-dark" data-testid="open-app">
         <Smartphone className="size-5" /> Open in Gadget Galli app
       </button>
+      {config.customerAppUrl ? (
+        <a href={`${config.customerAppUrl}/${path}`} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-white text-base font-semibold text-primary hover:bg-primary-soft" data-testid="open-web">
+          <Globe className="size-5" /> Open in your browser
+        </a>
+      ) : null}
       <div className="flex gap-3">
         <a href={PLAY} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-center text-sm font-semibold hover:bg-slate-50">
           Get it on Google Play

@@ -93,12 +93,23 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 44. **No commission or fees in v1.** The schema already has `featured` (paid placement) and shop stats, so monetisation can be switched on later without migrations. See MARKETING.md for the suggested plans.
 
+## Websites (Hostinger)
+
+45. **The customer app and the Shop Partner app are two websites made from one build.**
+    - The web build reads a small `config.js` when the page loads. It holds the Supabase keys, which side to show (`customer` or `partner`), demo mode and the addresses of the other sites.
+    - So the same files serve both websites, and they can be pointed at a server after uploading, without a rebuild.
+    - The store app still shows both sides, with the role picked at sign-up.
+    - On the customer site, shop owners can shop too. On the partner site, the buy/sell question is skipped and new users go straight to shop registration.
+    - Each site's switch button opens the other website.
+46. **The demo phone numbers show on the login screen only in demo mode** (`EXPO_PUBLIC_DEMO=1`, or `demo: true` in a website's `config.js`). Earlier builds always showed them, which a real launch must not do.
+47. **Hostinger serves the websites; Supabase stays the backend.** Hostinger's web hosting serves files and PHP but has no Postgres, so the database, logins, storage and realtime stay on Supabase (the free tier is enough for a demo). An `.htaccess` file in each site sends every address to `index.html`, so links like `/product/…` work.
+
 ## Development and testing
 
-45. **No Docker was available while building**, so:
+48. **No Docker was available while building**, so:
     - `supabase/tests` runs every migration and the seed on a throwaway local Postgres, with a small auth/storage shim, and asserts search, security, the order flow and jobs.
     - `scripts/dev-stack` is a small Supabase-compatible API on the same database, used for development and the Playwright end-to-end test.
     - Official `supabase start` (Docker) works too.
-46. **Seed data is generated** by `supabase/seed/generate-seed.mjs`, which is deterministic:
+49. **Seed data is generated** by `supabase/seed/generate-seed.mjs`, which is deterministic:
     - `seed.sql` is the full demo: 16 shops, 624 listings, 90 orders in every status, reviews and search history.
     - `seed-reference.sql` is the production starter: areas, categories, brands, synonyms, 172 catalog products and banners only.

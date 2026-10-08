@@ -9,9 +9,12 @@ import { normalizeIndianPhone } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { supabase } from '@/shared/api/supabase';
+import { config } from '@/shared/config';
 import { LANGUAGES, setLanguage, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Chip, Input, Row } from '@/shared/ui';
+
+const PARTNER = config.app === 'partner';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
@@ -50,8 +53,8 @@ export default function LoginScreen() {
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="flash" size={34} color="#FF8A5C" />
             </View>
-            <AppText variant="display" color="#FFFFFF">{t('auth.welcome')}</AppText>
-            <AppText variant="body" color="#E0E7FF">{t('auth.subtitle')}</AppText>
+            <AppText variant="display" color="#FFFFFF">{t(PARTNER ? 'auth.partnerWelcome' : 'auth.welcome')}</AppText>
+            <AppText variant="body" color="#E0E7FF">{t(PARTNER ? 'auth.partnerSubtitle' : 'auth.subtitle')}</AppText>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -74,9 +77,13 @@ export default function LoginScreen() {
             <Button testID="send-otp" title={t('auth.sendOtp')} variant="action" size="lg" loading={loading} onPress={send} full />
             <AppText variant="caption" color="textMuted" align="center">{t('auth.terms')}</AppText>
           </View>
-          <View style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12 }}>
-            <AppText variant="caption" color="primary" align="center">{t('auth.demoHint')}</AppText>
-          </View>
+          {config.demo ? (
+            <View style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12 }} testID="demo-hint">
+              <AppText variant="caption" color="primary" align="center">
+                {config.app === 'all' ? t('auth.demoHint') : t('auth.demoLogin', { phone: PARTNER ? '+91 90000 10002' : '+91 90000 00001' })}
+              </AppText>
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

@@ -16,6 +16,8 @@
     "e2e:prepare": "node scripts/e2e/prepare.mjs",
     "e2e": "node scripts/e2e/smoke.mjs && node scripts/e2e/screens.mjs",
     "screenshots": "node scripts/e2e/screenshots.mjs",
+    "deploy:hostinger": "node scripts/deploy/hostinger.mjs",
+    "deploy:check": "node scripts/deploy/check-sites.mjs",
     "dev-stack:reset": "node scripts/dev-stack/reset.mjs",
     "i18n:check": "node scripts/check-i18n.cjs"
   },

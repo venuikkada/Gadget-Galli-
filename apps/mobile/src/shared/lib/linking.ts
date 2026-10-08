@@ -5,6 +5,8 @@ import { Alert, Platform, Share } from 'react-native';
 
 import { DELIVERY_APPS, mapsUrl, telUrl, whatsappUrl } from '@gg/shared';
 
+import { config } from '../config';
+
 export async function openUrl(url: string) {
   // On the web, Linking.openURL replaces the current page. Open web links (wa.me, maps,
   // tracking) in a new tab so the app stays open; tel:/upi: hand off to the phone as usual.
@@ -95,7 +97,7 @@ export async function openDeliveryApp(key: keyof typeof DELIVERY_APPS) {
   await openUrl(Platform.OS === 'android' ? app.android : Platform.OS === 'ios' ? app.ios : app.web);
 }
 
-export const SHARE_BASE = (process.env.EXPO_PUBLIC_SHARE_BASE_URL ?? 'https://gadgetgalli.in').replace(/\/$/, '');
+export const SHARE_BASE = config.shareBaseUrl;
 export const productShareUrl = (id: string) => `${SHARE_BASE}/s/product/${id}`;
 export const shopShareUrl = (id: string) => `${SHARE_BASE}/s/shop/${id}`;
 export const appDeepLink = (path: string) => Linking.createURL(path);

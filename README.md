@@ -14,6 +14,8 @@ Three parts share one Supabase backend:
 | **Backend** | Supabase: Postgres schema, search, the order workflow as database functions, row-level security, storage, realtime, edge functions | `supabase/` |
 
 > 📣 **Selling and marketing:** see **[docs/MARKETING.md](docs/MARKETING.md)** for the full go-to-market playbook: signing up shops, getting customers, scripts, budgets, the launch calendar and the numbers to watch.
+>
+> 🌐 **Put it online as websites:** `pnpm deploy:hostinger` packages the customer app, the Shop Partner app and the admin panel as three separate websites (Hostinger, temporary domains are fine), with a free Supabase project as the backend. Step by step: **[docs/DEPLOY-HOSTINGER.md](docs/DEPLOY-HOSTINGER.md)**.
 
 ---
 
@@ -123,6 +125,7 @@ Try this: log in as Ravi and search **`rtx 4060`**. Only KPHB Computer World and
 | `pnpm typecheck` | TypeScript for every package. |
 | `pnpm i18n:check` | Telugu and Hindi match English key-for-key (placeholders, brand names) and every `t()` key used in code exists. |
 | `pnpm e2e:prepare && pnpm dev-stack --serve-admin apps/admin/dist --serve-mobile apps/mobile/dist`, then `pnpm e2e` | **End-to-end browser test (Playwright).** A customer searches "rtx4060", compares shops and orders on WhatsApp. The shop accepts, records the UPI payment with a photo, packs the order and sends it with Rapido. The customer confirms delivery and leaves a review. A new owner registers a shop through all 8 steps. The admin reviews the documents and approves the shop and a custom product. The app switches to Telugu, and a share page opens. Screenshots go to `test-results/smoke/`. Run `pnpm dev-stack:reset` first for fresh data. |
+| `pnpm deploy:hostinger`, then `pnpm deploy:check` (dev stack running, fresh data) | Builds the three website packages, then serves them on three local ports the way Hostinger will and checks each in a browser: the customer and partner sites keep to their own side, the switch buttons open the other site, addresses work on reload, and share pages link to the customer site. |
 | `pnpm screenshots` (same setup as `pnpm e2e`, on fresh data) | Captures 46 curated screens of all three apps: one order from search to review, customer and shop side by side, then a tour of every part. Writes them with captions and a gallery page to `test-results/screenshots/`. Useful for pitching shops, brochures and Reels. (Google Play wants screenshots no taller than 2:1, so take store screenshots on a phone.) Build with `GG_SHARE_BASE_URL=https://gadgetgalli.in pnpm e2e:prepare` so share links show your domain. |
 
 ## Repository layout
@@ -141,9 +144,11 @@ supabase/
   tests/             SQL tests + run-tests.sh
 scripts/
   dev-stack/         Local Postgres + Supabase-compatible API (pnpm dev-stack)
-  e2e/               Playwright smoke test
+  e2e/               Playwright smoke test, screen tour and screenshot gallery
+  deploy/            Website packages for Hostinger (pnpm deploy:hostinger) and their browser check
 docs/
   SETUP.md           Going live: Supabase, SMS, maps, push, app store builds, admin hosting
+  DEPLOY-HOSTINGER.md  The three apps as websites on Hostinger, with Supabase
   DECISIONS.md       Every product and technical choice made, and why
   MARKETING.md       How to sell: shops, customers, channels, scripts, budgets, KPIs
 ```

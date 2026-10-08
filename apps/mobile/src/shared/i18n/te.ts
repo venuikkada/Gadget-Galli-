@@ -91,6 +91,9 @@ export const te: Translations = {
     roleSellDesc: 'మీ దగ్గర్లోని కస్టమర్ల నుండి ఆర్డర్లు పొందండి. చేరడం ఉచితం.',
     languageTitle: 'మీ భాషను ఎంచుకోండి',
     demoHint: 'డెమో: +91 90000 00001 (కస్టమర్) లేదా +91 90000 10002 (షాప్), OTP 123456',
+    demoLogin: 'డెమో లాగిన్: {{phone}} · OTP 123456',
+    partnerWelcome: 'Gadget Galli Partner',
+    partnerSubtitle: 'షాప్ ఓనర్ల కోసం: మీ దగ్గర్లోని కస్టమర్ల నుండి ఆర్డర్లు, డబ్బు నేరుగా మీ UPIకి.',
     adminHint: 'అడ్మిన్లు వెబ్ ప్యానెల్లో సైన్ ఇన్ అవుతారు.',
   },
   location: {

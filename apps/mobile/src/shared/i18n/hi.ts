@@ -91,6 +91,9 @@ export const hi: Translations = {
     roleSellDesc: 'पास के ग्राहकों से ऑर्डर पाएं। जुड़ना फ़्री है।',
     languageTitle: 'अपनी भाषा चुनें',
     demoHint: 'डेमो: +91 90000 00001 (ग्राहक) या +91 90000 10002 (दुकान), OTP 123456',
+    demoLogin: 'डेमो लॉगिन: {{phone}} · OTP 123456',
+    partnerWelcome: 'Gadget Galli Partner',
+    partnerSubtitle: 'दुकानदारों के लिए: आस-पास के ग्राहकों से ऑर्डर, पैसा सीधे आपके UPI में।',
     adminHint: 'एडमिन वेब पैनल पर साइन इन करते हैं।',
   },
   location: {

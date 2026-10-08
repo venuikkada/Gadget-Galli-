@@ -19,6 +19,7 @@ run('apps/mobile', 'npx', ['expo', 'export', '--platform', 'web', '--clear'], {
   CI: '1',
   EXPO_PUBLIC_SUPABASE_URL: API,
   EXPO_PUBLIC_SUPABASE_ANON_KEY: ANON_KEY,
+  EXPO_PUBLIC_DEMO: '1', // the local stack accepts OTP 123456, so show the demo numbers
   // Share links point at the admin app's /s/ pages; set GG_SHARE_BASE_URL=https://gadgetgalli.in for screenshots.
   EXPO_PUBLIC_SHARE_BASE_URL: process.env.GG_SHARE_BASE_URL ?? process.env.GG_ADMIN_URL ?? 'http://localhost:4173',
 });

@@ -89,6 +89,9 @@ export const en = {
     roleSellDesc: 'Get orders from customers near you. Free to join.',
     languageTitle: 'Choose your language',
     demoHint: 'Demo: +91 90000 00001 (customer) or +91 90000 10002 (shop), OTP 123456',
+    demoLogin: 'Demo login: {{phone}} · OTP 123456',
+    partnerWelcome: 'Gadget Galli Partner',
+    partnerSubtitle: 'For shop owners: get orders from customers near you, paid straight to your UPI.',
     adminHint: 'Admins sign in on the web panel.',
   },
   location: {

@@ -19,3 +19,6 @@ supabase/.temp/
 scripts/dev-stack/.data/
 test-results/
 playwright-report/
+
+# Website packages built by pnpm deploy:hostinger
+/deploy/

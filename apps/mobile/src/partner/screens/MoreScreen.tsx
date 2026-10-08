@@ -5,9 +5,11 @@ import { View } from 'react-native';
 import { formatPhone } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
+import { config } from '@/shared/config';
 import { useProfile, useUpdateProfile } from '@/shared/hooks/profile';
 import { LANGUAGES, useTranslation } from '@/shared/i18n';
 import { deleteAccount, signOut } from '@/shared/lib/auth';
+import { openUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Card, confirmDialog, Divider, Header, ListItem, Row, Screen, ShopAvatar, Tag, toast, VerifiedBadge } from '@/shared/ui';
 
@@ -76,7 +78,9 @@ export default function MoreScreen() {
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: 10, backgroundColor: colors.primarySoft }}>
-        <ListItem icon="bag-handle-outline" title={t('p.more.switch')} onPress={switchToBuying} testID="switch-to-buying" />
+        {config.app === 'all' || config.customerAppUrl ? (
+          <ListItem icon="bag-handle-outline" title={t('p.more.switch')} onPress={config.app === 'all' ? switchToBuying : () => openUrl(config.customerAppUrl)} testID="switch-to-buying" />
+        ) : null}
       </Card>
 
       <Card padded={false} style={{ paddingHorizontal: 10 }}>
