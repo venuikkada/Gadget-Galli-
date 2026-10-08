@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  agoParts,
   buildWhatsAppOrderMessage,
   canTransition,
   canReportIssue,
   deliversInText,
   distanceKm,
+  durationParts,
   formatDateTimeIST,
   formatDistance,
   formatDuration,
@@ -20,6 +22,7 @@ import {
   normalizeIndianPhone,
   normalizeQuery,
   openingHint,
+  openingState,
   percentOff,
   upiPaymentUrl,
   whatsappUrl,
@@ -180,5 +183,31 @@ describe('search helpers', () => {
       { text: 'iPh', match: true },
       { text: 'one 15', match: false },
     ]);
+  });
+});
+
+describe('translatable time parts', () => {
+  it('splits durations and time ago', () => {
+    expect(durationParts(40)).toEqual({ kind: 'mins', n: 40 });
+    expect(durationParts(95)).toEqual({ kind: 'hours', n: 1.5 });
+    expect(durationParts(600)).toEqual({ kind: 'sameDay' });
+    expect(durationParts(null)).toBeNull();
+    const now = new Date('2026-10-08T10:00:00Z');
+    expect(agoParts(new Date('2026-10-08T09:59:40Z'), now)).toEqual({ kind: 'now' });
+    expect(agoParts(new Date('2026-10-08T09:15:00Z'), now)).toEqual({ kind: 'mins', n: 45 });
+    expect(agoParts(new Date('2026-10-08T05:00:00Z'), now)).toEqual({ kind: 'hours', n: 5 });
+    expect(agoParts(new Date('2026-10-05T10:00:00Z'), now)).toEqual({ kind: 'days', n: 3 });
+  });
+  it('describes the opening state', () => {
+    const hours = { mon: { open: '10:00', close: '21:00' }, thu: { open: '10:00', close: '21:00' }, fri: { open: '10:00', close: '21:00' } };
+    // Thursday 8 Oct 2026, 07:30 IST
+    expect(openingState(hours, true, new Date('2026-10-08T02:00:00Z'))).toEqual({ kind: 'opensToday', time: '10:00 AM' });
+    // Thursday 12:00 IST
+    expect(openingState(hours, true, new Date('2026-10-08T06:30:00Z'))).toEqual({ kind: 'openUntil', time: '9:00 PM' });
+    // Thursday 22:00 IST -> Friday
+    expect(openingState(hours, true, new Date('2026-10-08T16:30:00Z'))).toEqual({ kind: 'opensTomorrow', time: '10:00 AM' });
+    // Saturday -> Monday
+    expect(openingState(hours, true, new Date('2026-10-10T06:30:00Z'))).toEqual({ kind: 'opensOn', day: 'mon', time: '10:00 AM' });
+    expect(openingState(hours, false, new Date('2026-10-08T06:30:00Z'))).toEqual({ kind: 'closedNow' });
   });
 });

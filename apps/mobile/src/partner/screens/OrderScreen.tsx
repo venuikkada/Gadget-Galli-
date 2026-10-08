@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { formatDistance, formatINR, formatPhone, nextShopStep, timeAgo, variantText } from '@gg/shared';
+import { formatDistance, formatINR, formatPhone, nextShopStep, variantText } from '@gg/shared';
 
 import { OrderTimeline } from '@/shared/components/OrderTimeline';
 import { errorText } from '@/shared/api/rpc';
@@ -12,6 +12,7 @@ import { signedUrl } from '@/shared/api/storage';
 import { useOrder } from '@/shared/hooks/order';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
+import { tAgo } from '@/shared/i18n/format';
 import { callPhone, openMaps, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, ErrorState, Header, InfoBanner, Loading, ProductImage, Row, Screen, StatusChip, Tag } from '@/shared/ui';
@@ -50,7 +51,7 @@ export default function PartnerOrderScreen() {
 
   return (
     <Screen
-      header={<Header title={o.order_no} subtitle={t('p.order.requestedAgo', { time: timeAgo(o.requested_at) })} right={<View style={{ paddingRight: 8 }}><StatusChip status={o.status} /></View>} />}
+      header={<Header title={o.order_no} subtitle={t('p.order.requestedAgo', { time: tAgo(o.requested_at) })} right={<View style={{ paddingRight: 8 }}><StatusChip status={o.status} /></View>} />}
       refreshing={q.isRefetching}
       onRefresh={() => q.refetch()}
       footer={

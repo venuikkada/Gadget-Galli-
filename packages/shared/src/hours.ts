@@ -50,39 +50,78 @@ export function isShopOpenNow(hours: ShopHours | null | undefined, manualOpen: b
   return false;
 }
 
-/** "Closes 9:00 PM" or "Opens tomorrow 10:00 AM" style hint. */
-export function openingHint(hours: ShopHours | null | undefined, manualOpen: boolean, now: Date = new Date()): string {
-  if (!hours) return manualOpen ? 'Open now' : 'Closed';
+export type OpeningState =
+  | { kind: 'open24' }
+  | { kind: 'openUntil'; time: string }
+  | { kind: 'openNow' }
+  | { kind: 'closedNow' }
+  | { kind: 'opensToday'; time: string }
+  | { kind: 'opensTomorrow'; time: string }
+  | { kind: 'opensOn'; day: Weekday; time: string }
+  | { kind: 'closed' };
+
+/** Where the shop stands right now, as data (apps turn it into translated text). */
+export function openingState(hours: ShopHours | null | undefined, manualOpen: boolean, now: Date = new Date()): OpeningState {
+  if (!hours || Object.keys(hours).length === 0) return manualOpen ? { kind: 'openNow' } : { kind: 'closed' };
   const p = istParts(now);
   const today = WEEKDAYS[p.weekday]!;
   const minute = p.hour * 60 + p.minute;
   if (isShopOpenNow(hours, manualOpen, now)) {
     const h = hours[today];
-    if (!h || h.open === h.close) return 'Open now · 24 hours';
-    return `Open now · closes ${formatHHMM(h.close)}`;
+    if (!h || h.open === h.close) return { kind: 'open24' };
+    return { kind: 'openUntil', time: formatHHMM(h.close) };
   }
-  if (!manualOpen) return 'Closed for now';
+  if (!manualOpen) return { kind: 'closedNow' };
   const t = hours[today];
-  if (t && !t.closed && minute < toMinutes(t.open)) return `Closed · opens ${formatHHMM(t.open)}`;
+  if (t && !t.closed && minute < toMinutes(t.open)) return { kind: 'opensToday', time: formatHHMM(t.open) };
   for (let i = 1; i <= 7; i++) {
     const wd = WEEKDAYS[(p.weekday + i) % 7]!;
     const h = hours[wd];
     if (h && !h.closed) {
-      return `Closed · opens ${i === 1 ? 'tomorrow' : WEEKDAY_LABEL[wd]} ${formatHHMM(h.open)}`;
+      return i === 1 ? { kind: 'opensTomorrow', time: formatHHMM(h.open) } : { kind: 'opensOn', day: wd, time: formatHHMM(h.open) };
     }
   }
-  return 'Closed';
+  return { kind: 'closed' };
+}
+
+/** "Open now · closes 9:00 PM" or "Closed · opens tomorrow 10:00 AM" (English). */
+export function openingHint(hours: ShopHours | null | undefined, manualOpen: boolean, now: Date = new Date()): string {
+  const s = openingState(hours, manualOpen, now);
+  switch (s.kind) {
+    case 'open24':
+      return 'Open now · 24 hours';
+    case 'openUntil':
+      return `Open now · closes ${s.time}`;
+    case 'openNow':
+      return 'Open now';
+    case 'closedNow':
+      return 'Closed for now';
+    case 'opensToday':
+      return `Closed · opens ${s.time}`;
+    case 'opensTomorrow':
+      return `Closed · opens tomorrow ${s.time}`;
+    case 'opensOn':
+      return `Closed · opens ${WEEKDAY_LABEL[s.day]} ${s.time}`;
+    default:
+      return 'Closed';
+  }
 }
 
 /** Rows for an hours table: [{day:'Monday', text:'10:00 AM – 9:00 PM'}] */
-export function hoursTable(hours: ShopHours | null | undefined): { day: Weekday; label: string; text: string }[] {
+export function hoursTable(hours: ShopHours | null | undefined): { day: Weekday; label: string; text: string; closed: boolean; allDay: boolean; range: string }[] {
   const order: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   return order.map((d) => {
     const h = hours?.[d];
+    const closed = !h || !!h.closed;
+    const allDay = !closed && h!.open === h!.close;
+    const range = closed || allDay ? '' : `${formatHHMM(h!.open)} – ${formatHHMM(h!.close)}`;
     return {
       day: d,
       label: WEEKDAY_LABEL[d],
-      text: !h || h.closed ? 'Closed' : h.open === h.close ? 'Open 24 hours' : `${formatHHMM(h.open)} – ${formatHHMM(h.close)}`,
+      text: closed ? 'Closed' : allDay ? 'Open 24 hours' : range,
+      closed,
+      allDay,
+      range,
     };
   });
 }

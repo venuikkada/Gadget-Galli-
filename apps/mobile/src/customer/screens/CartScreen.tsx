@@ -3,12 +3,13 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, deliversInText, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
+import { buildWhatsAppOrderMessage, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
+import { tDeliversIn } from '@/shared/i18n/format';
 import { callPhone, openMaps, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
@@ -158,7 +159,7 @@ export default function CartScreen() {
           <ShopAvatar name={shop.name} path={shop.logo_path} size={46} />
           <View style={{ flex: 1, gap: 2 }}>
             <AppText variant="title">{shop.name}</AppText>
-            <AppText variant="caption" color="textMuted">{[shop.area, deliversInText(shop.delivery_mins)].filter(Boolean).join(' · ')}</AppText>
+            <AppText variant="caption" color="textMuted">{[shop.area, tDeliversIn(shop.delivery_mins)].filter(Boolean).join(' · ')}</AppText>
             <OpenDot open={shop.is_open_now} />
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />

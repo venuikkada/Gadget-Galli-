@@ -3,11 +3,12 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { formatHHMM, WEEKDAYS, WEEKDAY_LABEL, type DocType, type ShopHours, type Weekday } from '@gg/shared';
+import { formatHHMM, WEEKDAYS, type DocType, type ShopHours, type Weekday } from '@gg/shared';
 
 import { uploadDocument } from '@/shared/api/storage';
 import { useAreas, useZones } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
+import { tWeekday } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Chip, Input, Row, Sheet, Tag, toast } from '@/shared/ui';
 
@@ -82,7 +83,7 @@ export function HoursEditor({ hours, holiday, onChange }: { hours: ShopHours; ho
         const allDay = h.open === h.close;
         return (
           <Row key={d} justify="space-between" gap={8}>
-            <AppText variant="label" style={{ width: 86 }}>{WEEKDAY_LABEL[d]}</AppText>
+            <AppText variant="label" style={{ width: 86 }}>{tWeekday(d)}</AppText>
             {h.closed ? (
               <AppText variant="bodySmall" color="error" style={{ flex: 1 }}>{t('p.reg.closedDay')}</AppText>
             ) : allDay ? (
@@ -108,7 +109,7 @@ export function HoursEditor({ hours, holiday, onChange }: { hours: ShopHours; ho
         {WEEKDAYS.map((d) => (
           <Chip
             key={d}
-            label={WEEKDAY_LABEL[d].slice(0, 3)}
+            label={tWeekday(d, true)}
             selected={holiday === d}
             onPress={() => {
               const next = { ...hours };

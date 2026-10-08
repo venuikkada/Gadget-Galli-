@@ -5,12 +5,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatDuration, formatINR, hoursTable, openingHint, type Listing } from '@gg/shared';
+import { formatINR, hoursTable, type Listing } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { publicUrl } from '@/shared/api/storage';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
+import { tDuration, tOpening, tWeekday } from '@/shared/i18n/format';
 import { callPhone, openMaps, openWhatsApp, shareText, shopShareUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
@@ -160,7 +161,7 @@ export default function ShopScreen() {
               <AppText variant="caption" color="textMuted">{[s.area?.name, d.distance_km != null ? `${d.distance_km} km` : null].filter(Boolean).join(' · ')}</AppText>
               <Row gap={10} wrap>
                 <Rating value={s.rating_avg} count={s.rating_count} size="md" />
-                <AppText variant="caption" color={s.is_open_now ? 'success' : 'error'} weight="semibold">{openingHint(s.hours, s.is_open)}</AppText>
+                <AppText variant="caption" color={s.is_open_now ? 'success' : 'error'} weight="semibold">{tOpening(s.hours, s.is_open)}</AppText>
               </Row>
             </View>
           </Row>
@@ -169,7 +170,7 @@ export default function ShopScreen() {
             <View style={{ flex: 1, gap: 2 }}>
               <Row gap={4}>
                 <Ionicons name="bicycle" size={16} color={colors.action} />
-                <AppText variant="label">{t('shop.usuallyDelivers', { time: formatDuration(d.delivery_mins) })}</AppText>
+                <AppText variant="label">{t('shop.usuallyDelivers', { time: tDuration(d.delivery_mins) })}</AppText>
               </Row>
               {d.avg_mins && d.orders_delivered ? <AppText variant="caption" color="textMuted">{t('shop.basedOn', { count: d.orders_delivered })}</AppText> : null}
             </View>
@@ -280,8 +281,8 @@ export default function ShopScreen() {
                 <AppText variant="title">{t('shop.hours')}</AppText>
                 {hoursTable(s.hours).map((h) => (
                   <Row key={h.day} justify="space-between">
-                    <AppText variant="bodySmall" color="textMuted">{h.label}</AppText>
-                    <AppText variant="bodySmall" color={h.text === 'Closed' ? 'error' : 'text'}>{h.text}</AppText>
+                    <AppText variant="bodySmall" color="textMuted">{tWeekday(h.day)}</AppText>
+                    <AppText variant="bodySmall" color={h.closed ? 'error' : 'text'}>{h.closed ? t('time.closed') : h.allDay ? t('time.allDay') : h.range}</AppText>
                   </Row>
                 ))}
               </Card>

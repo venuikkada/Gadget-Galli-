@@ -153,24 +153,49 @@ export function formatDateTimeIST(date: Date | string | number, now: Date = new 
 }
 
 /** "just now", "5 min ago", "2 hrs ago", "3 days ago" */
-export function timeAgo(date: Date | string | number, now: Date = new Date()): string {
+export type AgoParts = { kind: 'now' } | { kind: 'mins' | 'hours' | 'days'; n: number };
+
+/** Structured "time ago" so apps can translate it. */
+export function agoParts(date: Date | string | number, now: Date = new Date()): AgoParts {
   const d = date instanceof Date ? date : new Date(date);
   const mins = Math.max(0, Math.floor((now.getTime() - d.getTime()) / 60_000));
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return { kind: 'now' };
+  if (mins < 60) return { kind: 'mins', n: mins };
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hrs < 24) return { kind: 'hours', n: hrs };
+  return { kind: 'days', n: Math.floor(hrs / 24) };
+}
+
+export function timeAgo(date: Date | string | number, now: Date = new Date()): string {
+  const p = agoParts(date, now);
+  if (p.kind === 'now') return 'just now';
+  if (p.kind === 'mins') return `${p.n} min ago`;
+  if (p.kind === 'hours') return `${p.n} hr${p.n > 1 ? 's' : ''} ago`;
+  return `${p.n} day${p.n > 1 ? 's' : ''} ago`;
+}
+
+export type DurationParts = { kind: 'sameDay' } | { kind: 'mins' | 'hours'; n: number };
+
+/** Structured duration: under 1 hr in minutes, then half-hour steps, 8 hrs or more is "same day". */
+export function durationParts(mins: number | null | undefined): DurationParts | null {
+  if (mins == null || !Number.isFinite(mins)) return null;
+  if (mins >= 480) return { kind: 'sameDay' };
+  if (mins < 60) return { kind: 'mins', n: Math.max(1, Math.round(mins)) };
+  return { kind: 'hours', n: Math.round((mins / 60) * 2) / 2 };
 }
 
 /** 45 -> "45 min", 60 -> "1 hr", 90 -> "1.5 hrs", 480 -> "Same day" */
 export function formatDuration(mins: number | null | undefined): string {
-  if (mins == null || !Number.isFinite(mins)) return '';
-  if (mins >= 480) return 'Same day';
-  if (mins < 60) return `${Math.max(1, Math.round(mins))} min`;
-  const hrs = Math.round((mins / 60) * 2) / 2;
-  return `${trimZeros(hrs.toFixed(1))} hr${hrs > 1 ? 's' : ''}`;
+  const p = durationParts(mins);
+  if (!p) return '';
+  if (p.kind === 'sameDay') return 'Same day';
+  if (p.kind === 'mins') return `${p.n} min`;
+  return `${trimZeros(p.n.toFixed(1))} hr${p.n > 1 ? 's' : ''}`;
+}
+
+/** 1.5 -> "1.5", 2 -> "2" */
+export function trimNumber(n: number): string {
+  return trimZeros(n.toFixed(1));
 }
 
 /** "Delivers in about 2 hrs" */

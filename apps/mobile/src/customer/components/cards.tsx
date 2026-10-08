@@ -3,23 +3,11 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import {
-  deliversInText,
-  formatDateIST,
-  formatDateTimeIST,
-  formatDistance,
-  formatDuration,
-  formatINR,
-  variantText,
-  type Offer,
-  type OrderCard,
-  type ProductCard as ProductCardT,
-  type Review,
-  type ShopCard as ShopCardT,
-} from '@gg/shared';
+import { formatDateIST, formatDateTimeIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
 
 import { thumbUrl } from '@/shared/api/storage';
 import { useTranslation } from '@/shared/i18n';
+import { tDeliversIn, tDuration } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AddButton,
@@ -67,7 +55,7 @@ export function ProductRow({ p, nearOnly = true }: { p: ProductCardT; nearOnly?:
             {p.fastest_mins ? (
               <Row gap={3}>
                 <Ionicons name="flash" size={12} color={colors.action} />
-                <AppText variant="caption" color="textMuted">{formatDuration(p.fastest_mins)}</AppText>
+                <AppText variant="caption" color="textMuted">{tDuration(p.fastest_mins)}</AppText>
               </Row>
             ) : null}
             {p.nearest_km != null ? <AppText variant="caption" color="textMuted">{formatDistance(p.nearest_km)}</AppText> : null}
@@ -125,7 +113,7 @@ export function ShopTile({ s, width = 264 }: { s: ShopCardT; width?: number }) {
           <Rating value={s.rating_avg} count={s.rating_count} />
           <Row gap={3}>
             <Ionicons name="time-outline" size={13} color={colors.textMuted} />
-            <AppText variant="caption" color="textMuted">{deliversInText(s.delivery_mins)}</AppText>
+            <AppText variant="caption" color="textMuted">{tDeliversIn(s.delivery_mins)}</AppText>
           </Row>
         </Row>
       </View>
@@ -151,7 +139,7 @@ export function ShopListRow({ s }: { s: ShopCardT }) {
           </Row>
           <Row gap={3}>
             <Ionicons name="bicycle-outline" size={14} color={colors.textMuted} />
-            <AppText variant="caption" color="textMuted">{deliversInText(s.delivery_mins)}</AppText>
+            <AppText variant="caption" color="textMuted">{tDeliversIn(s.delivery_mins)}</AppText>
           </Row>
         </View>
       </Row>
@@ -182,7 +170,7 @@ export function OfferRow({ o, qty, onAdd, onQty, productId }: { o: Offer; qty: n
           </Row>
           {o.delivers ? (
             <AppText variant="caption" color="textMuted">
-              {deliversInText(o.delivery_mins)} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
+              {tDeliversIn(o.delivery_mins)} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
             </AppText>
           ) : (
             <Row gap={4}>

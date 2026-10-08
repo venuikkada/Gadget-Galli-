@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { formatDistance, formatINR, timeAgo, type OrderCard } from '@gg/shared';
+import { formatDistance, formatINR, type OrderCard } from '@gg/shared';
 
 import { useTranslation } from '@/shared/i18n';
+import { tAgo } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Card, ProductImage, Row, StatusChip, Tag } from '@/shared/ui';
 
@@ -37,7 +38,7 @@ export function PartnerOrderRow({ o }: { o: OrderCard }) {
           </Row>
           <Row justify="space-between">
             <AppText variant="caption" color={isNew ? 'action' : 'textSubtle'} weight={isNew ? 'semibold' : 'regular'}>
-              {t('p.order.requestedAgo', { time: timeAgo(o.requested_at) })}
+              {t('p.order.requestedAgo', { time: tAgo(o.requested_at) })}
             </AppText>
             <AppText variant="price" style={{ fontSize: 15 }}>{formatINR(o.grand_total)}</AppText>
           </Row>

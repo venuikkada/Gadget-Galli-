@@ -2,11 +2,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { deliversInText, formatINR, percentOff, variantText } from '@gg/shared';
+import { formatINR, percentOff, variantText } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoGallery } from '@/shared/components/PhotoViewer';
 import { useTranslation } from '@/shared/i18n';
+import { tDeliversIn } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, ErrorState, Header, Loading, QtyStepper, Rating, Row, Screen, ShopAvatar, SwitchRow, Tag, VerifiedBadge } from '@/shared/ui';
 
@@ -99,7 +100,7 @@ export default function ShopItemScreen() {
               <Row gap={8}>
                 <Rating value={item.shop.rating_avg} count={item.shop.rating_count} />
                 <AppText variant="caption" color={item.shop.delivers_to_me ? 'textMuted' : 'warning'}>
-                  {item.shop.delivers_to_me ? deliversInText(item.shop.delivery_mins) : t('product.doesNotDeliver')}
+                  {item.shop.delivers_to_me ? tDeliversIn(item.shop.delivery_mins) : t('product.doesNotDeliver')}
                 </AppText>
               </Row>
             </View>

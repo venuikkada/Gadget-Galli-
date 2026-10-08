@@ -3,10 +3,11 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { formatDuration, formatINR, formatINRCompact, type ShopInsights } from '@gg/shared';
+import { formatINR, formatINRCompact, type ShopInsights } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
+import { tDuration } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Card, Divider, ErrorState, Header, Row, Screen, Segmented, Skeleton, Tag } from '@/shared/ui';
 
@@ -89,9 +90,9 @@ export default function InsightsScreen() {
             <Kpi label={t('p.ins.delivered')} value={String(d.totals.delivered)} icon="checkmark-done" tone={colors.success} />
             <Kpi label={t('p.ins.aov')} value={d.totals.avg_order_value ? formatINRCompact(d.totals.avg_order_value) : ''} icon="pricetag" tone="#0891B2" />
             <Kpi label={t('p.ins.conversion')} value={conversion != null ? `${conversion}%` : ''} icon="trending-up" tone={colors.action} />
-            <Kpi label={t('p.ins.confirm')} value={formatDuration(d.totals.avg_confirm_mins)} icon="flash" tone={colors.warning} />
-            <Kpi label={t('p.ins.dispatch')} value={formatDuration(d.totals.avg_dispatch_mins)} icon="bicycle" tone="#7C3AED" />
-            <Kpi label={t('p.ins.avgDelivery')} value={formatDuration(d.avg_delivery_mins)} icon="time" tone={colors.primary} />
+            <Kpi label={t('p.ins.confirm')} value={tDuration(d.totals.avg_confirm_mins)} icon="flash" tone={colors.warning} />
+            <Kpi label={t('p.ins.dispatch')} value={tDuration(d.totals.avg_dispatch_mins)} icon="bicycle" tone="#7C3AED" />
+            <Kpi label={t('p.ins.avgDelivery')} value={tDuration(d.avg_delivery_mins)} icon="time" tone={colors.primary} />
             <Kpi label={t('p.ins.rating')} value={d.rating.count ? `${d.rating.avg.toFixed(1)} ★ (${d.rating.count})` : ''} icon="star" tone={colors.warning} />
           </Row>
 
