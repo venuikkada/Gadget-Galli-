@@ -110,7 +110,7 @@ const SHOPS = [
     desc: 'PC components wholesale & retail at Chenoy Trade Centre. GST bills and dealer prices for bulk buyers.',
     zones: ['Secunderabad & North', 'Central Hyderabad'], areas: [], charge: ['flat', 99], free: 20000, min: 1000, usual: 240,
     hours: H('10:30', '20:30', false), verified: true, upi: 'deccanpccomponents@okhdfcbank',
-    force: ['ZT-D40600H-10M', 'GV-N4060EAGLE OC-8GD'], landmark: 'Shop 214, Chenoy Trade Centre, Park Lane', install: 250 },
+    force: ['ZT-D40600H-10M', 'GV-N4060EAGLE OC-8GD'], landmark: 'Inside Chenoy Trade Centre, Park Lane', install: 250 },
   { n: 8, key: 'abids', name: 'Abids CCTV & Electronics', area: 'Abids', types: ['cctv_security'], owner: 'Syed Faraz',
     desc: 'Hikvision & CP Plus authorised dealer. Installation by certified technicians within 24 hours.',
     zones: ['Central Hyderabad', 'South Hyderabad'], areas: [], charge: ['flat', 99], free: 10000, min: 0, usual: 240,
@@ -310,7 +310,7 @@ for (const s of [...SHOPS, PENDING_SHOP]) {
   const phone = `+9190000100${String(s.n).padStart(2, '0')}`;
   const status = s === PENDING_SHOP ? 'under_review' : 'approved';
   const mode = s.radius ? 'radius' : 'areas';
-  shopRows.push(`  (${q(id)}, ${q(users[`owner_${s.key}`].id)}, ${q(slugify(`${s.name} ${s.area}`))}, ${q(s.name)}, array[${s.types.map((t) => q(t)).join(', ')}]::public.shop_type[], ${q(s.desc)}, ${js(s.hours)}, ${q(s.owner)}, ${q(phone)}, ${q(phone)}, ${q(phone)}, ${q(`${s.landmark}, ${s.area}, Hyderabad`)}, ${a.id}, ${q(a.pincode)}, ${q(s.landmark)}, ${s.lat}, ${s.lng}, ${q(mode)}, ${num(s.radius ?? null)}, ${q(s.charge[0])}, ${s.charge[1]}, ${num(s.free)}, ${s.min}, ${s.usual}, true, ${q(s.upi)}, ${q(s.name)}, ${status === 'approved'}, ${q(status)}, ${s.verified}, 8, ${status === 'approved' ? ago(between(30, 400) * 1440) : 'null'}, ${ago(between(1, 3) * 1440)})`);
+  shopRows.push(`  (${q(id)}, ${q(users[`owner_${s.key}`].id)}, ${q(slugify(`${s.name} ${s.area}`))}, ${q(s.name)}, array[${s.types.map((t) => q(t)).join(', ')}]::public.shop_type[], ${q(s.desc)}, ${js(s.hours)}, ${q(s.owner)}, ${q(phone)}, ${q(phone)}, ${q(phone)}, ${q(`Shop No. ${s.n + 3}, Ground Floor, ${s.area} Main Road`)}, ${a.id}, ${q(a.pincode)}, ${q(s.landmark)}, ${s.lat}, ${s.lng}, ${q(mode)}, ${num(s.radius ?? null)}, ${q(s.charge[0])}, ${s.charge[1]}, ${num(s.free)}, ${s.min}, ${s.usual}, true, ${q(s.upi)}, ${q(s.name)}, ${status === 'approved'}, ${q(status)}, ${s.verified}, 8, ${status === 'approved' ? ago(between(30, 400) * 1440) : 'null'}, ${ago(between(1, 3) * 1440)})`);
   for (const z of s.zones ?? []) daRows.push(`  (${q(id)}, ${zoneByName(z).id}, null)`);
   for (const ar of s.areas ?? []) daRows.push(`  (${q(id)}, null, ${areaByName(ar).id})`);
 
@@ -499,7 +499,7 @@ function addOrder(spec) {
     if (s === 'CONFIRMED') ev(prev, s, ownerId, 'shop', spec.updated ? 'Shop updated the order after the call' : 'Confirmed on call', at[s], { updated: !!spec.updated });
     if (s === 'PAID') {
       const txn = payMethod === 'upi' ? `4${between(10000000, 99999999)}${between(100, 999)}` : null;
-      ev(prev, s, ownerId, 'shop', `Payment received by ${payMethod}${txn ? ` · Txn ${txn}` : ''}`, at[s], { method: payMethod, txn_id: txn });
+      ev(prev, s, ownerId, 'shop', `Payment received by ${payMethod === 'upi' ? 'UPI' : payMethod.replace('_', ' ')}${txn ? ` · Txn ${txn}` : ''}`, at[s], { method: payMethod, txn_id: txn });
       paymentRows.push(`  (${q(id)}, ${q(payMethod)}, ${grand}, ${q(txn)}, ${q(ownerId)}, ${ago(at[s])})`);
     }
     if (s === 'PACKED') ev(prev, s, ownerId, 'shop', 'Packed', at[s]);
@@ -548,7 +548,7 @@ addOrder({ customer: 'kavya', shop: 'begumpet', status: 'REJECTED', ago: 4 * DAY
 addOrder({ customer: 'rahul', shop: 'kondapur', status: 'DISPATCHED', ago: 50, items: [['83ER00EVIN', 1]], method: 'call', pickup: true });
 addOrder({ customer: 'divya', shop: 'uppal', status: 'EXPIRED', ago: 3 * DAY, items: [[null, 1]], method: 'call' });
 addOrder({ customer: 'suresh', shop: 'secureeye', status: 'ISSUE_REPORTED', beforeIssue: 'PAID', ago: 26 * 60, items: [['CPP-8CH-24MP-KIT', 1]], method: 'call',
-  issue: { type: 'paid_not_sent', text: 'Paid ₹27,999 by UPI yesterday. Shop is not answering calls since morning.' } });
+  issue: { type: 'paid_not_sent', text: 'Paid the full amount by UPI yesterday. Shop is not answering calls since morning.' } });
 addOrder({ customer: 'ananya', shop: 'banjara', status: 'CONFIRMED', ago: 15, items: [['MFYP4HN/A', 1]], method: 'whatsapp' });
 addOrder({ customer: 'vikram', shop: 'sai', status: 'DELIVERED', ago: 75 * 60, items: [['MYEC3HN/A', 1], [null, 1]], method: 'call', autoDelivered: true });
 addOrder({ customer: 'meena', shop: 'miyapur', status: 'CANCELLED', ago: 2 * DAY, items: [[null, 1]], method: 'call', cancel: 'Ordered by mistake', reachedBefore: 'REQUESTED' });

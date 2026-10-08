@@ -97,12 +97,12 @@ export default function OrdersPage() {
             <Toggle checked={stuck} onChange={(v) => set('stuck', v ? '1' : null)} label="Stuck only" />
           </div>
           <label className="flex items-center gap-2 text-xs text-slate-500">
-            From
-            <Input type="date" value={from} onChange={(e) => set('from', e.target.value || null)} />
+            <span className="w-8 shrink-0">From</span>
+            <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => set('from', e.target.value || null)} />
           </label>
           <label className="flex items-center gap-2 text-xs text-slate-500">
-            To
-            <Input type="date" value={to} onChange={(e) => set('to', e.target.value || null)} />
+            <span className="w-8 shrink-0">To</span>
+            <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => set('to', e.target.value || null)} />
           </label>
           {hasFilters ? (
             <Button
@@ -141,7 +141,7 @@ export default function OrdersPage() {
                 {orders.data?.items.map((o) => (
                   <Tr key={o.id} onClick={() => navigate(`/orders/${o.id}`)}>
                     <Td>
-                      <div className="font-semibold">{o.order_no}</div>
+                      <div className="whitespace-nowrap font-semibold">{o.order_no}</div>
                       <div className="text-xs text-slate-500" title={formatDateTimeIST(o.requested_at)}>
                         {timeAgo(o.requested_at)} · {o.contact_method === 'whatsapp' ? 'WhatsApp' : 'Call'}
                       </div>

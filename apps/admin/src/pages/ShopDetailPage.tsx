@@ -170,7 +170,11 @@ export default function ShopDetailPage() {
               <Row label="Type">{s.shop_types.map((t) => SHOP_TYPE_LABEL[t as ShopType] ?? t).join(', ') || '—'}</Row>
               <Row label="Description">{s.description ?? '—'}</Row>
               <Row label="Address">
-                <div>{[s.address_line, s.landmark, s.area?.name, s.pincode].filter(Boolean).join(', ') || '—'}</div>
+                <div>
+                  {[s.address_line, s.landmark, s.area?.name, s.pincode]
+                    .filter((part, i, all): part is string => !!part && !all.slice(0, i).some((prev) => prev?.includes(part)))
+                    .join(', ') || '—'}
+                </div>
                 {s.lat != null ? (
                   <a href={mapsUrl(s.lat, s.lng, s.name ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">
                     <MapPin className="size-3.5" /> Open pin in Google Maps
@@ -191,10 +195,10 @@ export default function ShopDetailPage() {
                 {s.owner?.is_blocked ? <Badge tone="error" className="ml-2">Blocked</Badge> : null}
               </Row>
               <Row label="Hours">
-                <div className="grid grid-cols-2 gap-x-4 text-xs sm:grid-cols-3">
+                <div className="grid gap-x-6 gap-y-0.5 text-xs sm:grid-cols-2">
                   {hoursTable(s.hours).map((h) => (
-                    <div key={h.day} className={h.closed ? 'text-error' : ''}>
-                      <span className="font-semibold">{h.label.slice(0, 3)}</span> {h.text}
+                    <div key={h.day} className={h.closed ? 'whitespace-nowrap text-error' : 'whitespace-nowrap'}>
+                      <span className="inline-block w-9 font-semibold">{h.label.slice(0, 3)}</span> {h.text}
                     </div>
                   ))}
                 </div>

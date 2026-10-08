@@ -150,7 +150,7 @@ export function ShopStatusBadge({ status }: { status: ShopStatus }) {
 // ---------------------------------------------------------------------------
 // Form controls
 // ---------------------------------------------------------------------------
-const FIELD = 'w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const FIELD = 'rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 export function Field({ label, hint, error, children, className }: { label?: string; hint?: ReactNode; error?: string | null; children: ReactNode; className?: string }) {
   return (
@@ -162,17 +162,20 @@ export function Field({ label, hint, error, children, className }: { label?: str
   );
 }
 
+/** Full width unless the caller sets its own width (w-*, flex-*). */
+const width = (className?: string) => (/(^|\s)(w-|flex-|min-w-)/.test(className ?? '') ? '' : 'w-full');
+
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cx(FIELD, 'h-10', className)} {...rest} />;
+  return <input className={cx(FIELD, width(className), 'h-10', className)} {...rest} />;
 }
 
 export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cx(FIELD, 'min-h-24 py-2', className)} {...rest} />;
+  return <textarea className={cx(FIELD, width(className), 'min-h-24 py-2', className)} {...rest} />;
 }
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cx(FIELD, 'h-10 pr-8', className)} {...rest}>
+    <select className={cx(FIELD, width(className), 'h-10 pr-8', className)} {...rest}>
       {children}
     </select>
   );

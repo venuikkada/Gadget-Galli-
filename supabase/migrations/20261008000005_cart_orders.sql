@@ -759,7 +759,7 @@ declare
   o public.orders := private.lock_shop_order(p_order_id);
 begin
   perform private.set_order_status(o.id, 'PAID', 'shop',
-    'Payment received by ' || replace(p_method::text, '_', ' ') || coalesce(' · Txn ' || nullif(btrim(p_txn_id), ''), ''),
+    'Payment received by ' || case p_method::text when 'upi' then 'UPI' else replace(p_method::text, '_', ' ') end || coalesce(' · Txn ' || nullif(btrim(p_txn_id), ''), ''),
     jsonb_build_object('method', p_method, 'txn_id', p_txn_id));
   insert into public.payments_log (order_id, method, amount, upi_txn_id, proof_path, recorded_by)
   values (o.id, p_method, coalesce(p_amount, o.grand_total), nullif(btrim(p_txn_id), ''), p_proof_path, auth.uid());

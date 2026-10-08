@@ -72,24 +72,27 @@ const TILE_COLORS = ['#EEF2FF', '#FFF1EA', '#ECFEFF', '#F5F3FF', '#F0FDF4'];
 const TILE_DARK = ['#1E1B4B', '#3A1E12', '#0C2A33', '#2A1F4A', '#0F2E1C'];
 const TILE_FG = ['#4F46E5', '#FF6B35', '#0891B2', '#7C3AED', '#16A34A'];
 
+/** Top-level category tiles in a horizontal row (scrolls when they do not all fit). */
 export function CategoryTiles({ categories, onPress }: { categories: Category[]; onPress?: (c: Category) => void }) {
   const { dark, colors } = useTheme();
   return (
-    <Row wrap gap={10} justify="space-between">
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 8 }} style={{ marginHorizontal: -4 }}>
       {categories.map((c, i) => (
         <Pressable
           key={c.id}
           testID={`category-${c.slug}`}
           onPress={() => (onPress ? onPress(c) : router.push({ pathname: '/search', params: { category: String(c.id), title: localName(c) } }))}
-          style={({ pressed }) => ({ width: '18%', minWidth: 62, alignItems: 'center', gap: 6, opacity: pressed ? 0.75 : 1 })}
+          style={({ pressed }) => ({ width: 82, alignItems: 'center', gap: 6, opacity: pressed ? 0.75 : 1 })}
         >
-          <View style={{ width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: (dark ? TILE_DARK : TILE_COLORS)[i % 5] }}>
+          <View style={{ width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: (dark ? TILE_DARK : TILE_COLORS)[i % 5] }}>
             <Icon name={c.icon} set="mci" size={28} color={dark ? '#E0E7FF' : TILE_FG[i % 5]} />
           </View>
-          <AppText variant="caption" weight="semibold" align="center" numberOfLines={2} color={colors.text}>{localName(c)}</AppText>
+          <AppText variant="caption" weight="semibold" align="center" numberOfLines={2} color={colors.text} style={{ fontSize: 11.5 }}>
+            {localName(c)}
+          </AppText>
         </Pressable>
       ))}
-    </Row>
+    </ScrollView>
   );
 }
 

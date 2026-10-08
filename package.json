@@ -12,9 +12,17 @@
     "mobile": "pnpm --filter @gg/mobile start",
     "admin": "pnpm --filter @gg/admin dev",
     "admin:build": "pnpm --filter @gg/admin build",
-    "dev-stack": "node scripts/dev-stack/server.mjs"
+    "dev-stack": "node scripts/dev-stack/server.mjs",
+    "e2e:prepare": "node scripts/e2e/prepare.mjs",
+    "e2e": "node scripts/e2e/smoke.mjs",
+    "dev-stack:reset": "node scripts/dev-stack/reset.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "pg": "^8.23.1",
+    "playwright": "1.56.1",
+    "ws": "^8.22.0"
   }
 }

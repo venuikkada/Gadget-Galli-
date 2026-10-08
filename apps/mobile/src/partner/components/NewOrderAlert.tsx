@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -6,8 +7,9 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Platform, Vibration, View } from 'react-native';
 
-import { formatINR } from '@gg/shared';
+import { formatINR, type ShopOrdersResult } from '@gg/shared';
 
+import { rpc } from '@/shared/api/rpc';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
 import { queryClient } from '@/shared/lib/queryClient';
@@ -59,13 +61,33 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
     if (Platform.OS !== 'web') Vibration.cancel();
   }, []);
 
+  // Orders already rung for in this app session (so "Later" does not ring again every poll)
+  const seen = useRef(new Set<string>());
+
   const push = useCallback(
     (o: Incoming) => {
+      seen.current.add(o.id);
       setQueue((q) => (q.some((x) => x.id === o.id) ? q : [...q, o]));
       queryClient.invalidateQueries({ queryKey: ['partner'] });
     },
     [],
   );
+
+  // Fallback when realtime or push is not connected (or the app was just opened):
+  // poll waiting requests and ring once for each one not seen yet.
+  const waiting = useQuery({
+    queryKey: ['partner', 'alert-poll', shopId],
+    queryFn: () => rpc<ShopOrdersResult>('shop_orders', { p_shop_id: shopId, p_filter: 'new', p_limit: 20, p_offset: 0 }),
+    enabled: !!shopId,
+    refetchInterval: 30_000,
+  });
+  useEffect(() => {
+    for (const o of waiting.data?.items ?? []) {
+      if (o.status === 'REQUESTED' && !seen.current.has(o.id)) {
+        push({ id: o.id, order_no: o.order_no, customer_name: o.customer_name, grand_total: o.grand_total });
+      }
+    }
+  }, [waiting.data, push]);
 
   // Realtime insert on this shop's orders
   useRealtime(

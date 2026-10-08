@@ -417,7 +417,7 @@ export function ProductsTab() {
                       <Badge tone={p.status === 'approved' ? 'success' : p.status === 'pending' ? 'action' : p.status === 'rejected' ? 'error' : 'neutral'}>{p.status}</Badge>
                     </Td>
                     <Td>
-                      <div className="flex flex-wrap justify-end gap-2">
+                      <div className="flex justify-end gap-2 whitespace-nowrap">
                         {p.status === 'pending' ? (
                           <>
                             <Button size="sm" variant="success" loading={busy === p.id} onClick={() => review(p, 'approve')}>

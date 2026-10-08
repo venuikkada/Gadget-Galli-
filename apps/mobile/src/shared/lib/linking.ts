@@ -6,6 +6,12 @@ import { Alert, Platform, Share } from 'react-native';
 import { DELIVERY_APPS, mapsUrl, telUrl, whatsappUrl } from '@gg/shared';
 
 export async function openUrl(url: string) {
+  // On the web, Linking.openURL replaces the current page. Open web links (wa.me, maps,
+  // tracking) in a new tab so the app stays open; tel:/upi: hand off to the phone as usual.
+  if (Platform.OS === 'web' && /^https?:/i.test(url) && typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
   try {
     await Linking.openURL(url);
   } catch {
