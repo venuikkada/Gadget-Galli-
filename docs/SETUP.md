@@ -14,6 +14,12 @@ This takes Gadget Galli from the repo to a real Supabase project, real phones an
 | Google Cloud (Maps SDK + Places API) | Map pin and address search (optional: the app falls back to the area list) | Free monthly credit covers early usage |
 | A domain such as `gadgetgalli.in` + static hosting (Vercel / Netlify / Cloudflare Pages) | Admin panel and share links | Domain ₹700–1,000/year; hosting free |
 
+**Start these on day one, because they take days or weeks:**
+- **SMS sender registration (DLT, step 2).** Registering your business, the sender ID and the OTP template usually takes from a few days to two weeks. Until it is approved, only the test numbers can log in.
+- **Google Play access.** Google currently requires new *personal* developer accounts to run a closed test (at least 12 testers for 14 days in a row) before the app can be published to everyone. *Organisation* accounts skip this but need a D-U-N-S number, which can take a few weeks to get. Check the current rule when you sign up.
+  - Your partner shops and beta customers (MARKETING.md §10, weeks 1–2) make a natural closed-test group.
+  - Shops can also install the preview APK directly (step 4) while you wait.
+
 ---
 
 ## 1. Supabase project

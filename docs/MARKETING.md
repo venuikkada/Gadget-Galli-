@@ -306,7 +306,7 @@ Check exact dates in the panchangam each year. Plan campaigns 2–3 weeks ahead.
 
 **Weeks 1–2: pre-launch (supply)**
 - Sign 25+ shops in Kukatpally/KPHB, CTC and Madhapur. List 1,500 products.
-- Recruit 100 beta customers (friends, family, colleagues). Fix every bug and complaint within 48 hours.
+- Recruit 100 beta customers (friends, family, colleagues). Fix every bug and complaint within 48 hours. They and your first shops can double as the Google Play closed-test group (see SETUP.md, "Start these on day one").
 - Shoot 15 videos (shop stories, price checks, delivery tests) so you launch with a content bank.
 
 **Weeks 3–4: soft launch in West Hyderabad**
