@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Captures a curated set of screenshots of all three apps, for previews, the store listing and marketing:
+// Captures a curated set of screenshots of all three apps, for previews, pitching shops and marketing:
 // one order from search to review (customer and shop screens in turn), then a tour of the customer app,
 // the Shop Partner app and the admin panel. Writes JPEGs, manifest.json and a gallery page (index.html)
 // to test-results/screenshots/.
