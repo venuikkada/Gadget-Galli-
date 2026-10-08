@@ -123,6 +123,7 @@ Try this: log in as Ravi and search **`rtx 4060`**. Only KPHB Computer World and
 | `pnpm typecheck` | TypeScript for every package. |
 | `pnpm i18n:check` | Telugu and Hindi match English key-for-key (placeholders, brand names) and every `t()` key used in code exists. |
 | `pnpm e2e:prepare && pnpm dev-stack --serve-admin apps/admin/dist --serve-mobile apps/mobile/dist`, then `pnpm e2e` | **End-to-end browser test (Playwright).** A customer searches "rtx4060", compares shops and orders on WhatsApp. The shop accepts, records the UPI payment with a photo, packs the order and sends it with Rapido. The customer confirms delivery and leaves a review. A new owner registers a shop through all 8 steps. The admin reviews the documents and approves the shop and a custom product. The app switches to Telugu, and a share page opens. Screenshots go to `test-results/smoke/`. Run `pnpm dev-stack:reset` first for fresh data. |
+| `pnpm screenshots` (same setup as `pnpm e2e`, on fresh data) | Captures 46 curated screens of all three apps: one order from search to review, customer and shop side by side, then a tour of every part. Writes them with captions and a gallery page to `test-results/screenshots/`. Useful for the Play Store listing, shop brochures and Reels. Build with `GG_SHARE_BASE_URL=https://gadgetgalli.in pnpm e2e:prepare` so share links show your domain. |
 
 ## Repository layout
 

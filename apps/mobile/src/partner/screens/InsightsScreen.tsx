@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { formatINR, formatINRCompact, type ShopInsights } from '@gg/shared';
@@ -29,14 +29,21 @@ function Kpi({ label, value, icon, tone }: { label: string; value: string; icon:
   );
 }
 
-/** Bar chart of sales per day / week / month, drawn with plain views (no chart library on mobile). */
+/** Bar chart of sales per day / week / month, drawn with plain views (no chart library on mobile). Opens on the latest bars. */
 function SalesChart({ series }: { series: ShopInsights['series'] }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const scroll = useRef<ScrollView>(null);
   const max = Math.max(1, ...series.map((s) => s.sales));
   const H = 140;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 18, alignItems: 'flex-end' }}>
+    <ScrollView
+      ref={scroll}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
+      contentContainerStyle={{ gap: 10, paddingTop: 18, alignItems: 'flex-end' }}
+    >
       {series.map((s) => {
         const h = s.sales > 0 ? Math.max(6, (s.sales / max) * H) : 3;
         return (
