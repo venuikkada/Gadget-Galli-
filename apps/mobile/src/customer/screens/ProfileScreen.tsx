@@ -5,33 +5,12 @@ import { View } from 'react-native';
 
 import { formatPhone } from '@gg/shared';
 
-import { errorText, rpc } from '@/shared/api/rpc';
-import { supabase } from '@/shared/api/supabase';
-import { useLocationStore } from '@/shared/hooks/location';
+import { errorText } from '@/shared/api/rpc';
 import { useProfile, useUpdateProfile } from '@/shared/hooks/profile';
 import { LANGUAGES, useTranslation } from '@/shared/i18n';
-import { queryClient } from '@/shared/lib/queryClient';
+import { deleteAccount, signOut } from '@/shared/lib/auth';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, confirmDialog, Divider, Header, Input, ListItem, Row, Screen, Sheet, toast } from '@/shared/ui';
-
-export async function signOut() {
-  await supabase.auth.signOut();
-  queryClient.clear();
-  useLocationStore.getState().clear();
-  router.replace('/login');
-}
-
-export async function deleteAccount(t: (k: string) => string) {
-  const ok = await confirmDialog({ title: t('profile.delete'), message: t('profile.deleteConfirm'), destructive: true, confirmText: t('common.delete'), cancelText: t('common.cancel'), icon: 'trash' });
-  if (!ok) return;
-  try {
-    const { error } = await supabase.functions.invoke('delete-account');
-    if (error) await rpc('delete_my_account');
-    await signOut();
-  } catch (e) {
-    toast(errorText(e, t), 'error');
-  }
-}
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();

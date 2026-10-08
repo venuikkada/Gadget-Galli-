@@ -344,6 +344,8 @@ export interface ShopProductDetail {
   is_active: boolean;
   installation_available: boolean;
   installation_charge: number | null;
+  /** Only for the shop owner: the listing's own values, not merged with the catalog. */
+  own?: { description: string | null; specs: Record<string, string>; in_the_box: string | null; photos: string[]; mrp: number | null } | null;
   shop: {
     id: Uuid;
     name: string;

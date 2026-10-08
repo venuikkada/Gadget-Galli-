@@ -46,7 +46,7 @@ import {
 } from '@/shared/ui';
 
 import { useOrder, useOrderActions } from '../api';
-import { OrderTimeline } from '../components/OrderTimeline';
+import { OrderTimeline } from '@/shared/components/OrderTimeline';
 
 export default function OrderScreen() {
   const { t } = useTranslation();

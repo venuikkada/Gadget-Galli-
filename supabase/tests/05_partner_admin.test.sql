@@ -150,6 +150,29 @@ begin
 end $$;
 reset role;
 
+-- The owner's edit form gets the listing's own values; other users never see them.
+select pg_temp.act_as('kphb_owner');
+set role authenticated;
+do $$
+declare
+  sp uuid := (select id from public.shop_products where shop_id = current_setting('test.kphb')::uuid limit 1);
+  j jsonb;
+begin
+  perform public.shop_upsert_product(jsonb_build_object('id', sp, 'description', 'Sealed box, GST bill', 'specs', '{"Bill":"GST"}'::jsonb));
+  j := public.get_shop_product(sp);
+  assert j->'own'->>'description' = 'Sealed box, GST bill', 'own description missing';
+  assert j->'own'->'specs'->>'Bill' = 'GST', 'own specs missing';
+  perform set_config('test.kphb_sp', sp::text, false);
+end $$;
+reset role;
+select pg_temp.act_as('ravi');
+set role authenticated;
+do $$
+begin
+  assert public.get_shop_product(current_setting('test.kphb_sp')::uuid)->'own' = 'null'::jsonb, 'own values leaked to a customer';
+end $$;
+reset role;
+
 -- Admin reports and campaigns
 select pg_temp.act_as('admin');
 set role authenticated;

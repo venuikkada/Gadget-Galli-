@@ -211,14 +211,7 @@ export function useMyOrders(scope: 'active' | 'past') {
   });
 }
 
-export function useOrder(id: string | undefined) {
-  return useQuery({
-    queryKey: ['order', id],
-    queryFn: () => rpc<Order | null>('get_order', { p_order_id: id }),
-    enabled: !!id,
-    refetchInterval: 30_000,
-  });
-}
+export { useOrder } from '@/shared/hooks/order';
 
 function afterOrderChange(order: Order) {
   queryClient.setQueryData(['order', order.id], order);

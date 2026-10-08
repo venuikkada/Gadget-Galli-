@@ -691,7 +691,11 @@ begin
       'delivers_to_me', public.shop_delivers_to(s.id, p_area_id, v_lat, v_lng),
       'delivery_mins', public.gg_shop_delivery_mins(s.avg_delivery_mins, s.usual_delivery_mins),
       'distance_km', round(public.gg_distance_km(s.lat, s.lng, v_lat, v_lng)::numeric, 1),
-      'store_pickup', s.store_pickup)
+      'store_pickup', s.store_pickup),
+    -- The shop's own values (not merged with the catalog) so the owner's edit form shows only what they wrote.
+    'own', case when s.owner_id = auth.uid() then jsonb_build_object(
+      'description', sp.description, 'specs', coalesce(sp.specs, '{}'::jsonb), 'in_the_box', sp.in_the_box,
+      'photos', to_jsonb(sp.photos), 'mrp', sp.mrp) end
   ) into v
   from public.shop_products sp
   join public.catalog_products p on p.id = sp.catalog_product_id
