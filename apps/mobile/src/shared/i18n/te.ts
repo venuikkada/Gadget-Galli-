@@ -923,6 +923,7 @@ export const te: Translations = {
       done: 'అప్లోడ్ పూర్తయింది',
       viewProducts: 'నా ప్రొడక్ట్స్ చూడండి',
       moreRows: '+ ఇంకా {{count}} వరుసలు',
+      skipped: 'తప్పులు ఉన్న {{count}} లైన్లు అప్లోడ్ కాలేదు. షీట్లో సరిచేసి మళ్లీ అప్లోడ్ చేయండి.',
     },
     ins: {
       title: 'ఇన్సైట్స్',

@@ -923,6 +923,7 @@ export const hi: Translations = {
       done: 'अपलोड पूरा हुआ',
       viewProducts: 'मेरे प्रोडक्ट देखें',
       moreRows: '+ {{count}} और लाइनें',
+      skipped: 'गलतियों वाली {{count}} लाइनें अपलोड नहीं हुईं। शीट में ठीक करके फिर से अपलोड करें।',
     },
     ins: {
       title: 'रिपोर्ट',

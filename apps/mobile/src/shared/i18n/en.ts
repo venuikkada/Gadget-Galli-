@@ -921,6 +921,7 @@ export const en = {
       done: 'Upload finished',
       viewProducts: 'View my products',
       moreRows: '+ {{count}} more rows',
+      skipped: '{{count}} rows with mistakes were not uploaded. Fix them in the sheet and upload again.',
     },
     ins: {
       title: 'Insights',

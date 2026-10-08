@@ -70,7 +70,7 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 ## Language, design and content
 
-35. **English, Telugu and Hindi** for every screen (866 strings each).
+35. **English, Telugu and Hindi** for every screen (about 870 strings each).
     - The Telugu and Hindi texts were machine-drafted with care for placeholders and brand names. **Have a native speaker review them before launch.** `pnpm i18n:check` keeps the three files in step.
     - Category names have Telugu and Hindi columns in the database. Shop and product names stay as the shop entered them, because that's how people search.
 36. **Fonts:** Poppins (headings) and Inter (body) for English. These don't contain Telugu or Devanagari letters, so the app switches to **Noto Sans Telugu** and **Noto Sans Devanagari** in those languages.

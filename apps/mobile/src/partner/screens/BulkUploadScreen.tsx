@@ -47,6 +47,8 @@ export default function BulkUploadScreen() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  // Rows with mistakes are not uploaded; keep showing them after the upload so they can be fixed.
+  const [skipped, setSkipped] = useState<ParsedRow[]>([]);
   const [showCodes, setShowCodes] = useState(false);
 
   const num = (v: string | undefined) => {
@@ -93,6 +95,7 @@ export default function BulkUploadScreen() {
 
   const pick = async () => {
     setResult(null);
+    setSkipped([]);
     setParseError(null);
     const res = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/comma-separated-values', 'application/csv', 'text/plain', 'application/vnd.ms-excel'], copyToCacheDirectory: true });
     if (res.canceled || !res.assets[0]) return;
@@ -130,6 +133,7 @@ export default function BulkUploadScreen() {
       const res = await productActions.bulk(shop.id, valid.map((r) => r.payload));
       // Server results are numbered by position in the uploaded list; map back to sheet rows.
       setResult({ ...res, results: res.results.map((x) => ({ ...x, row: valid[x.row - 1]?.n ?? x.row })) });
+      setSkipped(invalid);
       setRows([]);
       toast(t('p.bulk.result', { created: res.created, updated: res.updated, errors: res.errors }), res.errors ? 'info' : 'success');
     } catch (e) {
@@ -214,6 +218,13 @@ export default function BulkUploadScreen() {
         <Card style={{ gap: 10 }} testID="bulk-result">
           <AppText variant="h3">{t('p.bulk.done')}</AppText>
           <InfoBanner tone={result.errors ? 'warning' : 'success'} text={t('p.bulk.result', { created: result.created, updated: result.updated, errors: result.errors })} />
+          {skipped.length ? <InfoBanner tone="warning" text={t('p.bulk.skipped', { count: skipped.length })} /> : null}
+          {skipped.map((r) => (
+            <View key={`k${r.n}`} style={{ backgroundColor: colors.warningSoft, borderRadius: 10, padding: 10 }}>
+              <AppText variant="caption" weight="semibold">{t('p.bulk.row', { n: r.n })} · {r.name || '—'}</AppText>
+              <AppText variant="caption">{r.error}</AppText>
+            </View>
+          ))}
           {serverErrors.map((r) => (
             <View key={`s${r.row}`} style={{ backgroundColor: colors.errorSoft, borderRadius: 10, padding: 10 }}>
               <AppText variant="caption" weight="semibold" color="error">{t('p.bulk.row', { n: r.row })} · {r.name || '—'}</AppText>
