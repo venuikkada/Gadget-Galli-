@@ -247,6 +247,7 @@ export const te: Translations = {
     variant: 'వేరియంట్',
     condition: 'కండిషన్',
     lowest: 'మీ దగ్గర్లో అతి తక్కువ ధర',
+    bestPrice: 'బెస్ట్ ధర',
     compareHint: 'ధరలు, డెలివరీ సమయం పోల్చి చూసి, నచ్చిన షాపు నుండి జోడించండి.',
   },
   shop: {
@@ -279,6 +280,7 @@ export const te: Translations = {
     call: 'షాపుకు కాల్ చేయండి',
   },
   cart: {
+    savings: 'MRP పై మీకు {{amount}} ఆదా',
     title: 'కార్ట్',
     emptyTitle: 'మీ కార్ట్ ఖాళీగా ఉంది',
     emptyBody: 'ఏదైనా గ్యాడ్జెట్ వెతికి, మీ దగ్గర్లోని షాపు నుండి జోడించండి.',

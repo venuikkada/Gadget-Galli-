@@ -245,6 +245,7 @@ export const en = {
     variant: 'Variant',
     condition: 'Condition',
     lowest: 'Lowest price near you',
+    bestPrice: 'Best price',
     compareHint: 'Compare prices and delivery time, then add from the shop you like.',
   },
   shop: {
@@ -277,6 +278,7 @@ export const en = {
     call: 'Call shop',
   },
   cart: {
+    savings: 'You save {{amount}} on MRP',
     title: 'Cart',
     emptyTitle: 'Your cart is empty',
     emptyBody: 'Search for a gadget and add it from a shop near you.',

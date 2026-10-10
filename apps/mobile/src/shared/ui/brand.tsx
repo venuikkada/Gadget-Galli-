@@ -12,11 +12,11 @@ import { BRAND_MARK } from './brandMark';
  * The teal brand gradient behind headers and hero cards, with a soft glow in the top-right corner.
  * `partner` is the deeper version used across the Shop Partner app.
  */
-export function BrandGradient({ children, variant = 'brand', style, glow = true }: { children?: ReactNode; variant?: 'brand' | 'partner'; style?: StyleProp<ViewStyle>; glow?: boolean }) {
+export function BrandGradient({ children, variant = 'brand', style, glow = true, vertical }: { children?: ReactNode; variant?: 'brand' | 'partner'; style?: StyleProp<ViewStyle>; glow?: boolean; vertical?: boolean }) {
   const { gradients } = useTheme();
   const colors = variant === 'partner' ? gradients.partnerHeader : gradients.header;
   return (
-    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ overflow: 'hidden' }, style]}>
+    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={vertical ? { x: 0, y: 1 } : { x: 1, y: 1 }} style={[{ overflow: 'hidden' }, style]}>
       {glow ? <View pointerEvents="none" style={{ position: 'absolute', width: 260, height: 260, borderRadius: 130, right: -90, top: -120, backgroundColor: teal[500], opacity: 0.35 }} /> : null}
       {children}
     </LinearGradient>

@@ -326,8 +326,8 @@ export function BillDetails({ rows, totalTestID }: { rows: { label: string; valu
     <View style={{ gap: 8 }}>
       {lines.map((r) => (
         <Row key={r.label} justify="space-between">
-          <AppText variant="bodySmall" color={r.tone === 'offer' ? 'offer' : 'textMuted'}>{r.label}</AppText>
-          <AppText variant="bodySmall" color={r.tone === 'offer' ? 'offer' : 'text'} weight="semibold">{r.value}</AppText>
+          <AppText variant="bodySmall" color="textMuted">{r.label}</AppText>
+          <AppText variant="bodySmall" color={r.tone === 'offer' ? 'offer' : r.tone === 'muted' ? 'textMuted' : 'text'} weight={r.tone === 'offer' ? 'bold' : 'semibold'}>{r.value}</AppText>
         </Row>
       ))}
       {total ? (
@@ -335,7 +335,7 @@ export function BillDetails({ rows, totalTestID }: { rows: { label: string; valu
           <View style={{ borderTopWidth: 1, borderStyle: 'dashed', borderColor: colors.border, marginTop: 2 }} />
           <Row justify="space-between">
             <AppText variant="title">{total.label}</AppText>
-            <AppText variant="price" testID={totalTestID}>{total.value}</AppText>
+            <AppText variant="priceLarge" testID={totalTestID}>{total.value}</AppText>
           </Row>
         </>
       ) : null}

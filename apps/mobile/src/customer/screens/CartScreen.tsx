@@ -14,6 +14,7 @@ import { callPhone, openMaps, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AppText,
+  BillDetails,
   Button,
   Card,
   confirmDialog,
@@ -34,6 +35,7 @@ import {
   SwitchRow,
   Tag,
   toast,
+  TrustStrip,
 } from '@/shared/ui';
 
 import { cartClear, cartUpdate, placeOrder, useCart } from '../api';
@@ -69,6 +71,8 @@ export default function CartScreen() {
   const shop = cart.shop;
   const pickup = cart.cart.fulfilment === 'pickup';
   const blocking = cart.problems.filter((p) => BLOCKING.includes(p));
+  // What the customer saves against the printed MRP; shown under the bill when there is a saving.
+  const savings = cart.items.reduce((sum, i) => sum + (i.mrp && i.mrp > i.price ? (i.mrp - i.price) * i.qty : 0), 0);
 
   const order = async (method: ContactMethod) => {
     if (note !== (cart.cart.note ?? '')) await cartUpdate({ note }).catch(() => undefined);
@@ -154,9 +158,9 @@ export default function CartScreen() {
       }
     >
       {/* Shop */}
-      <Card onPress={() => router.push(`/shop/${shop.id}`)}>
+      <Card onPress={() => router.push(`/shop/${shop.id}`)} level={2}>
         <Row gap={12}>
-          <ShopAvatar name={shop.name} path={shop.logo_path} size={46} />
+          <ShopAvatar name={shop.name} path={shop.logo_path} size={48} />
           <View style={{ flex: 1, gap: 2 }}>
             <AppText variant="title">{shop.name}</AppText>
             <AppText variant="caption" color="textMuted">{[shop.area, tDeliversIn(shop.delivery_mins)].filter(Boolean).join(' · ')}</AppText>
@@ -240,32 +244,30 @@ export default function CartScreen() {
       <Input label={t('cart.noteLabel')} placeholder={t('cart.notePlaceholder')} value={note} onChangeText={setNote} onBlur={() => note !== (cart.cart.note ?? '') && cartUpdate({ note })} multiline />
 
       {/* Bill */}
-      <Card style={{ gap: 8 }}>
-        <AppText variant="title">{t('cart.billDetails')}</AppText>
-        <Row justify="space-between">
-          <AppText variant="bodySmall" color="textMuted">{t('cart.itemTotal')}</AppText>
-          <AppText variant="bodySmall">{formatINR(cart.totals.item_total)}</AppText>
+      <Card style={{ gap: 12 }}>
+        <Row gap={8}>
+          <Ionicons name="receipt-outline" size={18} color={colors.primary} />
+          <AppText variant="title">{t('cart.billDetails')}</AppText>
         </Row>
-        {cart.totals.installation_total > 0 ? (
-          <Row justify="space-between">
-            <AppText variant="bodySmall" color="textMuted">{t('cart.installation')}</AppText>
-            <AppText variant="bodySmall">{formatINR(cart.totals.installation_total)}</AppText>
+        <BillDetails
+          totalTestID="grand-total"
+          rows={[
+            { label: t('cart.itemTotal'), value: formatINR(cart.totals.item_total) },
+            ...(cart.totals.installation_total > 0 ? [{ label: t('cart.installation'), value: formatINR(cart.totals.installation_total) }] : []),
+            ...(!pickup
+              ? [{ label: t('cart.delivery'), value: cart.totals.delivery_charge === 0 ? t('common.free') : formatINR(cart.totals.delivery_charge), tone: cart.totals.delivery_charge === 0 ? ('offer' as const) : undefined }]
+              : []),
+            { label: t('cart.grandTotal'), value: formatINR(cart.totals.grand_total) },
+          ]}
+        />
+        {savings > 0 ? (
+          <Row gap={8} style={{ backgroundColor: colors.successSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Ionicons name="pricetags" size={15} color={colors.offer} />
+            <AppText variant="label" color="offer" style={{ flex: 1 }}>{t('cart.savings', { amount: formatINR(savings) })}</AppText>
           </Row>
         ) : null}
-        {!pickup ? (
-          <Row justify="space-between">
-            <AppText variant="bodySmall" color="textMuted">{t('cart.delivery')}</AppText>
-            <AppText variant="bodySmall" color={cart.totals.delivery_charge === 0 ? 'success' : 'text'}>
-              {cart.totals.delivery_charge === 0 ? t('common.free') : formatINR(cart.totals.delivery_charge)}
-            </AppText>
-          </Row>
-        ) : null}
-        <Divider />
-        <Row justify="space-between">
-          <AppText variant="title">{t('cart.grandTotal')}</AppText>
-          <AppText variant="priceLarge" testID="grand-total">{formatINR(cart.totals.grand_total)}</AppText>
-        </Row>
       </Card>
+      <TrustStrip />
       <AppText variant="caption" color="textMuted" align="center">{t('cart.orderHint')}</AppText>
 
       <Sheet visible={addrOpen} onClose={() => setAddrOpen(false)} title={t('cart.deliverTo')}>

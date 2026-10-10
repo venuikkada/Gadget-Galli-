@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
@@ -14,16 +15,15 @@ import { useTranslation } from '@/shared/i18n';
 import { tDuration, tOpening, tWeekday } from '@/shared/i18n/format';
 import { callPhone, openMaps, openWhatsApp, shareText, shopShareUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
+import { shadow } from '@/shared/theme/tokens';
 import {
   AddButton,
   AppText,
   Button,
   Card,
   Chip,
-  Divider,
   EmptyState,
   ErrorState,
-  IconButton,
   InfoBanner,
   Input,
   Loading,
@@ -44,38 +44,63 @@ import { toggleFavourite, track, useShopCatalog, useShopPage, useShopReviews } f
 import { ReviewItem } from '../components/cards';
 import { StickyCartBar, useAddToCart, useCartQty } from '../components/cartBits';
 
+/** Item row: details on the left, photo on the right with ADD sitting on its bottom edge. */
 function ListingRow({ l, highlighted, qty, onAdd, onQty }: { l: Listing; highlighted?: boolean; qty: number; onAdd: () => void; onQty: (q: number) => void }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   return (
     <Card
       onPress={() => router.push(`/item/${l.id}`)}
-      style={highlighted ? { borderWidth: 2, borderColor: colors.action } : undefined}
+      style={highlighted ? { borderWidth: 2, borderColor: colors.accent } : undefined}
       testID={`listing-${l.id}`}
     >
-      <Row align="flex-start" gap={12}>
-        <ProductImage path={l.photo} categoryId={l.category_id} brand={l.brand} name={l.name} size={84} />
-        <View style={{ flex: 1, gap: 4 }}>
+      <Row align="flex-start" gap={14}>
+        <View style={{ flex: 1, gap: 5 }}>
           {highlighted ? <Tag label={t('product.availableAt')} tone="accent" icon="sparkles" /> : null}
           <AppText variant="title" numberOfLines={2}>{l.name}</AppText>
-          <Row gap={6} wrap>
-            {l.condition !== 'new' ? <Tag label={t(`condition.${l.condition}`)} tone="warning" /> : null}
-            {l.warranty_months ? <Tag label={`${l.warranty_months}m ${t(l.warranty_type === 'shop' ? 'product.warrantyShop' : 'product.warrantyBrand')}`} /> : null}
-          </Row>
           <PriceText price={l.price} mrp={l.mrp} />
-          <Row justify="space-between">
+          {l.condition !== 'new' || l.warranty_months ? (
+            <Row gap={6} wrap>
+              {l.condition !== 'new' ? <Tag label={t(`condition.${l.condition}`)} tone="warning" /> : null}
+              {l.warranty_months ? <Tag label={`${l.warranty_months}m ${t(l.warranty_type === 'shop' ? 'product.warrantyShop' : 'product.warrantyBrand')}`} icon="shield-checkmark-outline" /> : null}
+            </Row>
+          ) : null}
+          <Row gap={4}>
+            <Ionicons name={l.in_stock ? 'checkmark-circle' : 'close-circle'} size={13} color={l.in_stock ? colors.success : colors.error} />
             <AppText variant="caption" color={l.in_stock ? 'success' : 'error'} weight="semibold">
               {!l.in_stock ? t('product.outOfStock') : l.stock_qty != null && l.stock_qty <= 3 ? t('product.onlyLeft', { count: l.stock_qty }) : t('product.inStock')}
             </AppText>
+          </Row>
+        </View>
+        <View style={{ width: 112, alignItems: 'center', paddingBottom: 18 }}>
+          <ProductImage path={l.photo} categoryId={l.category_id} brand={l.brand} name={l.name} size={112} radius={14} />
+          <View style={{ position: 'absolute', bottom: 0 }}>
             {qty > 0 ? (
               <QtyStepper qty={qty} onChange={onQty} compact max={l.stock_qty ?? 99} />
             ) : (
               <AddButton label={t('common.add')} onPress={onAdd} disabled={!l.in_stock} compact />
             )}
-          </Row>
+          </View>
         </View>
       </Row>
     </Card>
+  );
+}
+
+/** White round button that stays readable on any cover photo. */
+function RoundButton({ icon, onPress, label, color, testID }: { icon: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; label: string; color?: string; testID?: string }) {
+  const { colors, dark } = useTheme();
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 }, shadow(2, dark)]}
+    >
+      <Ionicons name={icon} size={21} color={color ?? colors.text} />
+    </Pressable>
   );
 }
 
@@ -140,46 +165,54 @@ export default function ShopScreen() {
 
   const header = (
     <View>
-      <ShopCover name={s.name} path={coverPhoto} height={190 + insets.top}>
-        <Row justify="space-between" style={{ position: 'absolute', left: 8, right: 8, top: insets.top + 4 }}>
-          <IconButton icon="arrow-back" bg="rgba(15,23,42,0.45)" color="#fff" onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} label={t('common.back')} />
-          <Row gap={6}>
-            <IconButton icon={s.is_favourite ? 'heart' : 'heart-outline'} bg="rgba(15,23,42,0.45)" color={s.is_favourite ? '#FF6B35' : '#fff'} onPress={() => toggleFavourite(s.id)} label={t('shop.favourite')} testID="favourite-shop" />
-            <IconButton icon="share-social-outline" bg="rgba(15,23,42,0.45)" color="#fff" onPress={share} label={t('common.share')} />
+      <ShopCover name={s.name} path={coverPhoto} type={s.shop_types?.[0]} height={200 + insets.top}>
+        <LinearGradient colors={['rgba(0,0,0,0.38)', 'rgba(0,0,0,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: insets.top + 70 }} />
+        <Row justify="space-between" style={{ position: 'absolute', left: 12, right: 12, top: insets.top + 8 }}>
+          <RoundButton icon="arrow-back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} label={t('common.back')} />
+          <Row gap={10}>
+            <RoundButton icon={s.is_favourite ? 'heart' : 'heart-outline'} color={s.is_favourite ? colors.error : undefined} onPress={() => toggleFavourite(s.id)} label={t('shop.favourite')} testID="favourite-shop" />
+            <RoundButton icon="share-social-outline" onPress={share} label={t('common.share')} />
           </Row>
         </Row>
       </ShopCover>
-      <View style={{ paddingHorizontal: 16, marginTop: -36, gap: 12 }}>
-        <Card style={{ gap: 10 }} level={2}>
+      <View style={{ paddingHorizontal: 16, marginTop: -44, gap: 14 }}>
+        <Card style={{ gap: 12, borderRadius: 20, padding: 16 }} level={3}>
           <Row align="flex-start" gap={12}>
-            <ShopAvatar name={s.name} path={s.logo_path} size={56} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <Row gap={6}>
-                <AppText variant="h3" numberOfLines={2} style={{ flexShrink: 1 }} testID="shop-name">{s.name}</AppText>
-                {s.verified ? <VerifiedBadge /> : null}
-              </Row>
-              <AppText variant="caption" color="textMuted">{[s.area?.name, d.distance_km != null ? `${d.distance_km} km` : null].filter(Boolean).join(' · ')}</AppText>
-              <Row gap={10} wrap>
-                <Rating value={s.rating_avg} count={s.rating_count} size="md" />
-                <AppText variant="caption" color={s.is_open_now ? 'success' : 'error'} weight="semibold">{tOpening(s.hours, s.is_open)}</AppText>
-              </Row>
+            <View style={{ borderRadius: 20, borderWidth: 3, borderColor: colors.surface, marginTop: -40, backgroundColor: colors.surface }}>
+              <ShopAvatar name={s.name} path={s.logo_path} size={64} />
             </View>
+            <View style={{ flex: 1 }} />
+            <Row gap={4} style={{ backgroundColor: s.is_open_now ? colors.successSoft : colors.errorSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.is_open_now ? colors.success : colors.error }} />
+              <AppText variant="caption" color={s.is_open_now ? 'success' : 'error'} weight="bold">{tOpening(s.hours, s.is_open)}</AppText>
+            </Row>
           </Row>
-          <Divider />
-          <Row justify="space-between" align="flex-start">
-            <View style={{ flex: 1, gap: 2 }}>
-              <Row gap={4}>
-                <Ionicons name="bicycle" size={16} color={colors.action} />
-                <AppText variant="label">{t('shop.usuallyDelivers', { time: tDuration(d.delivery_mins) })}</AppText>
+          <View style={{ gap: 4 }}>
+            <Row gap={6}>
+              <AppText variant="h2" numberOfLines={2} style={{ flexShrink: 1 }} testID="shop-name">{s.name}</AppText>
+              {s.verified ? <VerifiedBadge /> : null}
+            </Row>
+            <Row gap={10} wrap>
+              <Rating value={s.rating_avg} count={s.rating_count} size="md" />
+              <Row gap={3}>
+                <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+                <AppText variant="bodySmall" color="textMuted">{[s.area?.name, d.distance_km != null ? `${d.distance_km} km` : null].filter(Boolean).join(' · ')}</AppText>
               </Row>
-              {d.avg_mins && d.orders_delivered ? <AppText variant="caption" color="textMuted">{t('shop.basedOn', { count: d.orders_delivered })}</AppText> : null}
+            </Row>
+          </View>
+          <Row align="flex-start" gap={10} style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="bicycle" size={18} color={colors.primary} />
             </View>
-            <View style={{ alignItems: 'flex-end', gap: 2 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <AppText variant="label">{t('shop.usuallyDelivers', { time: tDuration(d.delivery_mins) })}</AppText>
+              {d.avg_mins && d.orders_delivered ? <AppText variant="caption" color="textMuted">{t('shop.basedOn', { count: d.orders_delivered })}</AppText> : null}
               <AppText variant="caption" color="textMuted">
                 {d.charge_type === 'free' ? t('product.freeDelivery') : d.charge_type === 'per_km' ? t('shop.perKm', { amount: formatINR(d.charge) }) : t('shop.flat', { amount: formatINR(d.charge) })}
+                {' · '}
+                {d.min_order ? t('shop.minOrder', { amount: formatINR(d.min_order) }) : t('shop.noMinOrder')}
               </AppText>
-              {d.free_above ? <AppText variant="caption" color="success">{t('shop.freeAbove', { amount: formatINR(d.free_above) })}</AppText> : null}
-              <AppText variant="caption" color="textMuted">{d.min_order ? t('shop.minOrder', { amount: formatINR(d.min_order) }) : t('shop.noMinOrder')}</AppText>
+              {d.free_above ? <AppText variant="caption" color="offer" weight="semibold">{t('shop.freeAbove', { amount: formatINR(d.free_above) })}</AppText> : null}
             </View>
           </Row>
           <Row gap={8}>

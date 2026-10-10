@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatINR, highlightParts, type SearchFilters, type SearchSort } from '@gg/shared';
 
@@ -12,9 +12,9 @@ import { useRecent } from '@/shared/hooks/recent';
 import { useCategories } from '@/shared/hooks/reference';
 import { localName, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts, webNoOutline } from '@/shared/theme/tokens';
+import { fonts, shadow, webNoOutline } from '@/shared/theme/tokens';
 import { useFont } from '@/shared/theme/useFont';
-import { AppText, Badge, Button, Chip, EmptyState, ErrorState, IconButton, Loading, ProductImage, Row, ShopAvatar, SkeletonCard } from '@/shared/ui';
+import { AppText, BrandGradient, Button, Chip, EmptyState, ErrorState, IconButton, Loading, ProductImage, Row, ShopAvatar, SkeletonCard } from '@/shared/ui';
 
 import { useSearch, useSuggest } from '../api';
 import { ProductRow } from '../components/cards';
@@ -48,6 +48,7 @@ export default function SearchScreen() {
   const { t } = useTranslation();
   const { colors, dark } = useTheme();
   const ff = useFont();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ q?: string; category?: string; title?: string; brand?: string }>();
   const { data: categories = [] } = useCategories();
   const recent = useRecent();
@@ -105,12 +106,12 @@ export default function SearchScreen() {
   const showLanding = focused ? text.trim().length < 2 : !active;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style={dark ? 'light' : 'dark'} />
-      {/* Search input */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 10 }}>
-        <Row gap={8}>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: focused ? colors.primary : colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, gap: 8 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="light" />
+      {/* Search band: white field on the brand gradient, with filter and sort chips under it */}
+      <BrandGradient glow={false} style={{ paddingTop: insets.top + 8, paddingBottom: 12, gap: 12, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}>
+        <View style={{ paddingHorizontal: 16 }}>
+          <View style={[{ flexDirection: 'row', alignItems: 'center', height: 50, borderRadius: 14, borderWidth: 2, borderColor: focused ? colors.accent : 'transparent', backgroundColor: colors.surface, paddingHorizontal: 12, gap: 8 }, shadow(2, dark)]}>
             <Ionicons name="search" size={20} color={colors.primary} />
             <TextInput
               testID="search-input"
@@ -125,7 +126,7 @@ export default function SearchScreen() {
               placeholderTextColor={colors.textSubtle}
               autoCorrect={false}
               autoCapitalize="none"
-              style={[{ flex: 1, fontFamily: ff(fonts.body), fontSize: 15, color: colors.text, height: 48 }, webNoOutline]}
+              style={[{ flex: 1, fontFamily: ff(fonts.body), fontSize: 15, color: colors.text, height: 46 }, webNoOutline]}
             />
             {text ? (
               <IconButton
@@ -141,34 +142,28 @@ export default function SearchScreen() {
               />
             ) : null}
           </View>
-        </Row>
+        </View>
         {active && !focused ? (
-          <Row gap={8}>
-            <Pressable onPress={() => setFilterOpen(true)} testID="open-filters" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: nFilters ? colors.primary : colors.border, backgroundColor: colors.surface }}>
-              <Ionicons name="options-outline" size={16} color={colors.text} />
-              <AppText variant="label">{t('search.filters')}</AppText>
-              {nFilters ? <Badge count={nFilters} /> : null}
-            </Pressable>
-            <Pressable onPress={() => setSortOpen(true)} testID="open-sort" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-              <Ionicons name="swap-vertical" size={16} color={colors.text} />
-              <AppText variant="label" numberOfLines={1}>{t(`sort.${sort}`)}</AppText>
-            </Pressable>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+            <Chip tone="onBrand" testID="open-filters" icon="options-outline" label={t('search.filters')} selected={nFilters > 0} count={nFilters || undefined} onPress={() => setFilterOpen(true)} />
+            <Chip tone="onBrand" testID="open-sort" icon="swap-vertical" label={t(`sort.${sort}`)} selected={sort !== 'relevance'} onPress={() => setSortOpen(true)} />
             <Chip
+              tone="onBrand"
               label={t('filter.deliversToMe')}
-              icon={filters.deliver_only !== false ? 'checkmark' : undefined}
+              icon={filters.deliver_only !== false ? 'checkmark-circle' : 'location-outline'}
               selected={filters.deliver_only !== false}
               onPress={() => setFilters({ ...filters, deliver_only: filters.deliver_only === false })}
             />
-          </Row>
+          </ScrollView>
         ) : null}
-      </View>
+      </BrandGradient>
 
       {showSuggestions ? (
         <FlatList
           keyboardShouldPersistTaps="handled"
           data={[0]}
           keyExtractor={() => 'sugg'}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, gap: 4 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100, gap: 4 }}
           renderItem={() => (
             <View style={{ gap: 14 }}>
               <Pressable onPress={() => submit(text)} testID="search-submit" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}>
@@ -239,7 +234,10 @@ export default function SearchScreen() {
               {recent.searches.length ? (
                 <View style={{ gap: 10 }}>
                   <Row justify="space-between">
-                    <AppText variant="h3">{t('search.recent')}</AppText>
+                    <Row gap={6}>
+                      <Ionicons name="time" size={18} color={colors.primary} />
+                      <AppText variant="h3">{t('search.recent')}</AppText>
+                    </Row>
                     <AppText variant="label" color="primary" onPress={recent.clearSearches}>{t('search.clearRecent')}</AppText>
                   </Row>
                   <Row wrap gap={8}>
@@ -250,7 +248,10 @@ export default function SearchScreen() {
                 </View>
               ) : null}
               <View style={{ gap: 10 }}>
-                <AppText variant="h3">{t('search.trending')}</AppText>
+                <Row gap={6}>
+                  <Ionicons name="flame" size={18} color={colors.warning} />
+                  <AppText variant="h3">{t('search.trending')}</AppText>
+                </Row>
                 <Row wrap gap={8}>
                   {TRENDING.map((q) => (
                     <Chip key={q} label={q} icon="trending-up" onPress={() => submit(q)} />
@@ -284,13 +285,13 @@ export default function SearchScreen() {
           data={items}
           keyExtractor={(p) => p.product_id}
           renderItem={({ item }) => <ProductRow p={item} nearOnly={filters.deliver_only !== false} />}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140, gap: 12 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 140, gap: 12 }}
           onEndReached={() => results.hasNextPage && !results.isFetchingNextPage && results.fetchNextPage()}
           onEndReachedThreshold={0.4}
           refreshing={results.isRefetching && !results.isFetchingNextPage}
           onRefresh={() => results.refetch()}
           ListHeaderComponent={
-            <AppText variant="caption" color="textMuted">
+            <AppText variant="label" color="textMuted">
               {categoryName && !query ? `${t('search.browse', { name: localName(categoryName) })} · ` : ''}
               {t('search.results', { count: first.total })}
             </AppText>
@@ -320,6 +321,6 @@ export default function SearchScreen() {
 
       <FilterSheet visible={filterOpen} onClose={() => setFilterOpen(false)} value={filters} onApply={setFilters} />
       <SortSheet visible={sortOpen} onClose={() => setSortOpen(false)} value={sort} onChange={setSort} />
-    </SafeAreaView>
+    </View>
   );
 }

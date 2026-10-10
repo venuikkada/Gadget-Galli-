@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, type DimensionValue } from 'react-native';
 
-import { formatDateIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
+import { ACTIVE_STATUSES, formatDateIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
 
 import { thumbUrl } from '@/shared/api/storage';
 import { useTranslation } from '@/shared/i18n';
@@ -13,7 +14,8 @@ import {
   AddButton,
   AppText,
   Card,
-  OpenDot,
+  DiscountBadge,
+  OrderProgress,
   PriceText,
   ProductImage,
   QtyStepper,
@@ -39,13 +41,16 @@ export function ProductRow({ p, nearOnly = true }: { p: ProductCardT; nearOnly?:
   return (
     <Card onPress={() => router.push(`/product/${p.product_id}`)} testID={`product-${p.product_id}`}>
       <Row align="flex-start" gap={12}>
-        <ProductImage path={p.photo} categoryId={p.category_id} brand={p.brand} name={p.name} size={88} />
+        <View>
+          <ProductImage path={p.photo} categoryId={p.category_id} brand={p.brand} name={p.name} size={96} />
+          <DiscountBadge price={p.min_price} mrp={p.mrp} style={{ position: 'absolute', top: 6, left: 6 }} />
+        </View>
         <View style={{ flex: 1, gap: 4 }}>
           <AppText variant="title" numberOfLines={2}>{p.name}</AppText>
           {p.key_specs?.length ? (
             <AppText variant="caption" color="textMuted" numberOfLines={2}>{p.key_specs.slice(0, 3).join(' · ')}</AppText>
           ) : null}
-          <PriceText price={p.min_price} mrp={p.mrp} from={p.shop_count > 1 ? t('search.from') : undefined} />
+          <PriceText price={p.min_price} mrp={p.mrp} showOff={false} from={p.shop_count > 1 ? t('search.from') : undefined} />
           <Row gap={6} wrap>
             <Ionicons name="storefront-outline" size={13} color={colors.primary} />
             <AppText variant="caption" color="primary" weight="semibold">{shops}</AppText>
@@ -54,7 +59,7 @@ export function ProductRow({ p, nearOnly = true }: { p: ProductCardT; nearOnly?:
             {p.best_rating ? <Rating value={p.best_rating} /> : null}
             {p.fastest_mins ? (
               <Row gap={3}>
-                <Ionicons name="flash" size={12} color={colors.action} />
+                <Ionicons name="flash" size={12} color={colors.accentInk} />
                 <AppText variant="caption" color="textMuted">{tDuration(p.fastest_mins)}</AppText>
               </Row>
             ) : null}
@@ -68,18 +73,23 @@ export function ProductRow({ p, nearOnly = true }: { p: ProductCardT; nearOnly?:
 
 export function ProductTile({ p, width = 160 }: { p: ProductCardT; width?: number }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <Card padded={false} onPress={() => router.push(`/product/${p.product_id}`)} style={{ width, overflow: 'hidden' }}>
-      <View style={{ padding: 10, paddingBottom: 0 }}>
-        <ProductImage path={p.photo} categoryId={p.category_id} brand={p.brand} name={p.name} width={width - 20} height={width - 44} />
+      <View style={{ padding: 8, paddingBottom: 0 }}>
+        <ProductImage path={p.photo} categoryId={p.category_id} brand={p.brand} name={p.name} width={width - 16} height={width - 36} radius={12} />
+        <DiscountBadge price={p.min_price} mrp={p.mrp} style={{ position: 'absolute', top: 14, left: 14 }} />
       </View>
       <View style={{ padding: 10, gap: 4 }}>
         <AppText variant="bodySmall" weight="semibold" numberOfLines={2} style={{ minHeight: 38 }}>{p.name}</AppText>
-        <AppText variant="price">{formatINR(p.min_price)}</AppText>
+        <PriceText price={p.min_price} mrp={p.mrp} size="sm" stacked showOff={false} />
         {p.shop_count > 0 ? (
-          <AppText variant="caption" color="textMuted" numberOfLines={1}>
-            {p.shop_count === 1 ? t('search.availableAllOne') : t('search.availableAll', { count: p.shop_count })}
-          </AppText>
+          <Row gap={4}>
+            <Ionicons name="storefront-outline" size={12} color={colors.primary} />
+            <AppText variant="caption" color="primary" weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {p.shop_count === 1 ? t('search.availableAllOne') : t('search.availableAll', { count: p.shop_count })}
+            </AppText>
+          </Row>
         ) : null}
       </View>
     </Card>
@@ -89,72 +99,69 @@ export function ProductTile({ p, width = 160 }: { p: ProductCardT; width?: numbe
 // ---------------------------------------------------------------------------
 // Shop cards
 // ---------------------------------------------------------------------------
-export function ShopTile({ s, width = 264 }: { s: ShopCardT; width?: number }) {
+export function ShopTile({ s, width = 248, coverHeight = 118, fastest }: { s: ShopCardT; width?: DimensionValue; coverHeight?: number; fastest?: boolean }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   return (
     <Card padded={false} onPress={() => router.push(`/shop/${s.id}`)} style={{ width, overflow: 'hidden' }} testID={`shop-${s.id}`}>
-      <ShopCover name={s.name} path={s.cover_photo ?? s.cover_path} height={108}>
+      <ShopCover name={s.name} path={s.cover_photo ?? s.cover_path} type={s.shop_types?.[0]} height={coverHeight}>
+        <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.42)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 60 }} />
         <View style={{ position: 'absolute', left: 10, top: 10, flexDirection: 'row', gap: 6 }}>
-          {!s.is_open_now ? <Tag label="Closed" tone="error" icon="moon" /> : null}
+          {!s.is_open_now ? <Tag label={t('common.closed')} tone="error" icon="moon" /> : null}
+          {fastest && s.is_open_now ? (
+            <Row gap={3} style={{ backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+              <Ionicons name="flash" size={11} color={colors.onAccent} />
+              <AppText variant="caption" color="onAccent" weight="bold" style={{ fontSize: 11, lineHeight: 14 }}>{t('sort.fastest')}</AppText>
+            </Row>
+          ) : null}
         </View>
+        <Row gap={3} style={{ position: 'absolute', right: 10, bottom: 8 }}>
+          <Ionicons name="flash" size={12} color={colors.accent} />
+          <AppText variant="caption" color="onBrand" weight="bold">{tDuration(s.delivery_mins)}</AppText>
+        </Row>
       </ShopCover>
-      <View style={{ position: 'absolute', top: 84, left: 12, borderRadius: 14, borderWidth: 3, borderColor: colors.surface }}>
-        <ShopAvatar name={s.name} path={s.logo_path} size={44} />
+      <View style={{ position: 'absolute', top: coverHeight - 26, left: 12, borderRadius: 16, borderWidth: 3, borderColor: colors.surface }}>
+        <ShopAvatar name={s.name} path={s.logo_path} size={46} />
       </View>
-      <View style={{ padding: 12, paddingTop: 26, gap: 4 }}>
+      <View style={{ padding: 12, paddingTop: 28, gap: 5 }}>
         <Row gap={6}>
-          <AppText variant="title" numberOfLines={1} style={{ flexShrink: 1 }}>{s.name}</AppText>
+          <AppText variant="title" weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>{s.name}</AppText>
           {s.verified ? <VerifiedBadge small /> : null}
         </Row>
-        <AppText variant="caption" color="textMuted" numberOfLines={1}>
-          {[s.area, formatDistance(s.distance_km)].filter(Boolean).join(' · ')}
-        </AppText>
-        <Row gap={10}>
+        <Row gap={8}>
           <Rating value={s.rating_avg} count={s.rating_count} />
-          <Row gap={3}>
-            <Ionicons name="time-outline" size={13} color={colors.textMuted} />
-            <AppText variant="caption" color="textMuted">{tDeliversIn(s.delivery_mins)}</AppText>
-          </Row>
+          <AppText variant="caption" color="textMuted" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {[s.area, formatDistance(s.distance_km)].filter(Boolean).join(' · ')}
+          </AppText>
         </Row>
       </View>
     </Card>
   );
 }
 
+/** Full-width shop card for the shops list and favourites. */
 export function ShopListRow({ s }: { s: ShopCardT }) {
-  const { colors } = useTheme();
-  return (
-    <Card onPress={() => router.push(`/shop/${s.id}`)}>
-      <Row gap={12} align="flex-start">
-        <ShopAvatar name={s.name} path={s.logo_path} size={56} />
-        <View style={{ flex: 1, gap: 3 }}>
-          <Row gap={6}>
-            <AppText variant="title" numberOfLines={1} style={{ flexShrink: 1 }}>{s.name}</AppText>
-            {s.verified ? <VerifiedBadge small /> : null}
-          </Row>
-          <AppText variant="caption" color="textMuted">{[s.area, formatDistance(s.distance_km)].filter(Boolean).join(' · ')}</AppText>
-          <Row gap={10} wrap>
-            <Rating value={s.rating_avg} count={s.rating_count} />
-            <OpenDot open={s.is_open_now} />
-          </Row>
-          <Row gap={3}>
-            <Ionicons name="bicycle-outline" size={14} color={colors.textMuted} />
-            <AppText variant="caption" color="textMuted">{tDeliversIn(s.delivery_mins)}</AppText>
-          </Row>
-        </View>
-      </Row>
-    </Card>
-  );
+  return <ShopTile s={s} width="100%" coverHeight={132} />;
 }
 
 // ---------------------------------------------------------------------------
 // "Available at these shops" row on the product page
 // ---------------------------------------------------------------------------
-export function OfferRow({ o, qty, onAdd, onQty, productId }: { o: Offer; qty: number; onAdd: () => void; onQty: (q: number) => void; productId: string }) {
+export function OfferRow({ o, qty, onAdd, onQty, productId, badge }: { o: Offer; qty: number; onAdd: () => void; onQty: (q: number) => void; productId: string; badge?: 'best' | 'fastest' | null }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   return (
-    <Card onPress={() => router.push({ pathname: '/shop/[id]', params: { id: o.shop_id, highlight: o.shop_product_id, product: productId } })} testID={`offer-${o.shop_id}`}>
+    <Card
+      onPress={() => router.push({ pathname: '/shop/[id]', params: { id: o.shop_id, highlight: o.shop_product_id, product: productId } })}
+      testID={`offer-${o.shop_id}`}
+      style={badge ? { borderWidth: 1.5, borderColor: colors.accent } : undefined}
+    >
+      {badge ? (
+        <Row gap={4} style={{ position: 'absolute', top: -11, left: 14, backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+          <Ionicons name={badge === 'best' ? 'pricetag' : 'flash'} size={11} color={colors.onAccent} />
+          <AppText variant="caption" color="onAccent" weight="bold" style={{ fontSize: 11, lineHeight: 15 }}>{badge === 'best' ? t('product.bestPrice') : t('sort.fastest')}</AppText>
+        </Row>
+      ) : null}
       <Row align="flex-start" gap={12}>
         <ShopAvatar name={o.shop_name} path={o.logo_path} size={42} />
         <View style={{ flex: 1, gap: 3 }}>
@@ -183,7 +190,7 @@ export function OfferRow({ o, qty, onAdd, onQty, productId }: { o: Offer; qty: n
           </AppText>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 8 }}>
-          <AppText variant="price">{formatINR(o.price)}</AppText>
+          <AppText variant="price" style={{ fontSize: 17 }}>{formatINR(o.price)}</AppText>
           {qty > 0 ? (
             <QtyStepper qty={qty} onChange={onQty} compact max={o.stock_qty ?? 99} />
           ) : (
@@ -217,6 +224,7 @@ export function OrderRow({ o, onPress }: { o: OrderCard; onPress?: () => void })
             <AppText variant="caption" color="textSubtle">{o.order_no} · {tDateTime(o.requested_at)}</AppText>
             <AppText variant="price" style={{ fontSize: 15 }}>{formatINR(o.grand_total)}</AppText>
           </Row>
+          {ACTIVE_STATUSES.includes(o.status) ? <View style={{ marginTop: 4 }}><OrderProgress status={o.status} /></View> : null}
           {o.status === 'DELIVERED' && !o.has_review ? (
             <AppText variant="caption" color="primary" weight="semibold">★ {t('order.rate')}</AppText>
           ) : null}

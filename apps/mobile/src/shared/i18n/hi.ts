@@ -247,6 +247,7 @@ export const hi: Translations = {
     variant: 'वेरिएंट',
     condition: 'कंडीशन',
     lowest: 'आपके पास सबसे कम कीमत',
+    bestPrice: 'सबसे अच्छी कीमत',
     compareHint: 'कीमत और डिलीवरी के समय की तुलना करें, फिर अपनी पसंद की दुकान से कार्ट में डालें।',
   },
   shop: {
@@ -279,6 +280,7 @@ export const hi: Translations = {
     call: 'दुकान को कॉल करें',
   },
   cart: {
+    savings: 'MRP पर आपकी {{amount}} की बचत',
     title: 'कार्ट',
     emptyTitle: 'आपका कार्ट खाली है',
     emptyBody: 'कोई गैजेट खोजें और पास की दुकान से उसे कार्ट में डालें।',
