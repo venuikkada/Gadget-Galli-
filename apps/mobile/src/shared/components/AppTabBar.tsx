@@ -18,20 +18,23 @@ export interface TabItem {
 
 /** Bottom navigation with large touch targets, a badge and an optional element floating above it (cart bar). */
 export function AppTabBar({ state, navigation, insets, items, above }: BottomTabBarProps & { items: TabItem[]; above?: ReactNode }) {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const ff = useFont();
   return (
     <View>
       {above}
       <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 6,
-        }}
+        style={[
+          {
+            flexDirection: 'row',
+            backgroundColor: colors.surface,
+            borderTopWidth: dark ? 1 : 0,
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, 8),
+            paddingTop: 8,
+          },
+          dark ? null : { shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 10 },
+        ]}
       >
         {state.routes.map((route, index) => {
           const item = items.find((i) => i.name === route.name);
@@ -43,11 +46,12 @@ export function AppTabBar({ state, navigation, insets, items, above }: BottomTab
           };
           return (
             <Pressable key={route.key} testID={`tab-${route.name}`} accessibilityRole="tab" accessibilityState={{ selected: focused }} onPress={onPress} style={{ flex: 1, alignItems: 'center', paddingVertical: 4, gap: 2 }}>
+              {focused ? <View style={{ position: 'absolute', top: -8, width: 24, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: colors.primary }} /> : null}
               <View>
                 <Ionicons name={focused ? item.iconActive : item.icon} size={24} color={focused ? colors.primary : colors.textSubtle} />
                 {item.badge ? <Badge count={item.badge} style={{ position: 'absolute', top: -4, right: -10 }} /> : null}
               </View>
-              <Text style={{ fontSize: 11, fontFamily: ff(focused ? fonts.bodySemi : fonts.bodyMedium), color: focused ? colors.primary : colors.textSubtle }}>{item.label}</Text>
+              <Text style={{ fontSize: 11, fontFamily: ff(focused ? fonts.bodyBold : fonts.bodyMedium), color: focused ? colors.primary : colors.textSubtle }}>{item.label}</Text>
             </Pressable>
           );
         })}

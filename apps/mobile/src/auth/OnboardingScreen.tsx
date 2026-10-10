@@ -53,7 +53,7 @@ export default function OnboardingScreen() {
         style={{ flex: 1, borderRadius: 18, borderWidth: 2, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primarySoft : colors.surface, padding: 16, gap: 10 }}
       >
         <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: selected ? colors.primary : colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={icon} size={24} color={selected ? '#fff' : colors.primary} />
+          <Ionicons name={icon} size={24} color={selected ? colors.onPrimary : colors.primary} />
         </View>
         <AppText variant="title">{title}</AppText>
         <AppText variant="caption" color="textMuted">{body}</AppText>

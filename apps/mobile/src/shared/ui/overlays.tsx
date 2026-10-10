@@ -4,6 +4,8 @@ import { Animated, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 
+import { chartColors } from '@gg/shared';
+
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
 import { useFont } from '../theme/useFont';
@@ -37,7 +39,7 @@ export function Sheet({ visible, onClose, title, children, footer, maxHeight = 0
           }}
         >
           <View style={{ alignItems: 'center', paddingTop: 8 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+            <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border }} />
           </View>
           {title ? (
             <Row justify="space-between" style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 4 }}>
@@ -114,7 +116,7 @@ export function toast(text: string, tone: ToastTone = 'info') {
 }
 
 export function ToastHost() {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const ff = useFont();
   const insets = useSafeAreaInsets();
   const current = useToastStore((s) => s.toast);
@@ -132,13 +134,14 @@ export function ToastHost() {
     return () => clearTimeout(timer);
   }, [current, opacity]);
   if (!current) return null;
-  const bg = current.tone === 'error' ? colors.error : current.tone === 'success' ? colors.success : '#0F172A';
+  const bg = current.tone === 'error' ? colors.error : current.tone === 'success' ? colors.success : colors.inverse;
+  const fg = current.tone === 'error' ? colors.onError : current.tone === 'success' ? colors.onSuccess : colors.onInverse;
   const icon = current.tone === 'error' ? 'alert-circle' : current.tone === 'success' ? 'checkmark-circle' : 'information-circle';
   return (
     <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 90, opacity, alignItems: 'center' }}>
       <View style={{ backgroundColor: bg, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 480 }}>
-        <Ionicons name={icon} size={18} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: ff(fonts.bodyMedium), fontSize: 14, flexShrink: 1 }}>{current.text}</Text>
+        <Ionicons name={icon} size={18} color={current.tone === 'info' && !dark ? colors.accent : fg} />
+        <Text style={{ color: fg, fontFamily: ff(fonts.bodyMedium), fontSize: 14, flexShrink: 1 }}>{current.text}</Text>
       </View>
     </Animated.View>
   );
@@ -155,7 +158,7 @@ export function Celebration({ visible, onDone }: { visible: boolean; onDone?: ()
         x: Math.random() * width,
         delay: Math.random() * 400,
         size: 6 + Math.random() * 8,
-        color: ['#4F46E5', '#FF6B35', '#16A34A', '#F59E0B', '#DB2777', '#0891B2'][i % 6]!,
+        color: chartColors[i % chartColors.length]!,
         drift: (Math.random() - 0.5) * 120,
         anim: new Animated.Value(0),
       })),

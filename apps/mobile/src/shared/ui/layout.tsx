@@ -6,12 +6,33 @@ import { RefreshControl, ScrollView, View, type StyleProp, type ViewStyle } from
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../theme/ThemeProvider';
+import { BrandGradient } from './brand';
 import { AppText, IconButton, Row } from './primitives';
 
-/** Top bar with back button, title and optional right-side actions. */
-export function Header({ title, subtitle, onBack, right, transparent, back = true }: { title?: string; subtitle?: string; onBack?: () => void; right?: ReactNode; transparent?: boolean; back?: boolean }) {
+/**
+ * Top bar with back button, title and optional right-side actions. `brand` and `partner` draw the teal gradient
+ * up under the status bar (use with `<Screen brand>`), with white text and icons; give right-side IconButtons
+ * `tone="onBrand"`.
+ */
+export function Header({ title, subtitle, onBack, right, transparent, back = true, variant = 'default', children }: { title?: string; subtitle?: string; onBack?: () => void; right?: ReactNode; transparent?: boolean; back?: boolean; variant?: 'default' | 'brand' | 'partner'; children?: ReactNode }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const goBack = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
+  if (variant !== 'default') {
+    return (
+      <BrandGradient variant={variant === 'partner' ? 'partner' : 'brand'} style={{ paddingTop: insets.top, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+        <Row style={{ paddingHorizontal: 8, minHeight: 60 }} gap={4}>
+          {back ? <IconButton icon="arrow-back" onPress={goBack} label="Back" testID="header-back" tone="onBrand" /> : <View style={{ width: 12 }} />}
+          <View style={{ flex: 1 }}>
+            {title ? <AppText variant="h2" color="onBrand" numberOfLines={1}>{title}</AppText> : null}
+            {subtitle ? <AppText variant="caption" color="onBrandMuted" numberOfLines={1}>{subtitle}</AppText> : null}
+          </View>
+          {right}
+        </Row>
+        {children ? <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>{children}</View> : null}
+      </BrandGradient>
+    );
+  }
   return (
     <Row
       style={{
@@ -42,6 +63,7 @@ export function Screen({
   contentStyle,
   edges = ['top'],
   padded = true,
+  brand,
 }: {
   children: ReactNode;
   header?: ReactNode;
@@ -52,12 +74,14 @@ export function Screen({
   contentStyle?: StyleProp<ViewStyle>;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   padded?: boolean;
+  /** The header is a brand gradient that runs under the status bar (light status-bar icons). */
+  brand?: boolean;
 }) {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style={dark ? 'light' : 'dark'} />
+    <SafeAreaView edges={brand ? edges.filter((e) => e !== 'top') : edges} style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={brand || dark ? 'light' : 'dark'} />
       {header}
       {scroll ? (
         <ScrollView
@@ -71,7 +95,7 @@ export function Screen({
         <View style={[{ flex: 1 }, contentStyle]}>{children}</View>
       )}
       {footer ? (
-        <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, gap: 10 }}>
+        <View style={[{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.surface, borderTopWidth: dark ? 1 : 0, borderTopColor: colors.border, gap: 10, borderTopLeftRadius: 20, borderTopRightRadius: 20 }, dark ? null : { shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 12 }]}>
           {footer}
         </View>
       ) : null}

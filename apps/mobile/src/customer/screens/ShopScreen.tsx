@@ -56,7 +56,7 @@ function ListingRow({ l, highlighted, qty, onAdd, onQty }: { l: Listing; highlig
       <Row align="flex-start" gap={12}>
         <ProductImage path={l.photo} categoryId={l.category_id} brand={l.brand} name={l.name} size={84} />
         <View style={{ flex: 1, gap: 4 }}>
-          {highlighted ? <Tag label={t('product.availableAt')} tone="action" icon="sparkles" /> : null}
+          {highlighted ? <Tag label={t('product.availableAt')} tone="accent" icon="sparkles" /> : null}
           <AppText variant="title" numberOfLines={2}>{l.name}</AppText>
           <Row gap={6} wrap>
             {l.condition !== 'new' ? <Tag label={t(`condition.${l.condition}`)} tone="warning" /> : null}

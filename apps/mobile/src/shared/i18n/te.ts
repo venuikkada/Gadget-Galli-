@@ -36,6 +36,7 @@ export const te: Translations = {
     closed: 'మూసి ఉంది',
     openNow: 'ఇప్పుడు తెరిచి ఉంది',
     verified: 'వెరిఫైడ్',
+    verifiedShops: 'వెరిఫైడ్ షాపులు',
     free: 'ఉచితం',
     items: '{{count}} ఐటమ్స్',
     oneItem: '1 ఐటమ్',

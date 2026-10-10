@@ -86,7 +86,7 @@ export function OrderTimeline({ order }: { order: Order }) {
                 transform: [{ scale: current ? pulse : 1 }],
               }}
             >
-              <Ionicons name={done && !current ? 'checkmark' : ICONS[s]!} size={17} color={done ? '#fff' : colors.textSubtle} />
+              <Ionicons name={done && !current ? 'checkmark' : ICONS[s]!} size={17} color={done ? colors.onPrimary : colors.textSubtle} />
             </Animated.View>
             <View style={{ flex: 1, paddingTop: 2 }}>
               <AppText variant="title" color={done ? 'text' : 'textSubtle'}>{label}</AppText>

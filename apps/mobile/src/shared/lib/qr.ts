@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 
 /** QR code as an inline SVG string (for printable posters). Pure JS, works on every platform. */
-export function qrSvg(text: string, size = 320, color = '#0F172A', background = '#FFFFFF'): string {
+export function qrSvg(text: string, size = 320, color = '#0E1B1D', background = '#FFFFFF'): string {
   const qr = QRCode.create(text, { errorCorrectionLevel: 'M' });
   const n = qr.modules.size;
   const quiet = 2;

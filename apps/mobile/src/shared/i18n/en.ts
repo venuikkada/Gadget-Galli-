@@ -34,6 +34,7 @@ export const en = {
     closed: 'Closed',
     openNow: 'Open now',
     verified: 'Verified',
+    verifiedShops: 'Verified shops',
     free: 'Free',
     items: '{{count}} items',
     oneItem: '1 item',

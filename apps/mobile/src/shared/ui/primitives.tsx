@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -13,6 +13,8 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+
+import { teal } from '@gg/shared';
 
 import { useTranslation } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
@@ -79,6 +81,10 @@ export function AppText({ children, variant = 'body', color = 'text', weight, al
   const indic = i18n.language === 'te' || i18n.language === 'hi';
   const resolved = color in colors ? colors[color as ColorKey] : color;
   const { family: _f, ...rest } = v;
+  // Telugu and Devanagari need taller lines; letter-spacing and uppercase break their shapes.
+  const indicStyle: TextStyle | null = indic
+    ? { lineHeight: Math.max((rest.lineHeight ?? 20) + 4, Math.round((rest.fontSize ?? 15) * 1.5)), letterSpacing: 0, textTransform: 'none' }
+    : null;
   return (
     <Text
       testID={testID}
@@ -88,7 +94,7 @@ export function AppText({ children, variant = 'body', color = 'text', weight, al
       style={[
         rest,
         { fontFamily: family, color: resolved, textAlign: align },
-        indic ? { lineHeight: (rest.lineHeight ?? 20) + 4 } : null,
+        indicStyle,
         strike ? { textDecorationLine: 'line-through' } : null,
         style,
       ]}
@@ -101,7 +107,8 @@ export function AppText({ children, variant = 'body', color = 'text', weight, al
 // ---------------------------------------------------------------------------
 // Button
 // ---------------------------------------------------------------------------
-type ButtonVariant = 'primary' | 'action' | 'secondary' | 'ghost' | 'danger' | 'whatsapp' | 'success' | 'outline';
+/** `onBrand` is a white button for use on the teal gradients. */
+type ButtonVariant = 'primary' | 'action' | 'secondary' | 'ghost' | 'danger' | 'whatsapp' | 'success' | 'outline' | 'onBrand';
 
 export interface ButtonProps {
   title: string;
@@ -121,19 +128,23 @@ export interface ButtonProps {
 export function Button({ title, onPress, variant = 'primary', size = 'md', icon, iconRight, loading, disabled, full, style, subtitle, testID }: ButtonProps) {
   const { colors, dark } = useTheme();
   const ff = useFont();
-  const palette: Record<ButtonVariant, { bg: string; fg: string; border?: string; pressed: string }> = {
+  // `pressed` is a colour where one exists; otherwise the button dims slightly while pressed.
+  const palette: Record<ButtonVariant, { bg: string; fg: string; border?: string; pressed?: string }> = {
     primary: { bg: colors.primary, fg: colors.onPrimary, pressed: colors.primaryPressed },
     action: { bg: colors.action, fg: colors.onAction, pressed: colors.actionPressed },
-    secondary: { bg: colors.primarySoft, fg: dark ? '#C7D2FE' : colors.primary, pressed: colors.primarySoft },
+    secondary: { bg: colors.primarySoft, fg: colors.primary },
     ghost: { bg: 'transparent', fg: colors.primary, pressed: colors.surfaceAlt },
     outline: { bg: colors.surface, fg: colors.text, border: colors.border, pressed: colors.surfaceAlt },
-    danger: { bg: colors.errorSoft, fg: colors.error, pressed: colors.errorSoft },
-    whatsapp: { bg: colors.whatsapp, fg: '#FFFFFF', pressed: '#1EBE5A' },
-    success: { bg: colors.success, fg: '#FFFFFF', pressed: '#15803D' },
+    danger: { bg: colors.errorSoft, fg: colors.error },
+    whatsapp: { bg: colors.whatsapp, fg: colors.onWhatsapp },
+    success: { bg: colors.success, fg: colors.onSuccess },
+    onBrand: { bg: '#FFFFFF', fg: teal[700] },
   };
   const p = palette[variant];
   const heights = { sm: 36, md: 46, lg: 54, xl: 62 } as const;
   const fontSizes = { sm: 13, md: 15, lg: 16, xl: 17 } as const;
+  const radii = { sm: 10, md: 12, lg: 12, xl: 14 } as const;
+  const strong = size === 'lg' || size === 'xl';
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -146,25 +157,25 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
           minHeight: heights[size],
           paddingHorizontal: size === 'sm' ? 12 : 18,
           paddingVertical: subtitle ? 8 : 0,
-          borderRadius: size === 'sm' ? 10 : 14,
-          backgroundColor: pressed ? p.pressed : p.bg,
+          borderRadius: radii[size],
+          backgroundColor: pressed && p.pressed ? p.pressed : p.bg,
           borderWidth: p.border ? 1 : 0,
           borderColor: p.border,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          opacity: isDisabled ? 0.5 : 1,
+          opacity: isDisabled ? 0.5 : pressed && !p.pressed ? 0.85 : 1,
           alignSelf: full ? 'stretch' : 'auto',
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
-        variant === 'action' || variant === 'primary' ? shadow(1, dark) : null,
+        variant === 'action' || variant === 'primary' || variant === 'onBrand' ? shadow(strong ? 2 : 1, dark) : null,
         style,
       ]}
     >
       {loading ? <ActivityIndicator color={p.fg} /> : icon ? <Ionicons name={icon} size={fontSizes[size] + 4} color={p.fg} /> : null}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <Text style={{ color: p.fg, fontFamily: ff(fonts.bodySemi), fontSize: fontSizes[size], textAlign: 'center' }} numberOfLines={2}>
+        <Text style={{ color: p.fg, fontFamily: ff(strong ? fonts.bodyBold : fonts.bodySemi), fontSize: fontSizes[size], textAlign: 'center' }} numberOfLines={2}>
           {title}
         </Text>
         {subtitle ? <Text style={{ color: p.fg, opacity: 0.85, fontFamily: ff(fonts.body), fontSize: 12 }} numberOfLines={1}>{subtitle}</Text> : null}
@@ -174,8 +185,9 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
   );
 }
 
-export function IconButton({ icon, onPress, color, size = 22, bg, label, badge, testID }: { icon: IoniconName; onPress?: () => void; color?: string; size?: number; bg?: string; label?: string; badge?: number; testID?: string }) {
+export function IconButton({ icon, onPress, color, size = 22, bg, label, badge, testID, tone = 'default' }: { icon: IoniconName; onPress?: () => void; color?: string; size?: number; bg?: string; label?: string; badge?: number; testID?: string; tone?: 'default' | 'onBrand' }) {
   const { colors } = useTheme();
+  const onBrand = tone === 'onBrand';
   return (
     <Pressable
       testID={testID}
@@ -189,10 +201,10 @@ export function IconButton({ icon, onPress, color, size = 22, bg, label, badge, 
         borderRadius: (size + 18) / 2,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: pressed ? colors.surfaceAlt : bg ?? 'transparent',
+        backgroundColor: pressed ? (onBrand ? 'rgba(255,255,255,0.18)' : colors.surfaceAlt) : bg ?? 'transparent',
       })}
     >
-      <Ionicons name={icon} size={size} color={color ?? colors.text} />
+      <Ionicons name={icon} size={size} color={color ?? (onBrand ? colors.onBrand : colors.text)} />
       {badge ? <Badge count={badge} style={{ position: 'absolute', top: 2, right: 2 }} /> : null}
     </Pressable>
   );
@@ -202,8 +214,8 @@ export function Badge({ count, style }: { count: number; style?: StyleProp<ViewS
   const { colors } = useTheme();
   if (!count) return null;
   return (
-    <View style={[{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center' }, style]}>
-      <Text style={{ color: '#fff', fontSize: 11, fontFamily: fonts.bodyBold }}>{count > 99 ? '99+' : count}</Text>
+    <View style={[{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }, style]}>
+      <Text style={{ color: colors.onAccent, fontSize: 11, fontFamily: fonts.bodyBold }}>{count > 99 ? '99+' : count}</Text>
     </View>
   );
 }
@@ -239,14 +251,19 @@ export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
   return <View style={[{ height: 1, backgroundColor: colors.divider }, style]} />;
 }
 
-export function SectionHeader({ title, action, onAction, style }: { title: string; action?: string; onAction?: () => void; style?: StyleProp<ViewStyle> }) {
+export function SectionHeader({ title, subtitle, action, onAction, style }: { title: string; subtitle?: string; action?: string; onAction?: () => void; style?: StyleProp<ViewStyle> }) {
+  const { colors } = useTheme();
   return (
-    <Row justify="space-between" style={[{ marginBottom: 10 }, style]}>
-      <AppText variant="h3">{title}</AppText>
+    <Row justify="space-between" align="flex-end" style={[{ marginBottom: 10 }, style]}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="h3">{title}</AppText>
+        {subtitle ? <AppText variant="caption" color="textMuted">{subtitle}</AppText> : null}
+      </View>
       {action ? (
-        <AppText variant="label" color="primary" onPress={onAction}>
-          {action}
-        </AppText>
+        <Pressable onPress={onAction} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingBottom: 2 }}>
+          <AppText variant="label" color="primary">{action}</AppText>
+          <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+        </Pressable>
       ) : null}
     </Row>
   );
@@ -255,9 +272,13 @@ export function SectionHeader({ title, action, onAction, style }: { title: strin
 // ---------------------------------------------------------------------------
 // Chips
 // ---------------------------------------------------------------------------
-export function Chip({ label, selected, onPress, icon, count, testID }: { label: string; selected?: boolean; onPress?: () => void; icon?: IoniconName; count?: number; testID?: string }) {
-  const { colors, dark } = useTheme();
+export function Chip({ label, selected, onPress, icon, count, testID, tone = 'default' }: { label: string; selected?: boolean; onPress?: () => void; icon?: IoniconName; count?: number; testID?: string; tone?: 'default' | 'onBrand' }) {
+  const { colors } = useTheme();
   const ff = useFont();
+  const onBrand = tone === 'onBrand';
+  const bg = onBrand ? (selected ? '#FFFFFF' : 'rgba(255,255,255,0.14)') : selected ? colors.primary : colors.surface;
+  const fg = onBrand ? (selected ? teal[800] : colors.onBrand) : selected ? colors.onPrimary : colors.text;
+  const border = onBrand ? (selected ? '#FFFFFF' : 'rgba(255,255,255,0.3)') : selected ? colors.primary : colors.border;
   return (
     <Pressable
       testID={testID}
@@ -269,23 +290,24 @@ export function Chip({ label, selected, onPress, icon, count, testID }: { label:
         paddingHorizontal: 14,
         height: 36,
         borderRadius: 18,
-        backgroundColor: selected ? colors.primary : pressed ? colors.surfaceAlt : colors.surface,
+        backgroundColor: bg,
+        opacity: pressed ? 0.85 : 1,
         borderWidth: 1,
-        borderColor: selected ? colors.primary : colors.border,
+        borderColor: border,
       })}
     >
-      {icon ? <Ionicons name={icon} size={15} color={selected ? '#fff' : colors.textMuted} /> : null}
-      <Text style={{ fontFamily: ff(fonts.bodySemi), fontSize: 13, color: selected ? '#fff' : colors.text }}>{label}</Text>
+      {icon ? <Ionicons name={icon} size={15} color={selected || onBrand ? fg : colors.textMuted} /> : null}
+      <Text style={{ fontFamily: ff(fonts.bodySemi), fontSize: 13, color: fg }}>{label}</Text>
       {count != null ? (
-        <View style={{ backgroundColor: selected ? 'rgba(255,255,255,0.25)' : dark ? colors.surfaceAlt : colors.primarySoft, borderRadius: 9, paddingHorizontal: 6, minWidth: 20, alignItems: 'center' }}>
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: selected ? '#fff' : colors.primary }}>{count}</Text>
+        <View style={{ backgroundColor: colors.accent, borderRadius: 9, paddingHorizontal: 6, minWidth: 20, alignItems: 'center' }}>
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: colors.onAccent }}>{count}</Text>
         </View>
       ) : null}
     </Pressable>
   );
 }
 
-export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'action'; icon?: IoniconName }) {
+export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'accent' | 'action'; icon?: IoniconName }) {
   const { colors } = useTheme();
   const ff = useFont();
   const map = {
@@ -294,11 +316,12 @@ export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: '
     success: [colors.successSoft, colors.success],
     warning: [colors.warningSoft, colors.warning],
     error: [colors.errorSoft, colors.error],
-    action: [colors.actionSoft, colors.action],
+    accent: [colors.accentSoft, colors.accentInk],
+    action: [colors.accentSoft, colors.accentInk],
   } as const;
   const [bg, fg] = map[tone];
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' }}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
       <Text style={{ color: fg, fontFamily: ff(fonts.bodySemi), fontSize: 11.5 }}>{label}</Text>
     </View>
@@ -318,9 +341,10 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Input({ label, error, hint, icon, prefix, right, style, multiline, ...rest }: InputProps) {
+export function Input({ label, error, hint, icon, prefix, right, style, multiline, onFocus, onBlur, ...rest }: InputProps) {
   const { colors } = useTheme();
   const ff = useFont();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={[{ gap: 6 }, style]}>
       {label ? <AppText variant="label" color="textMuted">{label}</AppText> : null}
@@ -330,10 +354,10 @@ export function Input({ label, error, hint, icon, prefix, right, style, multilin
           alignItems: multiline ? 'flex-start' : 'center',
           gap: 8,
           backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: error ? colors.error : colors.border,
+          borderWidth: focused || error ? 1.5 : 1,
+          borderColor: error ? colors.error : focused ? colors.primary : colors.border,
           borderRadius: 12,
-          paddingHorizontal: 12,
+          paddingHorizontal: focused || error ? 11.5 : 12,
           minHeight: multiline ? 92 : 50,
           paddingVertical: multiline ? 10 : 0,
         }}
@@ -344,6 +368,14 @@ export function Input({ label, error, hint, icon, prefix, right, style, multilin
           placeholderTextColor={colors.textSubtle}
           multiline={multiline}
           style={[{ flex: 1, fontFamily: ff(fonts.body), fontSize: 15, color: colors.text, minHeight: multiline ? 72 : 48, textAlignVertical: multiline ? 'top' : 'center' }, webNoOutline]}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
           {...rest}
         />
         {right}
@@ -367,7 +399,7 @@ export function SwitchRow({ label, value, onValueChange, hint }: { label: string
 }
 
 export function Segmented<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const ff = useFont();
   return (
     <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 4 }}>
@@ -377,9 +409,12 @@ export function Segmented<T extends string>({ options, value, onChange }: { opti
           <Pressable
             key={o.value}
             onPress={() => onChange(o.value)}
-            style={{ flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.surface : 'transparent' }}
+            style={[
+              { flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.surface : 'transparent' },
+              active ? shadow(1, dark) : null,
+            ]}
           >
-            <Text style={{ fontFamily: ff(fonts.bodySemi), fontSize: 14, color: active ? colors.primary : colors.textMuted }}>{o.label}</Text>
+            <Text style={{ fontFamily: ff(active ? fonts.bodyBold : fonts.bodySemi), fontSize: 14, color: active ? colors.primary : colors.textMuted }}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -453,14 +488,14 @@ export function Loading({ label }: { label?: string }) {
 // Empty states with a small illustration
 // ---------------------------------------------------------------------------
 export function EmptyState({ icon = 'search', title, body, action, onAction, iconSet = 'ion', compact }: { icon?: string; title: string; body?: string; action?: string; onAction?: () => void; iconSet?: 'ion' | 'mci'; compact?: boolean }) {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   return (
     <View style={{ alignItems: 'center', paddingVertical: compact ? 20 : 40, paddingHorizontal: 24, gap: 10 }}>
       <View style={{ width: 132, height: 110, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ position: 'absolute', width: 110, height: 110, borderRadius: 55, backgroundColor: colors.primarySoft }} />
-        <View style={{ position: 'absolute', right: 4, top: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.actionSoft }} />
-        <View style={{ position: 'absolute', left: 8, bottom: 10, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.warningSoft }} />
-        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...shadow(2, false) }}>
+        <View style={{ position: 'absolute', right: 4, top: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accentSoft }} />
+        <View style={{ position: 'absolute', left: 8, bottom: 10, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.successSoft }} />
+        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: dark ? 1 : 0, borderColor: colors.border, ...shadow(2, dark) }}>
           <Icon name={icon} set={iconSet} size={32} color={colors.primary} />
         </View>
       </View>

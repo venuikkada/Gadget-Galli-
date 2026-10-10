@@ -36,6 +36,7 @@ export const hi: Translations = {
     closed: 'बंद',
     openNow: 'अभी खुला है',
     verified: 'वेरिफ़ाइड',
+    verifiedShops: 'वेरिफ़ाइड दुकानें',
     free: 'फ़्री',
     items: '{{count}} आइटम',
     oneItem: '1 आइटम',

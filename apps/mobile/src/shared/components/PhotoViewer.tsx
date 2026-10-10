@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { publicUrl, type Bucket } from '../api/storage';
+import { useTheme } from '../theme/ThemeProvider';
 import { AppText, IconButton, ProductImage, Row } from '../ui';
 
 function ZoomableImage({ uri, width, height }: { uri: string; width: number; height: number }) {
@@ -68,6 +69,7 @@ function ZoomableImage({ uri, width, height }: { uri: string; width: number; hei
 
 /** Swipeable photo gallery that opens a full-screen, pinch-to-zoom viewer on tap. */
 export function PhotoGallery({ photos, bucket = 'product-photos', height = 280, categoryId, brand, name }: { photos: string[]; bucket?: Bucket; height?: number; categoryId?: number | null; brand?: string | null; name?: string }) {
+  const { colors } = useTheme();
   const width = Math.min(Dimensions.get('window').width, 720);
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
@@ -96,7 +98,7 @@ export function PhotoGallery({ photos, bucket = 'product-photos', height = 280, 
       {photos.length > 1 ? (
         <Row gap={5} justify="center">
           {photos.map((p, i) => (
-            <View key={p} style={{ width: i === index ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === index ? '#4F46E5' : '#CBD5E1' }} />
+            <View key={p} style={{ width: i === index ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === index ? colors.primary : colors.border }} />
           ))}
         </Row>
       ) : null}

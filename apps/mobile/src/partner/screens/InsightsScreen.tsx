@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { formatINR, formatINRCompact, type ShopInsights } from '@gg/shared';
+import { chartColors, formatINR, formatINRCompact, type ShopInsights } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
@@ -95,10 +95,10 @@ export default function InsightsScreen() {
           <Row wrap gap={10} justify="space-between">
             <Kpi label={t('p.ins.orders')} value={String(d.totals.orders)} icon="receipt" tone={colors.primary} />
             <Kpi label={t('p.ins.delivered')} value={String(d.totals.delivered)} icon="checkmark-done" tone={colors.success} />
-            <Kpi label={t('p.ins.aov')} value={d.totals.avg_order_value ? formatINRCompact(d.totals.avg_order_value) : ''} icon="pricetag" tone="#0891B2" />
+            <Kpi label={t('p.ins.aov')} value={d.totals.avg_order_value ? formatINRCompact(d.totals.avg_order_value) : ''} icon="pricetag" tone={chartColors[2]} />
             <Kpi label={t('p.ins.conversion')} value={conversion != null ? `${conversion}%` : ''} icon="trending-up" tone={colors.action} />
             <Kpi label={t('p.ins.confirm')} value={tDuration(d.totals.avg_confirm_mins)} icon="flash" tone={colors.warning} />
-            <Kpi label={t('p.ins.dispatch')} value={tDuration(d.totals.avg_dispatch_mins)} icon="bicycle" tone="#7C3AED" />
+            <Kpi label={t('p.ins.dispatch')} value={tDuration(d.totals.avg_dispatch_mins)} icon="bicycle" tone={chartColors[4]} />
             <Kpi label={t('p.ins.avgDelivery')} value={tDuration(d.avg_delivery_mins)} icon="time" tone={colors.primary} />
             <Kpi label={t('p.ins.rating')} value={d.rating.count ? `${d.rating.avg.toFixed(1)} ★ (${d.rating.count})` : ''} icon="star" tone={colors.warning} />
           </Row>
@@ -142,7 +142,7 @@ export default function InsightsScreen() {
                 <AppText variant="title" numberOfLines={1}>{item.query}</AppText>
                 <Row gap={6}>
                   <AppText variant="caption" color="textMuted">{t('p.ins.searches', { count: item.searches })}</AppText>
-                  {item.zero_results ? <Tag tone="action" label={t('p.ins.zeroResults')} /> : null}
+                  {item.zero_results ? <Tag tone="accent" label={t('p.ins.zeroResults')} /> : null}
                 </Row>
               </View>
               <AppText variant="label" color="primary" onPress={() => router.push({ pathname: '/partner/product/add', params: { q: item.query } })}>
