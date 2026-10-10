@@ -80,7 +80,7 @@ export default function IssueDetailPage() {
   const o = i.order;
   return (
     <div className="space-y-6">
-      <Link to="/problems" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+      <Link to="/problems" className="inline-flex items-center gap-1 text-sm font-semibold text-link">
         <ArrowLeft className="size-4" /> Problems
       </Link>
       <PageHeader
@@ -112,12 +112,12 @@ export default function IssueDetailPage() {
               {i.notes.map((n) => (
                 <li key={n.id} className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800">
                   <div className="whitespace-pre-line">{n.note}</div>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 text-xs text-ink-muted">
                     {n.author ?? 'Admin'} · {formatDateTimeIST(n.created_at)}
                   </div>
                 </li>
               ))}
-              {!i.notes.length ? <li className="text-sm text-slate-500">No notes yet. Add what you learn from calls with the customer and the shop.</li> : null}
+              {!i.notes.length ? <li className="text-sm text-ink-muted">No notes yet. Add what you learn from calls with the customer and the shop.</li> : null}
             </ol>
             {i.status !== 'resolved' ? (
               <div className="mt-4 space-y-2">
@@ -133,7 +133,7 @@ export default function IssueDetailPage() {
             {i.status === 'resolved' ? (
               <div className="space-y-1 text-sm">
                 <p className="whitespace-pre-line">{i.resolution}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-muted">
                   {i.resolved_at ? formatDateTimeIST(i.resolved_at) : ''} · shop action: {i.shop_action ?? 'none'}
                 </p>
               </div>
@@ -171,7 +171,7 @@ export default function IssueDetailPage() {
 
         <div className="space-y-6">
           <Card title="Order">
-            <Link to={`/orders/${o.id}`} className="font-semibold text-primary">
+            <Link to={`/orders/${o.id}`} className="font-semibold text-link">
               {o.order_no}
             </Link>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
@@ -184,20 +184,20 @@ export default function IssueDetailPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-2 text-xs text-slate-500">
+            <div className="mt-2 text-xs text-ink-muted">
               {o.delivered_at ? `Delivered ${formatDateTimeIST(o.delivered_at)}` : o.dispatched_at ? `Dispatched ${formatDateTimeIST(o.dispatched_at)}` : `Placed ${formatDateTimeIST(o.requested_at)}`}
             </div>
           </Card>
           <Card title="Customer">
             <div className="font-semibold">{i.customer.name ?? '—'}</div>
             {i.customer.phone ? (
-              <a href={`tel:${i.customer.phone}`} className="inline-flex items-center gap-1 text-sm text-primary">
+              <a href={`tel:${i.customer.phone}`} className="inline-flex items-center gap-1 text-sm text-link">
                 <Phone className="size-3.5" /> {formatPhone(i.customer.phone)}
               </a>
             ) : null}
           </Card>
           <Card title="Shop">
-            <Link to={`/shops/${i.shop.id}`} className="font-semibold text-primary">
+            <Link to={`/shops/${i.shop.id}`} className="font-semibold text-link">
               {i.shop.name}
             </Link>
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -205,7 +205,7 @@ export default function IssueDetailPage() {
               {i.shop.warnings_count ? <Badge tone="warning">{i.shop.warnings_count} warnings</Badge> : null}
             </div>
             {i.shop.contact_phone ? (
-              <a href={`tel:${i.shop.contact_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-primary">
+              <a href={`tel:${i.shop.contact_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-link">
                 <Phone className="size-3.5" /> {formatPhone(i.shop.contact_phone)}
               </a>
             ) : null}

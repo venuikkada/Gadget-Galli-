@@ -1,3 +1,5 @@
+import { extra, grey, marigold, statusPalette, teal, type StatusColor } from './palette';
+
 /** Order statuses, exactly as stored in the database enum `order_status`. */
 export const ORDER_STATUSES = [
   'REQUESTED',
@@ -33,28 +35,23 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   ISSUE_REPORTED: 'Issue reported',
 };
 
-/** Chip colours (background, text) for each status, shared by the apps and the admin panel. */
-export const STATUS_COLORS: Record<OrderStatus, { bg: string; fg: string; dot: string }> = {
-  REQUESTED: { bg: '#FFF3EC', fg: '#C2410C', dot: '#FF6B35' },
-  CONFIRMED: { bg: '#EEF2FF', fg: '#3730A3', dot: '#4F46E5' },
-  PAID: { bg: '#ECFEFF', fg: '#0E7490', dot: '#0891B2' },
-  PACKED: { bg: '#F5F3FF', fg: '#6D28D9', dot: '#7C3AED' },
-  DISPATCHED: { bg: '#FEF3C7', fg: '#92400E', dot: '#F59E0B' },
-  DELIVERED: { bg: '#DCFCE7', fg: '#166534', dot: '#16A34A' },
-  REJECTED: { bg: '#FEE2E2', fg: '#991B1B', dot: '#DC2626' },
-  CANCELLED: { bg: '#F1F5F9', fg: '#475569', dot: '#64748B' },
-  EXPIRED: { bg: '#F1F5F9', fg: '#475569', dot: '#94A3B8' },
-  ISSUE_REPORTED: { bg: '#FEE2E2', fg: '#991B1B', dot: '#DC2626' },
-};
+/** Chip colours (background, text, dot) for each status, shared by the apps and the admin panel (light mode). */
+export const STATUS_COLORS: Record<OrderStatus, StatusColor> = statusPalette.light;
+/** The same chips in dark mode. */
+export const STATUS_COLORS_DARK: Record<OrderStatus, StatusColor> = statusPalette.dark;
 
+/** Brand colours for places that can't use the theme (printed posters, emails, share pages). */
 export const BRAND_COLORS = {
-  primary: '#4F46E5',
-  action: '#FF6B35',
-  success: '#16A34A',
-  warning: '#F59E0B',
-  error: '#DC2626',
-  background: '#F8FAFC',
-  text: '#0F172A',
+  primary: teal[600],
+  primaryDeep: teal[800],
+  action: teal[700],
+  accent: marigold[500],
+  accentInk: '#7A4E00',
+  success: extra.leaf,
+  warning: extra.amber,
+  error: extra.red,
+  background: grey[50],
+  text: extra.ink,
 } as const;
 
 export const CONDITIONS = ['new', 'open_box', 'refurbished', 'used'] as const;

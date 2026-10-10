@@ -96,11 +96,11 @@ export default function OrdersPage() {
           <div className="flex items-center">
             <Toggle checked={stuck} onChange={(v) => set('stuck', v ? '1' : null)} label="Stuck only" />
           </div>
-          <label className="flex items-center gap-2 text-xs text-slate-500">
+          <label className="flex items-center gap-2 text-xs text-ink-muted">
             <span className="w-8 shrink-0">From</span>
             <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => set('from', e.target.value || null)} />
           </label>
-          <label className="flex items-center gap-2 text-xs text-slate-500">
+          <label className="flex items-center gap-2 text-xs text-ink-muted">
             <span className="w-8 shrink-0">To</span>
             <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => set('to', e.target.value || null)} />
           </label>
@@ -142,18 +142,18 @@ export default function OrdersPage() {
                   <Tr key={o.id} onClick={() => navigate(`/orders/${o.id}`)}>
                     <Td>
                       <div className="whitespace-nowrap font-semibold">{o.order_no}</div>
-                      <div className="text-xs text-slate-500" title={formatDateTimeIST(o.requested_at)}>
+                      <div className="text-xs text-ink-muted" title={formatDateTimeIST(o.requested_at)}>
                         {timeAgo(o.requested_at)} · {o.contact_method === 'whatsapp' ? 'WhatsApp' : 'Call'}
                       </div>
                     </Td>
                     <Td>
                       <div>{o.customer_name ?? '—'}</div>
-                      <div className="text-xs text-slate-500">{o.fulfilment === 'pickup' ? 'Store pickup' : o.area ?? '—'}</div>
+                      <div className="text-xs text-ink-muted">{o.fulfilment === 'pickup' ? 'Store pickup' : o.area ?? '—'}</div>
                     </Td>
                     <Td>{o.shop_name}</Td>
                     <Td>
                       <div className="max-w-56 truncate">{o.first_item}</div>
-                      {o.item_count > 1 ? <div className="text-xs text-slate-500">+{o.item_count - 1} more</div> : null}
+                      {o.item_count > 1 ? <div className="text-xs text-ink-muted">+{o.item_count - 1} more</div> : null}
                     </Td>
                     <Td className="tabular text-right font-semibold">{formatINR(o.grand_total)}</Td>
                     <Td>

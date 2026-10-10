@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'in.gadgetgalli.app',
     adaptiveIcon: {
-      backgroundColor: '#4F46E5',
+      backgroundColor: '#08656B',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -55,13 +55,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     [
       'expo-splash-screen',
-      { backgroundColor: '#4F46E5', image: './assets/images/splash-icon.png', imageWidth: 220, dark: { backgroundColor: '#1E1B4B' } },
+      { backgroundColor: '#08656B', image: './assets/images/splash-icon.png', imageWidth: 220, dark: { backgroundColor: '#061314' } },
     ],
     [
       'expo-notifications',
       {
         icon: './assets/images/notification-icon.png',
-        color: '#4F46E5',
+        color: '#0B7A80',
         sounds: ['./assets/sounds/new_order.wav'],
       },
     ],

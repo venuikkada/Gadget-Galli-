@@ -56,27 +56,27 @@ export default function IssuesPage() {
                 <Tr key={i.id} onClick={() => navigate(`/problems/${i.id}`)}>
                   <Td>
                     <div className="font-semibold">{ISSUE_TYPE_LABEL[i.type as IssueType] ?? i.type}</div>
-                    <div className="max-w-72 truncate text-xs text-slate-500">{i.description ?? '—'}</div>
+                    <div className="max-w-72 truncate text-xs text-ink-muted">{i.description ?? '—'}</div>
                   </Td>
                   <Td>
                     <div className="font-semibold">{i.order_no}</div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 text-xs text-ink-muted">
                       {formatINR(i.grand_total)} <OrderStatusBadge status={i.order_status} />
                     </div>
                   </Td>
                   <Td>
                     <div>{i.customer_name ?? '—'}</div>
-                    <div className="text-xs text-slate-500">{formatPhone(i.customer_phone)}</div>
+                    <div className="text-xs text-ink-muted">{formatPhone(i.customer_phone)}</div>
                   </Td>
                   <Td>
                     <div>{i.shop_name}</div>
-                    <div className="text-xs text-slate-500">{formatPhone(i.shop_phone)}</div>
+                    <div className="text-xs text-ink-muted">{formatPhone(i.shop_phone)}</div>
                   </Td>
                   <Td>
                     <Badge tone={TONE[i.status]}>{i.status.replace('_', ' ')}</Badge>
-                    {i.notes_count ? <div className="mt-1 text-xs text-slate-500">{i.notes_count} notes</div> : null}
+                    {i.notes_count ? <div className="mt-1 text-xs text-ink-muted">{i.notes_count} notes</div> : null}
                   </Td>
-                  <Td className="text-xs text-slate-500">{timeAgo(i.created_at)}</Td>
+                  <Td className="text-xs text-ink-muted">{timeAgo(i.created_at)}</Td>
                 </Tr>
               ))}
             </tbody>

@@ -15,7 +15,7 @@ export function KeyValueEditor({ rows, onChange, keyPlaceholder, valuePlaceholde
         <div key={i} className="flex gap-2">
           <Input className="flex-1" placeholder={keyPlaceholder} value={r.k} onChange={(e) => onChange(rows.map((x, j) => (j === i ? { ...x, k: e.target.value } : x)))} />
           <Input className="flex-[1.4]" placeholder={valuePlaceholder} value={r.v} onChange={(e) => onChange(rows.map((x, j) => (j === i ? { ...x, v: e.target.value } : x)))} />
-          <button type="button" className="rounded-lg px-2 text-slate-400 hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800" onClick={() => onChange(rows.filter((_, j) => j !== i))} aria-label="Remove">
+          <button type="button" className="rounded-lg px-2 text-slate-400 hover:bg-slate-100 hover:text-error-ink dark:hover:bg-slate-800" onClick={() => onChange(rows.filter((_, j) => j !== i))} aria-label="Remove">
             <X className="size-4" />
           </button>
         </div>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    Gadget Galli brand mark: a marigold shopping bag with a peacock-teal lightning bolt ("electronics, fast").
+    This file is the source for every icon. After editing it, run `pnpm brand:assets` to regenerate the
+    app icons, splash, favicons, admin logo, link-preview image and the in-app BrandMark paths.
+    Keep the ids: bg, glow, handle, bag, bolt.
+  -->
+  <defs>
+    <linearGradient id="bg-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0E8C91" />
+      <stop offset="0.55" stop-color="#08656B" />
+      <stop offset="1" stop-color="#053D42" />
+    </linearGradient>
+    <radialGradient id="glow-fill" cx="0.22" cy="0.18" r="0.62">
+      <stop offset="0" stop-color="#5FC0C1" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#5FC0C1" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bag-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC026" />
+      <stop offset="1" stop-color="#FFB300" />
+    </linearGradient>
+  </defs>
+  <rect id="bg" width="1024" height="1024" fill="url(#bg-fill)" />
+  <rect id="glow" width="1024" height="1024" fill="url(#glow-fill)" />
+  <path id="handle" d="M 420 384 L 420 332 A 92 92 0 0 1 604 332 L 604 384" fill="none" stroke="#E89E00" stroke-width="46" stroke-linecap="round" />
+  <path id="bag" d="M 348 372 L 676 372 Q 724 372 729 420 L 772 764 Q 778 812 730 812 L 294 812 Q 246 812 252 764 L 295 420 Q 300 372 348 372 Z" fill="url(#bag-fill)" />
+  <path id="bolt" d="M 548 448 L 440 612 L 506 612 L 474 742 L 588 566 L 520 566 Z" fill="#064F55" stroke="#064F55" stroke-width="10" stroke-linejoin="round" />
+</svg>

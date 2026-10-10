@@ -30,17 +30,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-primary to-indigo-900 p-4">
+    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-primary-950 to-primary-700 p-4">
       <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-2xl bg-white p-7 shadow-xl dark:bg-slate-900">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="" className="size-11 rounded-xl" />
           <div>
             <h1 className="text-xl font-bold">Gadget Galli Admin</h1>
-            <p className="text-xs text-slate-500">For the Gadget Galli team only</p>
+            <p className="text-xs text-ink-muted">For the Gadget Galli team only</p>
           </div>
         </div>
         {noAccess ? (
-          <div className="space-y-3 rounded-xl bg-error-soft p-3 text-sm text-red-800">
+          <div className="space-y-3 rounded-xl bg-error-soft p-3 text-sm text-error-ink">
             <p>This account does not have admin access.</p>
             <Button size="sm" variant="outline" onClick={signOut}>
               Use another account
@@ -53,7 +53,7 @@ export default function LoginPage() {
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} data-testid="login-password" />
         </Field>
-        {error ? <p className="text-sm text-error">{error}</p> : null}
+        {error ? <p className="text-sm text-error-ink">{error}</p> : null}
         <Button type="submit" className="w-full" size="lg" loading={busy} data-testid="login-submit">
           Log in
         </Button>

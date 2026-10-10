@@ -15,11 +15,11 @@ type ButtonVariant = 'primary' | 'action' | 'secondary' | 'outline' | 'ghost' | 
 const BUTTON: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-white hover:bg-primary-dark shadow-sm',
   action: 'bg-action text-white hover:bg-action-dark shadow-sm',
-  secondary: 'bg-primary-soft text-primary hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200',
+  secondary: 'bg-primary-soft text-link hover:bg-primary-100 dark:hover:bg-primary-900',
   outline: 'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800',
-  ghost: 'text-primary hover:bg-primary-soft dark:text-indigo-300 dark:hover:bg-slate-800',
-  danger: 'bg-error text-white hover:bg-red-700 shadow-sm',
-  success: 'bg-success text-white hover:bg-green-700 shadow-sm',
+  ghost: 'text-link hover:bg-primary-soft dark:hover:bg-slate-800',
+  danger: 'bg-error text-white hover:bg-error-ink shadow-sm dark:hover:bg-[#a12222]',
+  success: 'bg-success text-white hover:bg-[#1b5e25] shadow-sm',
 };
 
 export function Button({
@@ -73,7 +73,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -92,9 +92,9 @@ export function Stat({ label, value, hint, tone = 'primary', onClick }: { label:
       )}
     >
       <span className={cx('absolute inset-y-0 left-0 w-1', bar)} />
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-slate-400">{label}</div>
       <div className="tabular mt-1 text-2xl font-bold">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
+      {hint ? <div className="mt-1 text-xs text-ink-muted dark:text-slate-400">{hint}</div> : null}
     </Tag>
   );
 }
@@ -105,11 +105,11 @@ export function Stat({ label, value, hint, tone = 'primary', onClick }: { label:
 type Tone = 'neutral' | 'primary' | 'action' | 'success' | 'warning' | 'error';
 const BADGE: Record<Tone, string> = {
   neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  primary: 'bg-primary-soft text-primary dark:bg-indigo-950 dark:text-indigo-300',
-  action: 'bg-action-soft text-action-dark dark:bg-orange-950 dark:text-orange-300',
-  success: 'bg-success-soft text-green-800 dark:bg-green-950 dark:text-green-300',
-  warning: 'bg-warning-soft text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  error: 'bg-error-soft text-red-800 dark:bg-red-950 dark:text-red-300',
+  primary: 'bg-primary-soft text-link',
+  action: 'bg-accent-soft text-accent-ink',
+  success: 'bg-success-soft text-success-ink',
+  warning: 'bg-warning-soft text-warning-ink',
+  error: 'bg-error-soft text-error-ink',
 };
 
 export function Badge({ children, tone = 'neutral', className }: { children: ReactNode; tone?: Tone; className?: string }) {
@@ -157,7 +157,7 @@ export function Field({ label, hint, error, children, className }: { label?: str
     <label className={cx('block space-y-1.5', className)}>
       {label ? <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</span> : null}
       {children}
-      {error ? <span className="block text-xs text-error">{error}</span> : hint ? <span className="block text-xs text-slate-500">{hint}</span> : null}
+      {error ? <span className="block text-xs text-error-ink">{error}</span> : hint ? <span className="block text-xs text-ink-muted">{hint}</span> : null}
     </label>
   );
 }
@@ -211,7 +211,7 @@ export function Table({ children, className }: { children: ReactNode; className?
 }
 
 export function Th({ children, className }: { children?: ReactNode; className?: string }) {
-  return <th className={cx('whitespace-nowrap border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400', className)}>{children}</th>;
+  return <th className={cx('whitespace-nowrap border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-ink-muted dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400', className)}>{children}</th>;
 }
 
 export function Td({ children, className, colSpan }: { children?: ReactNode; className?: string; colSpan?: number }) {
@@ -235,7 +235,7 @@ export function Tabs<T extends string>({ value, onChange, options }: { value: T;
           onClick={() => onChange(o.value)}
           className={cx(
             'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition',
-            value === o.value ? 'bg-white text-primary shadow-sm dark:bg-slate-800 dark:text-indigo-300' : 'text-slate-600 hover:text-ink dark:text-slate-400 dark:hover:text-slate-100',
+            value === o.value ? 'bg-white text-link shadow-sm dark:bg-slate-800' : 'text-slate-600 hover:text-ink dark:text-slate-400 dark:hover:text-slate-100',
           )}
         >
           {o.label}
@@ -251,7 +251,7 @@ export function Pagination({ total, limit, offset, onChange }: { total: number; 
   const page = Math.floor(offset / limit) + 1;
   const pages = Math.ceil(total / limit);
   return (
-    <div className="flex items-center justify-between gap-2 px-4 py-3 text-sm text-slate-500">
+    <div className="flex items-center justify-between gap-2 px-4 py-3 text-sm text-ink-muted">
       <span>
         {offset + 1}–{Math.min(offset + limit, total)} of {total}
       </span>
@@ -272,8 +272,8 @@ export function Pagination({ total, limit, offset, onChange }: { total: number; 
 // ---------------------------------------------------------------------------
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
-      <Loader2 className="size-5 animate-spin text-primary" />
+    <div className="flex items-center justify-center gap-2 p-10 text-sm text-ink-muted">
+      <Loader2 className="size-5 animate-spin text-link" />
       {label}
     </div>
   );
@@ -282,9 +282,9 @@ export function Spinner({ label }: { label?: string }) {
 export function Empty({ title, body, action }: { title: string; body?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-      <div className="mb-2 size-14 rounded-2xl bg-primary-soft dark:bg-indigo-950" />
+      <div className="mb-2 size-14 rounded-2xl bg-primary-soft" />
       <div className="font-semibold">{title}</div>
-      {body ? <div className="max-w-md text-sm text-slate-500">{body}</div> : null}
+      {body ? <div className="max-w-md text-sm text-ink-muted">{body}</div> : null}
       {action}
     </div>
   );
@@ -292,7 +292,7 @@ export function Empty({ title, body, action }: { title: string; body?: ReactNode
 
 export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-error-soft px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-error/25 bg-error-soft px-4 py-3 text-sm text-error-ink">
       <span>{error}</span>
       {onRetry ? (
         <Button size="sm" variant="outline" onClick={onRetry}>
@@ -321,7 +321,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
           <h3 className="text-lg font-semibold">{title}</h3>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-ink-muted hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
             <X className="size-5" />
           </button>
         </div>

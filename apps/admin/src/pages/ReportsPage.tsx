@@ -128,7 +128,7 @@ export default function ReportsPage() {
             }
             actions={
               <>
-                <Link to="/catalog?tab=synonyms" className="text-sm font-semibold text-primary">
+                <Link to="/catalog?tab=synonyms" className="text-sm font-semibold text-link">
                   Add synonyms
                 </Link>
                 <CsvButton name={`zero-results-${from}-${to}`} rows={r.zero_result_searches} />
@@ -154,7 +154,7 @@ export default function ReportsPage() {
                       <Td className="font-semibold">{z.query}</Td>
                       <Td className="tabular">{z.n}</Td>
                       <Td>{z.top_area ?? '—'}</Td>
-                      <Td className="text-xs text-slate-500">{timeAgo(z.last_at)}</Td>
+                      <Td className="text-xs text-ink-muted">{timeAgo(z.last_at)}</Td>
                     </Tr>
                   ))}
                 </tbody>
@@ -197,10 +197,10 @@ export default function ReportsPage() {
                   {r.top_shops.map((s) => (
                     <Tr key={s.id}>
                       <Td>
-                        <Link to={`/shops/${s.id}`} className="font-semibold text-primary">
+                        <Link to={`/shops/${s.id}`} className="font-semibold text-link">
                           {s.name}
                         </Link>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-ink-muted">
                           {s.area} · {Number(s.rating_avg).toFixed(1)} ★
                         </div>
                       </Td>
@@ -249,7 +249,7 @@ export default function ReportsPage() {
                     {r.new_shops.map((s) => (
                       <Tr key={s.id}>
                         <Td>
-                          <Link to={`/shops/${s.id}`} className="font-semibold text-primary">
+                          <Link to={`/shops/${s.id}`} className="font-semibold text-link">
                             {s.name ?? 'Unnamed'}
                           </Link>
                         </Td>
@@ -257,7 +257,7 @@ export default function ReportsPage() {
                         <Td>
                           <ShopStatusBadge status={s.status} />
                         </Td>
-                        <Td className="text-xs text-slate-500">{formatDateIST(s.created_at)}</Td>
+                        <Td className="text-xs text-ink-muted">{formatDateIST(s.created_at)}</Td>
                       </Tr>
                     ))}
                   </tbody>

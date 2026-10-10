@@ -66,7 +66,7 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card title="Shops waiting for review" actions={<Link to="/shops?status=under_review" className="text-sm font-semibold text-primary">See all</Link>} padded={false}>
+        <Card title="Shops waiting for review" actions={<Link to="/shops?status=under_review" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
           {shops.data && !shops.data.items.length ? <Empty title="All caught up" body="No shop is waiting for review." /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {shops.data?.items.map((s) => (
@@ -74,7 +74,7 @@ export default function DashboardPage() {
                 <Link to={`/shops/${s.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <div className="min-w-0">
                     <div className="truncate font-semibold">{s.name ?? 'Unnamed shop'}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-ink-muted">
                       {s.area ?? '—'} · {s.submitted_at ? `submitted ${timeAgo(s.submitted_at)}` : 'draft'}
                     </div>
                   </div>
@@ -85,7 +85,7 @@ export default function DashboardPage() {
           </ul>
         </Card>
 
-        <Card title="Stuck orders" actions={<Link to="/orders?stuck=1" className="text-sm font-semibold text-primary">See all</Link>} padded={false}>
+        <Card title="Stuck orders" actions={<Link to="/orders?stuck=1" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
           {stuck.data && !stuck.data.items.length ? <Empty title="Nothing stuck" body="Every order is moving on time." /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {stuck.data?.items.map((r) => (
@@ -95,7 +95,7 @@ export default function DashboardPage() {
                     <span className="font-semibold">{r.order_no}</span>
                     <OrderStatusBadge status={r.status} />
                   </div>
-                  <div className="mt-0.5 text-xs text-slate-500">
+                  <div className="mt-0.5 text-xs text-ink-muted">
                     {r.shop_name} · {formatINR(r.grand_total)}
                   </div>
                   <Badge tone="error" className="mt-1">
@@ -107,7 +107,7 @@ export default function DashboardPage() {
           </ul>
         </Card>
 
-        <Card title="Open problems" actions={<Link to="/problems" className="text-sm font-semibold text-primary">See all</Link>} padded={false}>
+        <Card title="Open problems" actions={<Link to="/problems" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
           {issues.data && !issues.data.length ? <Empty title="No open problems" /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {issues.data?.map((i) => (
@@ -115,9 +115,9 @@ export default function DashboardPage() {
                 <Link to={`/problems/${i.id}`} className="block px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold">{i.order_no}</span>
-                    <span className="text-xs text-slate-500">{timeAgo(i.created_at)}</span>
+                    <span className="text-xs text-ink-muted">{timeAgo(i.created_at)}</span>
                   </div>
-                  <div className="mt-0.5 truncate text-xs text-slate-500">
+                  <div className="mt-0.5 truncate text-xs text-ink-muted">
                     {i.shop_name} · {i.customer_name}
                   </div>
                   <div className="mt-1 line-clamp-2 text-sm">{i.description ?? i.type}</div>

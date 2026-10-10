@@ -114,7 +114,7 @@ export default function OrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+      <Link to="/orders" className="inline-flex items-center gap-1 text-sm font-semibold text-link">
         <ArrowLeft className="size-4" /> Orders
       </Link>
       <PageHeader
@@ -139,14 +139,14 @@ export default function OrderDetailPage() {
                   {i.photo ? <img src={publicUrl('product-photos', i.photo) ?? ''} alt="" className="size-14 rounded-lg bg-slate-100 object-cover" /> : <div className="size-14 rounded-lg bg-slate-100 dark:bg-slate-800" />}
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{i.name}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-ink-muted">
                       {[i.brand, variantText(i.variant), CONDITION_LABEL[i.condition], i.warranty_months ? `${i.warranty_months} mo warranty` : null].filter(Boolean).join(' · ')}
                     </div>
                     {i.with_installation ? <Badge tone="primary" className="mt-1">Installation {formatINR(i.installation_charge)}</Badge> : null}
                   </div>
                   <div className="text-right text-sm">
                     <div className="tabular font-semibold">{formatINR(i.line_total)}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-ink-muted">
                       {i.qty} × {formatINR(i.price)}
                     </div>
                   </div>
@@ -155,24 +155,24 @@ export default function OrderDetailPage() {
             </ul>
             <div className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
               <div className="flex justify-between">
-                <span className="text-slate-500">Items</span>
+                <span className="text-ink-muted">Items</span>
                 <span className="tabular">{formatINR(o.item_total)}</span>
               </div>
               {o.installation_total ? (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Installation</span>
+                  <span className="text-ink-muted">Installation</span>
                   <span className="tabular">{formatINR(o.installation_total)}</span>
                 </div>
               ) : null}
               <div className="flex justify-between">
-                <span className="text-slate-500">Delivery</span>
+                <span className="text-ink-muted">Delivery</span>
                 <span className="tabular">{o.delivery_charge ? formatINR(o.delivery_charge) : 'Free'}</span>
               </div>
               <div className="flex justify-between text-base font-bold">
                 <span>Total</span>
                 <span className="tabular">{formatINR(o.grand_total)}</span>
               </div>
-              {o.updated_by_shop ? <p className="text-xs text-warning">The shop edited this order when confirming it.</p> : null}
+              {o.updated_by_shop ? <p className="text-xs text-warning-ink">The shop edited this order when confirming it.</p> : null}
             </div>
           </Card>
 
@@ -183,7 +183,7 @@ export default function OrderDetailPage() {
                   <span className="absolute top-1 -left-[27px] size-3 rounded-full border-2 border-white bg-primary dark:border-slate-900" />
                   <div className="flex flex-wrap items-center gap-2">
                     <OrderStatusBadge status={e.to} />
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-ink-muted">
                       {ACTOR[e.actor_role] ?? e.actor_role} · {formatDateTimeIST(e.created_at)}
                     </span>
                   </div>
@@ -191,8 +191,8 @@ export default function OrderDetailPage() {
                 </li>
               ))}
             </ol>
-            {o.reject_reason ? <p className="mt-3 text-sm text-error">Rejected: {o.reject_reason}</p> : null}
-            {o.cancel_reason ? <p className="mt-1 text-sm text-slate-500">Cancelled: {o.cancel_reason}</p> : null}
+            {o.reject_reason ? <p className="mt-3 text-sm text-error-ink">Rejected: {o.reject_reason}</p> : null}
+            {o.cancel_reason ? <p className="mt-1 text-sm text-ink-muted">Cancelled: {o.cancel_reason}</p> : null}
           </Card>
 
           {o.issues.length ? (
@@ -205,8 +205,8 @@ export default function OrderDetailPage() {
                       <Badge tone={i.status === 'resolved' ? 'success' : 'error'}>{i.status.replace('_', ' ')}</Badge>
                     </div>
                     {i.description ? <p className="mt-1 text-sm">{i.description}</p> : null}
-                    {i.resolution ? <p className="mt-1 text-sm text-success">Resolution: {i.resolution}</p> : null}
-                    <Link to={`/problems/${i.id}`} className="mt-2 inline-block text-sm font-semibold text-primary">
+                    {i.resolution ? <p className="mt-1 text-sm text-success-ink">Resolution: {i.resolution}</p> : null}
+                    <Link to={`/problems/${i.id}`} className="mt-2 inline-block text-sm font-semibold text-link">
                       Open problem
                     </Link>
                   </li>
@@ -221,7 +221,7 @@ export default function OrderDetailPage() {
                 {media.map((m) => (
                   <a key={m.label} href={m.url} target="_blank" rel="noreferrer" className="block">
                     <img src={m.url} alt={m.label} className="aspect-square w-full rounded-xl bg-slate-100 object-cover" />
-                    <span className="mt-1 block text-xs text-slate-500">{m.label}</span>
+                    <span className="mt-1 block text-xs text-ink-muted">{m.label}</span>
                   </a>
                 ))}
               </div>
@@ -233,7 +233,7 @@ export default function OrderDetailPage() {
           <Card title="Customer">
             <div className="font-semibold">{o.customer_name ?? '—'}</div>
             {o.customer_phone ? (
-              <a href={`tel:${o.customer_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-primary">
+              <a href={`tel:${o.customer_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-link">
                 <Phone className="size-3.5" /> {formatPhone(o.customer_phone)}
               </a>
             ) : null}
@@ -241,26 +241,26 @@ export default function OrderDetailPage() {
               <div className="mt-3 text-sm">
                 <div className="whitespace-pre-line">{addressLines(o.address)}</div>
                 {o.address.lat != null ? (
-                  <a href={mapsUrl(o.address.lat, o.address.lng, o.address.area ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                  <a href={mapsUrl(o.address.lat, o.address.lng, o.address.area ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
                     <MapPin className="size-3.5" /> Map {o.distance_km != null ? `· ${o.distance_km} km from shop` : ''}
                   </a>
                 ) : null}
               </div>
             ) : null}
-            {o.note ? <p className="mt-3 rounded-lg bg-warning-soft p-2 text-sm text-amber-900">Note: {o.note}</p> : null}
+            {o.note ? <p className="mt-3 rounded-lg bg-warning-soft p-2 text-sm text-warning-ink">Note: {o.note}</p> : null}
           </Card>
 
           <Card title="Shop">
-            <Link to={`/shops/${o.shop.id}`} className="font-semibold text-primary">
+            <Link to={`/shops/${o.shop.id}`} className="font-semibold text-link">
               {o.shop.name}
             </Link>
-            <div className="text-sm text-slate-500">{o.shop.area}</div>
+            <div className="text-sm text-ink-muted">{o.shop.area}</div>
             {o.shop.contact_phone ? (
-              <a href={`tel:${o.shop.contact_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-primary">
+              <a href={`tel:${o.shop.contact_phone}`} className="mt-1 inline-flex items-center gap-1 text-sm text-link">
                 <Phone className="size-3.5" /> {formatPhone(o.shop.contact_phone)}
               </a>
             ) : null}
-            <div className="mt-2 text-xs text-slate-500">UPI: {o.shop.upi_id ?? '—'}</div>
+            <div className="mt-2 text-xs text-ink-muted">UPI: {o.shop.upi_id ?? '—'}</div>
           </Card>
 
           <Card title="Payment">
@@ -271,7 +271,7 @@ export default function OrderDetailPage() {
                     <div className="font-semibold">
                       {formatINR(p.amount)} by {PAYMENT_METHOD_LABEL[p.method]}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-ink-muted">
                       {p.upi_txn_id ? `Ref ${p.upi_txn_id} · ` : ''}
                       {formatDateTimeIST(p.created_at)}
                     </div>
@@ -279,7 +279,7 @@ export default function OrderDetailPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500">Not paid yet. Customers pay the shop directly by UPI.</p>
+              <p className="text-sm text-ink-muted">Not paid yet. Customers pay the shop directly by UPI.</p>
             )}
           </Card>
 
@@ -296,7 +296,7 @@ export default function OrderDetailPage() {
                 {o.dispatch.delivery_otp ? <div>OTP {o.dispatch.delivery_otp}</div> : null}
                 {o.dispatch.eta ? <div>ETA {formatDateTimeIST(o.dispatch.eta)}</div> : null}
                 {o.dispatch.tracking_url ? (
-                  <a href={o.dispatch.tracking_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary">
+                  <a href={o.dispatch.tracking_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-link">
                     Tracking link <ExternalLink className="size-3.5" />
                   </a>
                 ) : null}

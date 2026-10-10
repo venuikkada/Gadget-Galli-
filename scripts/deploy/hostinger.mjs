@@ -104,7 +104,7 @@ function site(name, label, from, { title, app } = {}) {
   rmSync(join(dir, '_redirects'), { force: true }); // Netlify-style rules; .htaccess does this on Hostinger
   let html = readFileSync(join(dir, 'index.html'), 'utf8');
   if (title) html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
-  html = html.replace('</head>', '<script src="/config.js"></script></head>');
+  html = html.replace('</head>', '<meta name="theme-color" content="#064F55" /><script src="/config.js"></script></head>');
   writeFileSync(join(dir, 'index.html'), html);
   writeFileSync(join(dir, 'config.js'), configJs(label, app));
   writeFileSync(join(dir, '.htaccess'), HTACCESS);

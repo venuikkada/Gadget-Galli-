@@ -199,7 +199,7 @@ function ProductForm({ product, open, onClose }: { product: CatalogRow | null; o
             </div>
           ))}
           {photos.length < 8 ? (
-            <label className="flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-xs text-slate-500 hover:border-primary hover:text-primary">
+            <label className="flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-xs text-ink-muted hover:border-primary hover:text-link">
               {uploading ? '…' : <ImagePlus className="size-5" />}
               Add
               <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
@@ -280,10 +280,10 @@ function MergeModal({ source, onClose }: { source: CatalogRow | null; onClose: (
           .filter((r) => r.id !== source?.id)
           .map((r) => (
             <li key={r.id}>
-              <button type="button" onClick={() => setTarget(r)} className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${target?.id === r.id ? 'bg-primary-soft dark:bg-indigo-950' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <button type="button" onClick={() => setTarget(r)} className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${target?.id === r.id ? 'bg-primary-soft' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <span>
                   <span className="font-semibold">{r.name}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block text-xs text-ink-muted">
                     {[r.brand, r.model_number, variantText(r.variant)].filter(Boolean).join(' · ')} · {r.listings} listings
                   </span>
                 </span>
@@ -291,7 +291,7 @@ function MergeModal({ source, onClose }: { source: CatalogRow | null; onClose: (
               </button>
             </li>
           ))}
-        {results.data && !results.data.items.length ? <li className="px-3 py-4 text-sm text-slate-500">No matches</li> : null}
+        {results.data && !results.data.items.length ? <li className="px-3 py-4 text-sm text-ink-muted">No matches</li> : null}
       </ul>
     </Modal>
   );
@@ -401,7 +401,7 @@ export function ProductsTab() {
                         {p.photos[0] ? <img src={publicUrl('product-photos', p.photos[0]) ?? ''} alt="" className="size-10 rounded-lg bg-slate-100 object-cover" /> : <div className="size-10 rounded-lg bg-slate-100 dark:bg-slate-800" />}
                         <div className="min-w-0">
                           <div className="max-w-80 truncate font-semibold">{p.name}</div>
-                          <div className="text-xs text-slate-500">{[p.brand, p.model_number, variantText(p.variant)].filter(Boolean).join(' · ')}</div>
+                          <div className="text-xs text-ink-muted">{[p.brand, p.model_number, variantText(p.variant)].filter(Boolean).join(' · ')}</div>
                           {p.created_by_shop ? (
                             <div className="text-xs text-action">
                               Added by {p.created_by_shop} · {timeAgo(p.created_at)}

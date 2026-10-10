@@ -49,11 +49,11 @@ function openApp(path: string) {
 function AppButtons({ path }: { path: string }) {
   return (
     <div className="space-y-3">
-      <button type="button" onClick={() => openApp(path)} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-action text-base font-semibold text-white shadow-lg shadow-orange-500/20 hover:bg-action-dark" data-testid="open-app">
+      <button type="button" onClick={() => openApp(path)} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-action text-base font-semibold text-white shadow-lg shadow-primary-800/25 hover:bg-action-dark" data-testid="open-app">
         <Smartphone className="size-5" /> Open in Gadget Galli app
       </button>
       {config.customerAppUrl ? (
-        <a href={`${config.customerAppUrl}/${path}`} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-white text-base font-semibold text-primary hover:bg-primary-soft" data-testid="open-web">
+        <a href={`${config.customerAppUrl}/${path}`} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-white text-base font-semibold text-link hover:bg-primary-soft" data-testid="open-web">
           <Globe className="size-5" /> Open in your browser
         </a>
       ) : null}
@@ -84,7 +84,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-xl space-y-5 px-4 py-6">{children}</main>
-      <footer className="pb-8 text-center text-xs text-slate-500">Pay the shop directly by UPI · Delivered by Porter, Rapido, Uber or the shop&apos;s rider</footer>
+      <footer className="pb-8 text-center text-xs text-ink-muted">Pay the shop directly by UPI · Delivered by Porter, Rapido, Uber or the shop&apos;s rider</footer>
     </div>
   );
 }
@@ -99,13 +99,13 @@ function ProductShare({ id }: { id: string }) {
   }, [p, min, offers.length]);
 
   if (q.isLoading) return <Spinner />;
-  if (!p) return <p className="text-center text-slate-500">This product is no longer available.</p>;
+  if (!p) return <p className="text-center text-ink-muted">This product is no longer available.</p>;
   return (
     <>
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
         {p.photos[0] ? <img src={imageUrl(p.photos[0]) ?? ''} alt={p.name} className="aspect-square w-full object-contain p-6" /> : <div className="aspect-[2/1] bg-primary-soft" />}
         <div className="space-y-2 p-5">
-          <div className="text-xs font-semibold text-slate-500 uppercase">{p.brand}</div>
+          <div className="text-xs font-semibold text-ink-muted uppercase">{p.brand}</div>
           <h1 className="text-xl leading-snug font-bold">{p.name}</h1>
           {min != null ? (
             <div className="flex items-baseline gap-2">
@@ -113,7 +113,7 @@ function ProductShare({ id }: { id: string }) {
               {p.mrp && p.mrp > min ? (
                 <>
                   <span className="text-slate-400 line-through">{formatINR(p.mrp)}</span>
-                  <span className="font-semibold text-success">{percentOff(min, p.mrp)}% off</span>
+                  <span className="font-semibold text-success-ink">{percentOff(min, p.mrp)}% off</span>
                 </>
               ) : null}
             </div>
@@ -135,9 +135,9 @@ function ProductShare({ id }: { id: string }) {
           <div className="min-w-0">
             <div className="flex items-center gap-1 font-semibold">
               <span className="truncate">{o.shop_name}</span>
-              {o.verified ? <BadgeCheck className="size-4 shrink-0 text-primary" /> : null}
+              {o.verified ? <BadgeCheck className="size-4 shrink-0 text-link" /> : null}
             </div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-ink-muted">
               {o.area} · usually {formatDuration(o.delivery_mins)}
             </div>
           </div>
@@ -156,20 +156,20 @@ function ShopShare({ id }: { id: string }) {
     if (s) setMeta(s.name, `${s.area?.name ?? 'Hyderabad'} · ${s.rating_count ? `${Number(s.rating_avg).toFixed(1)}★ · ` : ''}Order on Gadget Galli and get it delivered in hours.`, publicUrl('shop-media', s.cover_path ?? s.logo_path));
   }, [s]);
   if (q.isLoading) return <Spinner />;
-  if (!s || s.status !== 'approved') return <p className="text-center text-slate-500">This shop is not available right now.</p>;
+  if (!s || s.status !== 'approved') return <p className="text-center text-ink-muted">This shop is not available right now.</p>;
   const cover = publicUrl('shop-media', s.cover_path ?? s.photos.find((p) => p.kind === 'front')?.path);
   return (
     <>
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-        {cover ? <img src={cover} alt="" className="aspect-[2/1] w-full object-cover" /> : <div className="aspect-[3/1] bg-gradient-to-r from-primary to-indigo-400" />}
+        {cover ? <img src={cover} alt="" className="aspect-[2/1] w-full object-cover" /> : <div className="aspect-[3/1] bg-gradient-to-r from-primary-800 to-primary-500" />}
         <div className="space-y-2 p-5">
           <div className="flex items-center gap-3">
             {s.logo_path ? <img src={publicUrl('shop-media', s.logo_path) ?? ''} alt="" className="size-12 rounded-xl object-cover" /> : null}
             <div>
               <h1 className="flex items-center gap-1 text-xl font-bold">
-                {s.name} {s.verified ? <BadgeCheck className="size-5 text-primary" /> : null}
+                {s.name} {s.verified ? <BadgeCheck className="size-5 text-link" /> : null}
               </h1>
-              <div className="flex items-center gap-1 text-sm text-slate-500">
+              <div className="flex items-center gap-1 text-sm text-ink-muted">
                 <MapPin className="size-3.5" /> {[s.area?.name, s.pincode].filter(Boolean).join(' ')}
               </div>
             </div>
@@ -180,7 +180,7 @@ function ShopShare({ id }: { id: string }) {
                 {Number(s.rating_avg).toFixed(1)} <Star className="size-3.5 fill-white" />
               </span>
             ) : null}
-            <span className={s.is_open_now ? 'font-semibold text-success' : 'font-semibold text-error'}>{openingHint(s.hours, s.is_open)}</span>
+            <span className={s.is_open_now ? 'font-semibold text-success-ink' : 'font-semibold text-error-ink'}>{openingHint(s.hours, s.is_open)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Truck className="size-4" /> Usually delivers in {formatDuration(s.delivery.delivery_mins)}
@@ -196,5 +196,5 @@ function ShopShare({ id }: { id: string }) {
 
 export default function SharePage() {
   const { type, id } = useParams<{ type: string; id: string }>();
-  return <Shell>{type === 'product' && id ? <ProductShare id={id} /> : type === 'shop' && id ? <ShopShare id={id} /> : <p className="text-center text-slate-500">Link not found.</p>}</Shell>;
+  return <Shell>{type === 'product' && id ? <ProductShare id={id} /> : type === 'shop' && id ? <ShopShare id={id} /> : <p className="text-center text-ink-muted">Link not found.</p>}</Shell>;
 }

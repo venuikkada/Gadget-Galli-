@@ -93,14 +93,14 @@ export default function CustomersPage() {
                   </Td>
                   <Td>
                     <div>{formatPhone(u.phone)}</div>
-                    {u.email ? <div className="text-xs text-slate-500">{u.email}</div> : null}
+                    {u.email ? <div className="text-xs text-ink-muted">{u.email}</div> : null}
                   </Td>
                   <Td>{u.area ?? '—'}</Td>
                   <Td className="tabular">
-                    {u.orders} <span className="text-xs text-slate-500">({u.delivered} delivered)</span>
-                    {u.last_order_at ? <div className="text-xs text-slate-500">last {timeAgo(u.last_order_at)}</div> : null}
+                    {u.orders} <span className="text-xs text-ink-muted">({u.delivered} delivered)</span>
+                    {u.last_order_at ? <div className="text-xs text-ink-muted">last {timeAgo(u.last_order_at)}</div> : null}
                   </Td>
-                  <Td className="text-xs text-slate-500">{formatDateIST(u.created_at)}</Td>
+                  <Td className="text-xs text-ink-muted">{formatDateIST(u.created_at)}</Td>
                   <Td>{u.deleted ? <Badge>Deleted</Badge> : u.is_blocked ? <Badge tone="error">Blocked</Badge> : <Badge tone="success">Active</Badge>}</Td>
                   <Td>
                     <div className="flex flex-wrap items-center justify-end gap-2">

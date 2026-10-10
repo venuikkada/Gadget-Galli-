@@ -135,7 +135,7 @@ function AreasTab() {
           {zones.map((z) => (
             <div key={z.id} className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-800">
               <span className="font-semibold">{z.name}</span>
-              <span className="text-xs text-slate-500">{areas.filter((a) => a.zone_id === z.id).length} areas</span>
+              <span className="text-xs text-ink-muted">{areas.filter((a) => a.zone_id === z.id).length} areas</span>
               <Toggle checked={z.is_active} onChange={(v) => saveZone({ ...z, is_active: v })} />
             </div>
           ))}
@@ -171,7 +171,7 @@ function AreasTab() {
                 <Td>{zones.find((z) => z.id === a.zone_id)?.name}</Td>
                 <Td>
                   {a.lat != null ? (
-                    <a href={mapsUrl(a.lat, a.lng, a.name)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary">
+                    <a href={mapsUrl(a.lat, a.lng, a.name)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-link">
                       <MapPin className="size-3.5" /> {a.lat.toFixed(4)}, {a.lng?.toFixed(4)}
                     </a>
                   ) : (
@@ -208,7 +208,7 @@ function WaitlistTab() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <Card title="Where people are asking from" className="h-fit">
-        {!byPlace.length ? <p className="text-sm text-slate-500">No requests yet.</p> : null}
+        {!byPlace.length ? <p className="text-sm text-ink-muted">No requests yet.</p> : null}
         <ul className="space-y-2 text-sm">
           {byPlace.slice(0, 20).map(([place, n]) => (
             <li key={place} className="flex justify-between gap-2">
@@ -217,7 +217,7 @@ function WaitlistTab() {
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-xs text-slate-500">These people opened the app outside our delivery area and asked to be told when we launch there. Use this to pick the next city or zone.</p>
+        <p className="mt-4 text-xs text-ink-muted">These people opened the app outside our delivery area and asked to be told when we launch there. Use this to pick the next city or zone.</p>
       </Card>
       <Card title={`Notify-me requests (${q.data?.length ?? 0})`} padded={false} className="lg:col-span-2">
         {!q.data?.length ? (
@@ -239,14 +239,14 @@ function WaitlistTab() {
                   <Td>{formatPhone(r.phone)}</Td>
                   <Td>
                     {r.lat != null ? (
-                      <a href={mapsUrl(r.lat, r.lng)} target="_blank" rel="noreferrer" className="text-xs text-primary">
+                      <a href={mapsUrl(r.lat, r.lng)} target="_blank" rel="noreferrer" className="text-xs text-link">
                         Map
                       </a>
                     ) : (
                       '—'
                     )}
                   </Td>
-                  <Td className="text-xs text-slate-500">{formatDateTimeIST(r.created_at)}</Td>
+                  <Td className="text-xs text-ink-muted">{formatDateTimeIST(r.created_at)}</Td>
                 </Tr>
               ))}
             </tbody>

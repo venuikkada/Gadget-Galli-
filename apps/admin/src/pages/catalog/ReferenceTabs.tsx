@@ -164,7 +164,7 @@ export function CategoriesTab() {
             title={
               <span className="flex items-center gap-2">
                 {p.name}
-                <span className="text-xs font-normal text-slate-500">
+                <span className="text-xs font-normal text-ink-muted">
                   {p.name_te} · {p.name_hi}
                 </span>
                 {!p.is_active ? <Badge>Hidden</Badge> : null}
@@ -188,14 +188,14 @@ export function CategoriesTab() {
                 .map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
                     <span>
-                      <span className="font-semibold">{c.name}</span> <span className="text-xs text-slate-500">{c.slug}</span>
+                      <span className="font-semibold">{c.name}</span> <span className="text-xs text-ink-muted">{c.slug}</span>
                       {!c.is_active ? <Badge className="ml-2">Hidden</Badge> : null}
                     </span>
                     <span className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => setEditing(c)}>
                         Edit
                       </Button>
-                      <button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800" aria-label="Delete">
+                      <button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error-ink dark:hover:bg-slate-800" aria-label="Delete">
                         <Trash2 className="size-4" />
                       </button>
                     </span>
@@ -269,7 +269,7 @@ export function BrandsTab() {
             {list.map((b) => (
               <Tr key={b.id}>
                 <Td className="font-semibold">{b.name}</Td>
-                <Td className="text-xs text-slate-500">{b.slug}</Td>
+                <Td className="text-xs text-ink-muted">{b.slug}</Td>
                 <Td>
                   <Toggle checked={b.is_active} onChange={(v) => save({ id: b.id, name: b.name, slug: b.slug, is_active: v })} />
                 </Td>
@@ -325,7 +325,7 @@ export function SynonymsTab() {
     <div className="grid gap-6 lg:grid-cols-5">
       <div className="space-y-4 lg:col-span-3">
         <Card title="Add a synonym group">
-          <p className="mb-3 text-sm text-slate-500">Words in a group mean the same thing in search. Use the zero-result searches report to find new ones.</p>
+          <p className="mb-3 text-sm text-ink-muted">Words in a group mean the same thing in search. Use the zero-result searches report to find new ones.</p>
           <div className="flex gap-2">
             <Input placeholder="e.g. gpu, graphics card, video card" value={words} onChange={(e) => setWords(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
             <Button loading={busy} onClick={add} icon={<Plus className="size-4" />}>
@@ -351,7 +351,7 @@ export function SynonymsTab() {
                   </span>
                   <button
                     type="button"
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800"
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error-ink dark:hover:bg-slate-800"
                     aria-label="Delete"
                     onClick={async () => {
                       try {
@@ -377,13 +377,13 @@ export function SynonymsTab() {
           {results.data?.items.map((p) => (
             <div key={p.product_id} className="rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-800">
               <div className="font-semibold">{p.name}</div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-ink-muted">
                 {p.min_price != null ? `from ${formatINR(p.min_price)} · ` : ''}
                 {p.shop_count} shops
               </div>
             </div>
           ))}
-          {results.data && !results.data.items.length ? <p className="text-sm text-error">No results. Add a synonym or a catalog keyword.</p> : null}
+          {results.data && !results.data.items.length ? <p className="text-sm text-error-ink">No results. Add a synonym or a catalog keyword.</p> : null}
         </div>
       </Card>
     </div>

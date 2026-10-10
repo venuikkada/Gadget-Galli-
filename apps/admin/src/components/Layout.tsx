@@ -95,7 +95,7 @@ export function Layout() {
     <div className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-800">
       <div className="px-2">
         <div className="truncate text-sm font-semibold">{profile?.user.name ?? profile?.user.email}</div>
-        <div className="text-xs text-slate-500">{isSuper ? 'Super admin' : 'Support'}</div>
+        <div className="text-xs text-ink-muted">{isSuper ? 'Super admin' : 'Support'}</div>
       </div>
       <div className="flex gap-2">
         <button
@@ -123,7 +123,7 @@ export function Layout() {
       <img src="/logo.png" alt="" className="size-9 rounded-xl" />
       <div>
         <div className="font-display text-base font-bold leading-tight">Gadget Galli</div>
-        <div className="text-xs text-slate-500">Admin</div>
+        <div className="text-xs text-ink-muted">Admin</div>
       </div>
     </div>
   );

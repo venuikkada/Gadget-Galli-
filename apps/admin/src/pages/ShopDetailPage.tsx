@@ -38,7 +38,7 @@ const DOC_LABEL: Record<string, string> = {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-3 gap-3 py-2 text-sm">
-      <div className="text-slate-500">{label}</div>
+      <div className="text-ink-muted">{label}</div>
       <div className="col-span-2 break-words">{children}</div>
     </div>
   );
@@ -111,7 +111,7 @@ export default function ShopDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/shops" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+      <Link to="/shops" className="inline-flex items-center gap-1 text-sm font-semibold text-link">
         <ArrowLeft className="size-4" /> Shops
       </Link>
       <PageHeader
@@ -176,7 +176,7 @@ export default function ShopDetailPage() {
                     .join(', ') || '—'}
                 </div>
                 {s.lat != null ? (
-                  <a href={mapsUrl(s.lat, s.lng, s.name ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                  <a href={mapsUrl(s.lat, s.lng, s.name ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
                     <MapPin className="size-3.5" /> Open pin in Google Maps
                   </a>
                 ) : null}
@@ -197,7 +197,7 @@ export default function ShopDetailPage() {
               <Row label="Hours">
                 <div className="grid gap-x-6 gap-y-0.5 text-xs sm:grid-cols-2">
                   {hoursTable(s.hours).map((h) => (
-                    <div key={h.day} className={h.closed ? 'whitespace-nowrap text-error' : 'whitespace-nowrap'}>
+                    <div key={h.day} className={h.closed ? 'whitespace-nowrap text-error-ink' : 'whitespace-nowrap'}>
                       <span className="inline-block w-9 font-semibold">{h.label.slice(0, 3)}</span> {h.text}
                     </div>
                   ))}
@@ -205,7 +205,7 @@ export default function ShopDetailPage() {
               </Row>
               <Row label="Delivery">
                 {s.delivery_mode === 'radius' ? `Within ${s.delivery_radius_km} km` : [...s.delivery_zone_names.map((z) => `${z} (whole zone)`), ...s.delivery_area_names].join(', ') || 'No areas yet'}
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-ink-muted">
                   {s.delivery_charge_type === 'free' ? 'Free delivery' : s.delivery_charge_type === 'flat' ? `${formatINR(s.delivery_charge)} per order` : `${formatINR(s.delivery_charge)} per km`}
                   {s.free_delivery_above ? ` · free above ${formatINR(s.free_delivery_above)}` : ''}
                   {s.min_order ? ` · min order ${formatINR(s.min_order)}` : ''}
@@ -216,9 +216,9 @@ export default function ShopDetailPage() {
               <Row label="UPI">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-mono">{s.upi_id ?? '—'}</span>
-                  {s.upi_name ? <span className="text-slate-500">({s.upi_name})</span> : null}
+                  {s.upi_name ? <span className="text-ink-muted">({s.upi_name})</span> : null}
                   {upiQr ? (
-                    <a href={upiQr} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary">
+                    <a href={upiQr} target="_blank" rel="noreferrer" className="text-xs font-semibold text-link">
                       View UPI QR
                     </a>
                   ) : null}
@@ -240,7 +240,7 @@ export default function ShopDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No photos uploaded.</p>
+              <p className="text-sm text-ink-muted">No photos uploaded.</p>
             )}
           </Card>
 
@@ -251,7 +251,7 @@ export default function ShopDetailPage() {
                   <div key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
                     <div>
                       <div className="font-semibold">{DOC_LABEL[d.doc_type] ?? d.doc_type}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-ink-muted">
                         {d.doc_number ? `No. ${d.doc_number} · ` : ''}uploaded {formatDateTimeIST(d.created_at)}
                       </div>
                     </div>
@@ -263,9 +263,9 @@ export default function ShopDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No documents uploaded.</p>
+              <p className="text-sm text-ink-muted">No documents uploaded.</p>
             )}
-            <p className="mt-3 text-xs text-slate-500">Links expire after 5 minutes. Documents are visible only to admins.</p>
+            <p className="mt-3 text-xs text-ink-muted">Links expire after 5 minutes. Documents are visible only to admins.</p>
           </Card>
         </div>
 
@@ -279,7 +279,7 @@ export default function ShopDetailPage() {
                 label={
                   <span>
                     <span className="font-semibold">Verified shop</span>
-                    <span className="block text-xs text-slate-500">Shown to customers after documents and a visit or video call check.</span>
+                    <span className="block text-xs text-ink-muted">Shown to customers after documents and a visit or video call check.</span>
                   </span>
                 }
               />
@@ -290,7 +290,7 @@ export default function ShopDetailPage() {
                 label={
                   <span>
                     <span className="font-semibold">UPI ID checked</span>
-                    <span className="block text-xs text-slate-500">The UPI name matches the shop or owner.</span>
+                    <span className="block text-xs text-ink-muted">The UPI name matches the shop or owner.</span>
                   </span>
                 }
               />
@@ -300,36 +300,36 @@ export default function ShopDetailPage() {
           <Card title="Performance">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div className="text-xs text-slate-500">Orders</div>
+                <div className="text-xs text-ink-muted">Orders</div>
                 <div className="tabular text-lg font-bold">{s.stats.orders}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Delivered</div>
+                <div className="text-xs text-ink-muted">Delivered</div>
                 <div className="tabular text-lg font-bold">{s.stats.delivered}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Rejected / expired</div>
+                <div className="text-xs text-ink-muted">Rejected / expired</div>
                 <div className="tabular text-lg font-bold">
                   {s.stats.rejected} / {s.stats.expired}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Problems</div>
+                <div className="text-xs text-ink-muted">Problems</div>
                 <div className="tabular text-lg font-bold">{s.stats.issues}</div>
               </div>
               <div className="col-span-2">
-                <div className="text-xs text-slate-500">Paid order value</div>
+                <div className="text-xs text-ink-muted">Paid order value</div>
                 <div className="tabular text-lg font-bold">{formatINR(s.stats.value)}</div>
               </div>
-              <div className="col-span-2 text-xs text-slate-500">
+              <div className="col-span-2 text-xs text-ink-muted">
                 Rating {s.rating_count ? `${Number(s.rating_avg).toFixed(1)} ★ from ${s.rating_count}` : 'none yet'} · avg delivery {formatDuration(s.avg_delivery_mins) || '—'} · {s.status === 'approved' ? (s.is_open_now ? 'open now' : 'closed now') : ''}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link to={`/orders?shop=${s.id}`} className="text-sm font-semibold text-primary">
+              <Link to={`/orders?shop=${s.id}`} className="text-sm font-semibold text-link">
                 View orders
               </Link>
-              <a href={`/s/shop/${s.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+              <a href={`/s/shop/${s.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-link">
                 Public page <ExternalLink className="size-3.5" />
               </a>
             </div>
@@ -348,7 +348,7 @@ export default function ShopDetailPage() {
                 {s.audit.map((a, i) => (
                   <li key={i} className="text-sm">
                     <div className="font-semibold">{a.action.replace(/_/g, ' ')}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-ink-muted">
                       {a.admin ?? 'Admin'} · {formatDateTimeIST(a.created_at)}
                     </div>
                     {typeof a.details?.reason === 'string' || typeof a.details?.message === 'string' ? <div className="text-xs">{String(a.details.reason ?? a.details.message)}</div> : null}
@@ -356,7 +356,7 @@ export default function ShopDetailPage() {
                 ))}
               </ol>
             ) : (
-              <p className="text-sm text-slate-500">No admin actions yet.</p>
+              <p className="text-sm text-ink-muted">No admin actions yet.</p>
             )}
           </Card>
         </div>

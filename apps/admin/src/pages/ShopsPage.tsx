@@ -81,21 +81,21 @@ export default function ShopsPage() {
                         {s.logo_path ? (
                           <img src={publicUrl('shop-media', s.logo_path) ?? ''} alt="" className="size-9 rounded-lg object-cover" />
                         ) : (
-                          <div className="flex size-9 items-center justify-center rounded-lg bg-primary-soft font-bold text-primary">{(s.name ?? '?')[0]}</div>
+                          <div className="flex size-9 items-center justify-center rounded-lg bg-primary-soft font-bold text-link">{(s.name ?? '?')[0]}</div>
                         )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-1 font-semibold">
                             <span className="truncate">{s.name ?? 'Unnamed shop'}</span>
-                            {s.verified ? <BadgeCheck className="size-4 text-primary" /> : null}
+                            {s.verified ? <BadgeCheck className="size-4 text-link" /> : null}
                           </div>
-                          <div className="truncate text-xs text-slate-500">{s.shop_types.map((t) => SHOP_TYPE_LABEL[t as ShopType] ?? t).join(', ')}</div>
+                          <div className="truncate text-xs text-ink-muted">{s.shop_types.map((t) => SHOP_TYPE_LABEL[t as ShopType] ?? t).join(', ')}</div>
                         </div>
                       </div>
                     </Td>
                     <Td>{s.area ?? '—'}</Td>
                     <Td>
                       <div>{s.owner_name ?? '—'}</div>
-                      <div className="text-xs text-slate-500">{formatPhone(s.owner_phone ?? s.contact_phone)}</div>
+                      <div className="text-xs text-ink-muted">{formatPhone(s.owner_phone ?? s.contact_phone)}</div>
                     </Td>
                     <Td className="tabular">{s.product_count}</Td>
                     <Td className="tabular">{s.rating_count ? `${Number(s.rating_avg).toFixed(1)} ★ (${s.rating_count})` : '—'}</Td>
@@ -106,7 +106,7 @@ export default function ShopsPage() {
                         {s.status === 'draft' ? <Badge>Step {s.registration_step}/8</Badge> : null}
                       </div>
                     </Td>
-                    <Td className="text-xs text-slate-500">{s.submitted_at ? timeAgo(s.submitted_at) : '—'}</Td>
+                    <Td className="text-xs text-ink-muted">{s.submitted_at ? timeAgo(s.submitted_at) : '—'}</Td>
                   </Tr>
                 ))}
               </tbody>

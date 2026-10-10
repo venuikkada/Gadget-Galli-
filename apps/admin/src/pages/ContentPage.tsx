@@ -209,7 +209,7 @@ function BannersTab() {
                 {b.subtitle ? <div className="text-xs opacity-90">{b.subtitle}</div> : null}
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-ink-muted">
               <span className="flex flex-wrap items-center gap-2">
                 {b.is_active ? <Badge tone="success">Active</Badge> : <Badge>Off</Badge>}
                 <span>
@@ -225,7 +225,7 @@ function BannersTab() {
                 <button
                   type="button"
                   aria-label="Delete banner"
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800"
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error-ink dark:hover:bg-slate-800"
                   onClick={async () => {
                     if (!window.confirm('Delete this banner?')) return;
                     try {
@@ -304,7 +304,7 @@ function FeaturedTab() {
                 <button
                   type="button"
                   aria-label="Remove"
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error dark:hover:bg-slate-800"
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-error-ink dark:hover:bg-slate-800"
                   onClick={async () => {
                     await deleteRow('featured', f.id).catch((e) => toast(errorMessage(e), 'error'));
                     qc.invalidateQueries({ queryKey: ['featured'] });
@@ -419,14 +419,14 @@ function CampaignsTab() {
             </Field>
           ) : null}
           <div className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">
-            <div className="text-xs font-semibold text-slate-500">Preview</div>
+            <div className="text-xs font-semibold text-ink-muted">Preview</div>
             <div className="mt-1 font-semibold">{title || 'Title'}</div>
             <div className="text-slate-600 dark:text-slate-300">{body || 'Message'}</div>
           </div>
           <Button variant="action" icon={<Send className="size-4" />} loading={busy} disabled={!title.trim() || !body.trim() || (segment === 'area' && !areaId)} onClick={send}>
             Send now
           </Button>
-          <p className="text-xs text-slate-500">Keep it to 1–2 campaigns a week. Too many pushes make people turn notifications off.</p>
+          <p className="text-xs text-ink-muted">Keep it to 1–2 campaigns a week. Too many pushes make people turn notifications off.</p>
         </div>
       </Card>
       <Card title="Sent campaigns" padded={false} className="lg:col-span-3">
@@ -447,11 +447,11 @@ function CampaignsTab() {
                 <Tr key={c.id}>
                   <Td>
                     <div className="font-semibold">{c.title}</div>
-                    <div className="max-w-80 truncate text-xs text-slate-500">{c.body}</div>
+                    <div className="max-w-80 truncate text-xs text-ink-muted">{c.body}</div>
                   </Td>
                   <Td className="text-xs">{c.segment === 'area' ? `Area: ${areas.find((a) => a.id === c.area_id)?.name ?? c.area_id}` : c.segment.replace('_', ' ')}</Td>
                   <Td className="tabular">{c.sent_count}</Td>
-                  <Td className="text-xs text-slate-500">{formatDateTimeIST(c.created_at)}</Td>
+                  <Td className="text-xs text-ink-muted">{formatDateTimeIST(c.created_at)}</Td>
                 </Tr>
               ))}
             </tbody>
@@ -495,7 +495,7 @@ function ReferralsTab() {
                 <Tr key={r.user_id}>
                   <Td>
                     <div className="font-semibold">{r.name ?? '—'}</div>
-                    <div className="text-xs text-slate-500">{formatPhone(r.phone)}</div>
+                    <div className="text-xs text-ink-muted">{formatPhone(r.phone)}</div>
                   </Td>
                   <Td className="font-mono text-xs">{r.code}</Td>
                   <Td className="tabular">{r.joined}</Td>
@@ -527,7 +527,7 @@ export default function ContentPage() {
           { value: 'referrals', label: 'Referrals' },
         ]}
       />
-      {!isSuper && tab === 'campaigns' ? <p className="text-sm text-slate-500">Support admins can send campaigns too. Please check the message with the team first.</p> : null}
+      {!isSuper && tab === 'campaigns' ? <p className="text-sm text-ink-muted">Support admins can send campaigns too. Please check the message with the team first.</p> : null}
       {tab === 'banners' ? <BannersTab /> : tab === 'featured' ? <FeaturedTab /> : tab === 'campaigns' ? <CampaignsTab /> : <ReferralsTab />}
     </div>
   );

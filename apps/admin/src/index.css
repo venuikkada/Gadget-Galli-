@@ -1,23 +1,112 @@
 @import 'tailwindcss';
 
-/* Gadget Galli design tokens */
+/* Gadget Galli design tokens: "Peacock Teal + Marigold", the same palette as packages/shared/src/palette.ts. */
 @theme {
-  --color-primary: #4f46e5;
-  --color-primary-dark: #4338ca;
-  --color-primary-soft: #eef2ff;
-  --color-action: #ff6b35;
-  --color-action-dark: #ea580c;
-  --color-action-soft: #fff1eb;
-  --color-success: #16a34a;
-  --color-success-soft: #dcfce7;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fef3c7;
-  --color-error: #dc2626;
-  --color-error-soft: #fee2e2;
-  --color-bg: #f8fafc;
-  --color-ink: #0f172a;
+  --color-primary-50: #e8f5f5;
+  --color-primary-100: #cdeded;
+  --color-primary-200: #9ddada;
+  --color-primary-300: #5fc0c1;
+  --color-primary-400: #2aa3a7;
+  --color-primary-500: #0e8c91;
+  --color-primary-600: #0b7a80;
+  --color-primary-700: #08656b;
+  --color-primary-800: #064f55;
+  --color-primary-900: #053d42;
+  --color-primary-950: #03282c;
+  --color-primary: #0b7a80;
+  --color-primary-dark: #08656b;
+  --color-action: #08656b;
+  --color-action-dark: #064f55;
+
+  --color-accent-50: #fff8e6;
+  --color-accent-100: #ffeec2;
+  --color-accent-200: #ffdf8a;
+  --color-accent-300: #ffcd4d;
+  --color-accent-400: #ffc026;
+  --color-accent-500: #ffb300;
+  --color-accent-600: #e89e00;
+  --color-accent-700: #b97900;
+  --color-accent-800: #8a5800;
+  --color-accent-900: #5c3b00;
+  --color-accent: #ffb300;
+  --color-accent-dark: #e89e00;
+
+  --color-success: #237a2e;
+  --color-warning: #b45309;
+  --color-error: #c62828;
+  --color-bg: #f4f7f7;
+  --color-ink: #0e1b1d;
+
+  /* Teal-tinted greys replace Tailwind's slate everywhere. */
+  --color-slate-50: #f4f7f7;
+  --color-slate-100: #eef3f3;
+  --color-slate-200: #dce5e5;
+  --color-slate-300: #c3d1d2;
+  --color-slate-400: #8fa3a5;
+  --color-slate-500: #5f7275;
+  --color-slate-600: #475a5d;
+  --color-slate-700: #33464a;
+  --color-slate-800: #1c3134;
+  --color-slate-900: #0c1d1f;
+  --color-slate-950: #061314;
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Poppins', 'Inter', ui-sans-serif, sans-serif;
+}
+
+/* Colours that change with dark mode. Text colours here pass 4.5:1 on their surfaces in both modes. */
+@theme inline {
+  --color-surface: var(--gg-surface);
+  --color-surface-alt: var(--gg-surface-alt);
+  --color-line: var(--gg-line);
+  --color-ink-muted: var(--gg-ink-muted);
+  --color-link: var(--gg-link);
+  --color-primary-soft: var(--gg-primary-soft);
+  --color-action-soft: var(--gg-action-soft);
+  --color-accent-soft: var(--gg-accent-soft);
+  --color-accent-ink: var(--gg-accent-ink);
+  --color-success-soft: var(--gg-success-soft);
+  --color-success-ink: var(--gg-success-ink);
+  --color-warning-soft: var(--gg-warning-soft);
+  --color-warning-ink: var(--gg-warning-ink);
+  --color-error-soft: var(--gg-error-soft);
+  --color-error-ink: var(--gg-error-ink);
+}
+
+:root {
+  --gg-surface: #ffffff;
+  --gg-surface-alt: #eef3f3;
+  --gg-line: #dce5e5;
+  --gg-ink-muted: #475a5d;
+  --gg-link: #0b7a80;
+  --gg-primary-soft: #e8f5f5;
+  --gg-action-soft: #e8f5f5;
+  --gg-accent-soft: #fff3d6;
+  --gg-accent-ink: #7a4e00;
+  --gg-success-soft: #eaf5eb;
+  --gg-success-ink: #1f6b2a;
+  --gg-warning-soft: #fff6ea;
+  --gg-warning-ink: #8f4200;
+  --gg-error-soft: #fdecec;
+  --gg-error-ink: #a12222;
+}
+
+.dark {
+  --gg-surface: #0c1d1f;
+  --gg-surface-alt: #132a2d;
+  --gg-line: #1f3b3f;
+  --gg-ink-muted: #a7bdbd;
+  --gg-link: #5fc0c1;
+  --gg-primary-soft: #0e3236;
+  --gg-action-soft: #0e3236;
+  --gg-accent-soft: #3a2c06;
+  --gg-accent-ink: #ffcf5c;
+  --gg-success-soft: #10301a;
+  --gg-success-ink: #7ad68c;
+  --gg-warning-soft: #3a2608;
+  --gg-warning-ink: #f0a53c;
+  --gg-error-soft: #3b1515;
+  --gg-error-ink: #ff8a8a;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
