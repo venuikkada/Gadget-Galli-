@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { BadgeCheck, Bike, Clock, ReceiptText, Search, ShieldAlert, Store, Wallet } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -7,6 +8,7 @@ import { formatDateIST, formatINR, formatINRCompact, timeAgo } from '@gg/shared'
 import { useOverview } from '@/components/Layout';
 import { Badge, Card, Empty, ErrorBox, OrderStatusBadge, PageHeader, ShopStatusBadge, Spinner, Stat } from '@/components/ui';
 import { errorMessage, rpc } from '@/lib/api';
+import { chartTheme, useIsDark } from '@/lib/chartTheme';
 import type { AdminIssueRow, AdminOrderRow, AdminShopRow, Paged, Reports } from '@/lib/types';
 
 function istDate(offsetDays = 0) {
@@ -16,6 +18,7 @@ function istDate(offsetDays = 0) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const ct = chartTheme(useIsDark());
   const overview = useOverview();
   const o = overview.data;
   const trend = useQuery({ queryKey: ['reports', 'dash'], queryFn: () => rpc<Reports>('admin_reports', { p_from: istDate(-13), p_to: istDate(0) }) });
@@ -29,14 +32,14 @@ export default function DashboardPage() {
       {overview.isError ? <ErrorBox error={errorMessage(overview.error)} onRetry={() => overview.refetch()} /> : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} />
-        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Paid to shops directly by UPI" />
-        <Stat label="Active orders" value={o?.active_orders ?? '–'} tone="action" onClick={() => navigate('/orders')} />
-        <Stat label="Searches today" value={o?.searches_today ?? '–'} tone="primary" onClick={() => navigate('/reports')} />
-        <Stat label="Shops to review" value={o?.shops_pending ?? '–'} tone="warning" onClick={() => navigate('/shops?status=under_review')} />
-        <Stat label="Stuck orders" value={o?.stuck_orders ?? '–'} tone="error" onClick={() => navigate('/orders?stuck=1')} />
-        <Stat label="Open problems" value={o?.issues_open ?? '–'} tone="error" onClick={() => navigate('/problems')} />
-        <Stat label="Live shops" value={o?.shops_live ?? '–'} tone="success" hint={`${o?.customers ?? 0} customers · ${o?.catalog_pending ?? 0} products to review`} onClick={() => navigate('/shops?status=approved')} />
+        <Stat hero label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} icon={<ReceiptText className="size-5" />} />
+        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Paid to shops directly by UPI" icon={<Wallet className="size-5" />} />
+        <Stat label="Active orders" value={o?.active_orders ?? '–'} tone="action" onClick={() => navigate('/orders')} icon={<Bike className="size-5" />} />
+        <Stat label="Searches today" value={o?.searches_today ?? '–'} tone="primary" onClick={() => navigate('/reports')} icon={<Search className="size-5" />} />
+        <Stat label="Shops to review" value={o?.shops_pending ?? '–'} tone="warning" onClick={() => navigate('/shops?status=under_review')} icon={<Store className="size-5" />} />
+        <Stat label="Stuck orders" value={o?.stuck_orders ?? '–'} tone="error" onClick={() => navigate('/orders?stuck=1')} icon={<Clock className="size-5" />} />
+        <Stat label="Open problems" value={o?.issues_open ?? '–'} tone="error" onClick={() => navigate('/problems')} icon={<ShieldAlert className="size-5" />} />
+        <Stat label="Live shops" value={o?.shops_live ?? '–'} tone="success" hint={`${o?.customers ?? 0} customers · ${o?.catalog_pending ?? 0} products to review`} onClick={() => navigate('/shops?status=approved')} icon={<BadgeCheck className="size-5" />} />
       </div>
 
       <Card title="Orders and paid value, last 14 days">
@@ -48,17 +51,17 @@ export default function DashboardPage() {
               <AreaChart data={trend.data.daily.map((d) => ({ ...d, label: formatDateIST(d.day, false) }))} margin={{ left: 0, right: 8, top: 8 }}>
                 <defs>
                   <linearGradient id="gOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
+                    <stop offset="0%" stopColor={ct.orders} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={ct.orders} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="o" allowDecimals={false} tick={{ fontSize: 11 }} width={30} />
-                <YAxis yAxisId="v" orientation="right" tickFormatter={(v: number) => formatINRCompact(v)} tick={{ fontSize: 11 }} width={60} />
-                <Tooltip formatter={(v, name) => (name === 'Paid value' ? formatINR(Number(v)) : v)} />
-                <Area yAxisId="o" type="monotone" dataKey="orders" name="Orders" stroke="#4F46E5" fill="url(#gOrders)" strokeWidth={2} />
-                <Area yAxisId="v" type="monotone" dataKey="paid_value" name="Paid value" stroke="#16A34A" fill="none" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="label" tick={ct.tick} stroke={ct.grid} />
+                <YAxis yAxisId="o" allowDecimals={false} tick={ct.tick} stroke={ct.grid} width={30} />
+                <YAxis yAxisId="v" orientation="right" tickFormatter={(v: number) => formatINRCompact(v)} tick={ct.tick} stroke={ct.grid} width={60} />
+                <Tooltip formatter={(v, name) => (name === 'Paid value' ? formatINR(Number(v)) : v)} contentStyle={ct.tooltip.contentStyle} labelStyle={ct.tooltip.labelStyle} itemStyle={ct.tooltip.itemStyle} />
+                <Area yAxisId="o" type="monotone" dataKey="orders" name="Orders" stroke={ct.orders} fill="url(#gOrders)" strokeWidth={2} />
+                <Area yAxisId="v" type="monotone" dataKey="paid_value" name="Paid value" stroke={ct.paid} fill="none" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

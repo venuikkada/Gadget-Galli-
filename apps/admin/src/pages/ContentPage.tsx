@@ -3,9 +3,9 @@ import { ImagePlus, Plus, Send, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { formatDateIST, formatDateTimeIST, formatPhone } from '@gg/shared';
+import { bannerPresets, bannerStyle, formatDateIST, formatDateTimeIST, formatPhone } from '@gg/shared';
 
-import { Badge, Button, Card, Empty, Field, Input, Modal, PageHeader, Select, Spinner, Stat, Table, Tabs, Td, Textarea, Th, toast, Toggle, Tr } from '@/components/ui';
+import { Badge, Button, Card, cx, Empty, Field, Input, Modal, PageHeader, Select, Spinner, Stat, Table, Tabs, Td, Textarea, Th, toast, Toggle, Tr } from '@/components/ui';
 import { deleteRow, errorMessage, publicUrl, rpc, selectAll, uploadPublic, upsertRow } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAreas, useCategories } from '@/lib/reference';
@@ -15,6 +15,11 @@ type Tab = 'banners' | 'featured' | 'campaigns' | 'referrals';
 
 const toLocalInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 5.5 * 3600_000).toISOString().slice(0, 16) : '');
 const fromLocalInput = (v: string) => (v ? new Date(`${v}:00+05:30`).toISOString() : null);
+/** A banner's gradient and text colour, drawn the way the customer app shows it. */
+const bannerCss = (color: string) => {
+  const b = bannerStyle(color);
+  return { background: `linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]})`, color: b.text };
+};
 
 // ---------------------------------------------------------------------------
 // Banners
@@ -23,7 +28,7 @@ function BannerForm({ banner, open, onClose }: { banner: Banner | null; open: bo
   const qc = useQueryClient();
   const { data: areas = [] } = useAreas();
   const { data: cats = [] } = useCategories();
-  const empty = { title: '', subtitle: '', image_path: null as string | null, bg_color: '#4F46E5', link_type: 'search' as Banner['link_type'], link_value: '', area_id: '' as number | '', sort: 0, is_active: true, starts_at: '', ends_at: '' };
+  const empty = { title: '', subtitle: '', image_path: null as string | null, bg_color: bannerPresets[0]!.color, link_type: 'search' as Banner['link_type'], link_value: '', area_id: '' as number | '', sort: 0, is_active: true, starts_at: '', ends_at: '' };
   const [f, setF] = useState(empty);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -85,7 +90,7 @@ function BannerForm({ banner, open, onClose }: { banner: Banner | null; open: bo
       }
     >
       {/* Live preview, roughly as it appears on the home screen */}
-      <div className="relative flex h-36 items-center overflow-hidden rounded-2xl p-5 text-white" style={{ background: f.bg_color }}>
+      <div className="relative flex h-36 items-center overflow-hidden rounded-2xl p-5" style={bannerCss(f.bg_color)}>
         {img ? <img src={img} alt="" className="absolute inset-y-0 right-0 h-full w-1/2 object-cover opacity-90" /> : null}
         <div className="relative max-w-[60%]">
           <div className="font-display text-xl font-bold leading-tight">{f.title || 'Banner title'}</div>
@@ -100,9 +105,24 @@ function BannerForm({ banner, open, onClose }: { banner: Banner | null; open: bo
           <Input value={f.subtitle} onChange={(e) => set('subtitle', e.target.value)} placeholder="Compare prices from 6 shops · delivered today" />
         </Field>
         <Field label="Background colour">
-          <div className="flex gap-2">
-            <input type="color" value={f.bg_color} onChange={(e) => set('bg_color', e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300" />
-            <Input value={f.bg_color} onChange={(e) => set('bg_color', e.target.value)} />
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {bannerPresets.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  title={p.label}
+                  aria-label={`${p.label} colour`}
+                  onClick={() => set('bg_color', p.color)}
+                  className={cx('size-8 rounded-full border-2 transition', f.bg_color.toUpperCase() === p.color.toUpperCase() ? 'border-accent ring-2 ring-accent/40' : 'border-white shadow dark:border-slate-700')}
+                  style={{ background: `linear-gradient(135deg, ${p.gradient[0]}, ${p.gradient[1]})` }}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input type="color" value={f.bg_color} onChange={(e) => set('bg_color', e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300" />
+              <Input value={f.bg_color} onChange={(e) => set('bg_color', e.target.value)} />
+            </div>
           </div>
         </Field>
         <Field label="Image (optional, right side)">
@@ -202,7 +222,7 @@ function BannersTab() {
       <div className="grid gap-4 md:grid-cols-2">
         {q.data?.map((b) => (
           <Card key={b.id} padded={false} className="overflow-hidden">
-            <div className="relative flex h-28 items-center p-4 text-white" style={{ background: b.bg_color }}>
+            <div className="relative flex h-28 items-center p-4" style={bannerCss(b.bg_color)}>
               {b.image_path ? <img src={publicUrl('banners', b.image_path) ?? ''} alt="" className="absolute inset-y-0 right-0 h-full w-1/2 object-cover" /> : null}
               <div className="relative max-w-[60%]">
                 <div className="font-display text-lg font-bold leading-tight">{b.title}</div>

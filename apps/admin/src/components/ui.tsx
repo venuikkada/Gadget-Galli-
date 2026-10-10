@@ -1,7 +1,7 @@
 import { Loader2, X } from 'lucide-react';
-import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
-import { STATUS_COLORS, STATUS_LABEL, type OrderStatus, type ShopStatus } from '@gg/shared';
+import { STATUS_LABEL, statusColors, type OrderStatus, type ShopStatus } from '@gg/shared';
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
@@ -18,7 +18,7 @@ const BUTTON: Record<ButtonVariant, string> = {
   secondary: 'bg-primary-soft text-link hover:bg-primary-100 dark:hover:bg-primary-900',
   outline: 'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800',
   ghost: 'text-link hover:bg-primary-soft dark:hover:bg-slate-800',
-  danger: 'bg-error text-white hover:bg-error-ink shadow-sm dark:hover:bg-[#a12222]',
+  danger: 'bg-error text-white hover:bg-[#a12222] shadow-sm',
   success: 'bg-success text-white hover:bg-[#1b5e25] shadow-sm',
 };
 
@@ -80,21 +80,51 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
-export function Stat({ label, value, hint, tone = 'primary', onClick }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'primary' | 'action' | 'success' | 'warning' | 'error'; onClick?: () => void }) {
+export function Stat({
+  label,
+  value,
+  hint,
+  tone = 'primary',
+  onClick,
+  icon,
+  hero,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+  tone?: 'primary' | 'action' | 'success' | 'warning' | 'error';
+  onClick?: () => void;
+  icon?: ReactNode;
+  /** The one headline number: drawn on the brand gradient. */
+  hero?: boolean;
+}) {
   const bar = { primary: 'bg-primary', action: 'bg-action', success: 'bg-success', warning: 'bg-warning', error: 'bg-error' }[tone];
+  const tile = {
+    primary: 'bg-primary-soft text-link',
+    action: 'bg-primary-soft text-link',
+    success: 'bg-success-soft text-success-ink',
+    warning: 'bg-warning-soft text-warning-ink',
+    error: 'bg-error-soft text-error-ink',
+  }[tone];
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
       onClick={onClick}
       className={cx(
-        'relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm dark:border-slate-800 dark:bg-slate-900',
+        'relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm',
+        hero ? 'border-transparent bg-gradient-to-br from-primary-900 to-primary-700 text-white' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900',
         onClick && 'transition hover:-translate-y-0.5 hover:shadow-md',
       )}
     >
-      <span className={cx('absolute inset-y-0 left-0 w-1', bar)} />
-      <div className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-slate-400">{label}</div>
-      <div className="tabular mt-1 text-2xl font-bold">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-ink-muted dark:text-slate-400">{hint}</div> : null}
+      {hero ? <span className="pointer-events-none absolute -top-12 -right-10 size-36 rounded-full bg-white/10" /> : icon ? null : <span className={cx('absolute inset-y-0 left-0 w-1', bar)} />}
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className={cx('text-xs font-medium tracking-wide uppercase', hero ? 'text-white/85' : 'text-ink-muted')}>{label}</div>
+          <div className="tabular mt-1 text-2xl font-bold">{value}</div>
+        </div>
+        {icon ? <span className={cx('grid size-10 shrink-0 place-items-center rounded-xl', hero ? 'bg-white/15 text-accent' : tile)}>{icon}</span> : null}
+      </div>
+      {hint ? <div className={cx('relative mt-1 text-xs', hero ? 'text-white/85' : 'text-ink-muted')}>{hint}</div> : null}
     </Tag>
   );
 }
@@ -116,11 +146,14 @@ export function Badge({ children, tone = 'neutral', className }: { children: Rea
   return <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold', BADGE[tone], className)}>{children}</span>;
 }
 
+/** Status chip; the light and dark colours ride in CSS variables so it follows the theme without JavaScript. */
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const c = STATUS_COLORS[status];
+  const l = statusColors(status, false);
+  const d = statusColors(status, true);
+  const vars = { '--sb': l.bg, '--sf': l.fg, '--sd': l.dot, '--sbd': d.bg, '--sfd': d.fg, '--sdd': d.dot } as CSSProperties;
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold" style={{ background: c.bg, color: c.fg }}>
-      <span className="size-1.5 rounded-full" style={{ background: c.dot }} />
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-(--sb) px-2 py-0.5 text-xs font-semibold text-(--sf) dark:bg-(--sbd) dark:text-(--sfd)" style={vars}>
+      <span className="size-1.5 rounded-full bg-(--sd) dark:bg-(--sdd)" />
       {STATUS_LABEL[status]}
     </span>
   );

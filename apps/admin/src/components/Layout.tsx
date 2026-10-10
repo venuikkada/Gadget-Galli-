@@ -56,15 +56,17 @@ function NavItem({ to, icon, label, count, end, onClick }: { to: string; icon: R
       end={end}
       onClick={onClick}
       className={({ isActive }) =>
-        cx(
-          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
-          isActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
-        )
+        cx('relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition', isActive ? 'bg-white/12 text-white' : 'text-white/75 hover:bg-white/8 hover:text-white')
       }
     >
-      {icon}
-      <span className="flex-1">{label}</span>
-      {count ? <span className="rounded-full bg-action px-2 py-0.5 text-xs font-bold text-white">{count}</span> : null}
+      {({ isActive }) => (
+        <>
+          {isActive ? <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-accent" /> : null}
+          {icon}
+          <span className="flex-1">{label}</span>
+          {count ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-ink">{count}</span> : null}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -92,16 +94,16 @@ export function Layout() {
   );
 
   const footer = (
-    <div className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+    <div className="space-y-2 border-t border-white/12 pt-4">
       <div className="px-2">
-        <div className="truncate text-sm font-semibold">{profile?.user.name ?? profile?.user.email}</div>
-        <div className="text-xs text-ink-muted">{isSuper ? 'Super admin' : 'Support'}</div>
+        <div className="truncate text-sm font-semibold text-white">{profile?.user.name ?? profile?.user.email}</div>
+        <div className="text-xs text-white/75">{isSuper ? 'Super admin' : 'Support'}</div>
       </div>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => setDark(!dark)}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/20 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
         >
           {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           {dark ? 'Light' : 'Dark'}
@@ -109,7 +111,7 @@ export function Layout() {
         <button
           type="button"
           onClick={signOut}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/20 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
         >
           <LogOut className="size-4" />
           Log out
@@ -119,11 +121,11 @@ export function Layout() {
   );
 
   const brand = (
-    <div className="flex items-center gap-2 px-2">
-      <img src="/logo.png" alt="" className="size-9 rounded-xl" />
+    <div className="flex items-center gap-2.5 px-2">
+      <img src="/logo.png" alt="" className="size-10 rounded-xl ring-2 ring-white/20" />
       <div>
-        <div className="font-display text-base font-bold leading-tight">Gadget Galli</div>
-        <div className="text-xs text-ink-muted">Admin</div>
+        <div className="font-display text-base leading-tight font-bold text-white">Gadget Galli</div>
+        <div className="text-xs font-semibold text-accent">Admin</div>
       </div>
     </div>
   );
@@ -131,7 +133,7 @@ export function Layout() {
   return (
     <div className="flex min-h-full">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-900">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 bg-gradient-to-b from-primary-800 to-primary-950 p-4 lg:flex">
         {brand}
         {nav}
         {footer}
@@ -140,10 +142,10 @@ export function Layout() {
       {/* Mobile drawer */}
       {open ? (
         <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={() => setOpen(false)}>
-          <aside className="flex h-full w-72 flex-col gap-6 bg-white p-4 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+          <aside className="flex h-full w-72 flex-col gap-6 bg-gradient-to-b from-primary-800 to-primary-950 p-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               {brand}
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close menu">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-2 text-white hover:bg-white/10" aria-label="Close menu">
                 <X className="size-5" />
               </button>
             </div>
@@ -154,8 +156,8 @@ export function Layout() {
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
-          <button type="button" onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Open menu">
+        <header className="sticky top-0 z-30 flex items-center gap-3 bg-gradient-to-r from-primary-900 to-primary-700 px-4 py-3 shadow-md lg:hidden">
+          <button type="button" onClick={() => setOpen(true)} className="rounded-lg p-2 text-white hover:bg-white/10" aria-label="Open menu">
             <Menu className="size-5" />
           </button>
           {brand}

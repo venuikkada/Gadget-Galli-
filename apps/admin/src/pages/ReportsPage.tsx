@@ -8,6 +8,7 @@ import { formatDateIST, formatINR, formatINRCompact, timeAgo } from '@gg/shared'
 
 import { Badge, Button, Card, Empty, ErrorBox, Input, PageHeader, ShopStatusBadge, Spinner, Stat, Table, Td, Th, Tr } from '@/components/ui';
 import { errorMessage, rpc } from '@/lib/api';
+import { chartTheme, useIsDark } from '@/lib/chartTheme';
 import type { Reports } from '@/lib/types';
 
 function istDate(offsetDays = 0) {
@@ -45,6 +46,7 @@ const PRESETS = [
 ];
 
 export default function ReportsPage() {
+  const ct = chartTheme(useIsDark());
   const [from, setFrom] = useState(istDate(-29));
   const [to, setTo] = useState(istDate(0));
   const q = useQuery({ queryKey: ['reports', from, to], queryFn: () => rpc<Reports>('admin_reports', { p_from: from, p_to: to }), placeholderData: (prev) => prev });
@@ -92,13 +94,13 @@ export default function ReportsPage() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={daily}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={30} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="orders" name="Orders" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="delivered" name="Delivered" fill="#16A34A" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                    <XAxis dataKey="label" tick={ct.tick} stroke={ct.grid} />
+                    <YAxis allowDecimals={false} tick={ct.tick} stroke={ct.grid} width={30} />
+                    <Tooltip contentStyle={ct.tooltip.contentStyle} labelStyle={ct.tooltip.labelStyle} itemStyle={ct.tooltip.itemStyle} />
+                    <Legend wrapperStyle={ct.legend} />
+                    <Bar dataKey="orders" name="Orders" fill={ct.orders} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="delivered" name="Delivered" fill={ct.paid} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -107,13 +109,13 @@ export default function ReportsPage() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={daily}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tickFormatter={(v: number) => formatINRCompact(v)} tick={{ fontSize: 11 }} width={60} />
-                    <Tooltip formatter={(v) => formatINR(Number(v))} />
-                    <Legend />
-                    <Line type="monotone" dataKey="order_value" name="Requested" stroke="#FF6B35" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="paid_value" name="Paid" stroke="#16A34A" strokeWidth={2} dot={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                    <XAxis dataKey="label" tick={ct.tick} stroke={ct.grid} />
+                    <YAxis tickFormatter={(v: number) => formatINRCompact(v)} tick={ct.tick} stroke={ct.grid} width={60} />
+                    <Tooltip formatter={(v) => formatINR(Number(v))} contentStyle={ct.tooltip.contentStyle} labelStyle={ct.tooltip.labelStyle} itemStyle={ct.tooltip.itemStyle} />
+                    <Legend wrapperStyle={ct.legend} />
+                    <Line type="monotone" dataKey="order_value" name="Requested" stroke={ct.requested} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="paid_value" name="Paid" stroke={ct.paid} strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -220,11 +222,11 @@ export default function ReportsPage() {
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={r.by_area} layout="vertical" margin={{ left: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="area" tick={{ fontSize: 11 }} width={100} />
-                      <Tooltip />
-                      <Bar dataKey="orders" name="Orders" fill="#FF6B35" radius={[0, 4, 4, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                      <XAxis type="number" allowDecimals={false} tick={ct.tick} stroke={ct.grid} />
+                      <YAxis type="category" dataKey="area" tick={ct.tick} stroke={ct.grid} width={100} />
+                      <Tooltip contentStyle={ct.tooltip.contentStyle} labelStyle={ct.tooltip.labelStyle} itemStyle={ct.tooltip.itemStyle} />
+                      <Bar dataKey="orders" name="Orders" fill={ct.orders} radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
