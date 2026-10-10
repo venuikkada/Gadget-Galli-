@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,13 +12,14 @@ import { supabase } from '@/shared/api/supabase';
 import { config } from '@/shared/config';
 import { LANGUAGES, setLanguage, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Chip, Input, Row } from '@/shared/ui';
+import { shadow } from '@/shared/theme/tokens';
+import { AppText, BrandGradient, BrandMark, Button, Chip, Input, Row, TrustStrip } from '@/shared/ui';
 
 const PARTNER = config.app === 'partner';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,25 +43,26 @@ export default function LoginScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <LinearGradient colors={['#4F46E5', '#3730A3']} style={{ paddingBottom: 36 }}>
+      <StatusBar style="light" />
+      <BrandGradient variant={PARTNER ? 'partner' : 'brand'} style={{ paddingBottom: 48 }}>
         <SafeAreaView edges={['top']}>
           <Row justify="flex-end" gap={6} style={{ paddingHorizontal: 16, paddingTop: 8 }}>
             {LANGUAGES.map((l) => (
-              <Chip key={l.code} label={l.native} selected={i18n.language === l.code} onPress={() => setLanguage(l.code)} />
+              <Chip key={l.code} tone="onBrand" label={l.native} selected={i18n.language === l.code} onPress={() => setLanguage(l.code)} />
             ))}
           </Row>
-          <View style={{ paddingHorizontal: 24, paddingTop: 28, gap: 10 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="flash" size={34} color="#FF8A5C" />
+          <View style={{ paddingHorizontal: 24, paddingTop: 24, gap: 10 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' }}>
+              <BrandMark size={58} />
             </View>
-            <AppText variant="display" color="#FFFFFF">{t(PARTNER ? 'auth.partnerWelcome' : 'auth.welcome')}</AppText>
-            <AppText variant="body" color="#E0E7FF">{t(PARTNER ? 'auth.partnerSubtitle' : 'auth.subtitle')}</AppText>
+            <AppText variant="display" color="onBrand">{t(PARTNER ? 'auth.partnerWelcome' : 'auth.welcome')}</AppText>
+            <AppText variant="body" color="onBrandMuted">{t(PARTNER ? 'auth.partnerSubtitle' : 'auth.subtitle')}</AppText>
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </BrandGradient>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, gap: 18, marginTop: -20 }} keyboardShouldPersistTaps="handled">
-          <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, gap: 16 }}>
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 16, marginTop: -28 }} keyboardShouldPersistTaps="handled">
+          <View style={[{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, gap: 16 }, shadow(3, dark)]}>
             <Input
               testID="phone-input"
               label={t('auth.phoneLabel')}
@@ -78,12 +80,14 @@ export default function LoginScreen() {
             <AppText variant="caption" color="textMuted" align="center">{t('auth.terms')}</AppText>
           </View>
           {config.demo ? (
-            <View style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12 }} testID="demo-hint">
-              <AppText variant="caption" color="primary" align="center">
+            <View style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }} testID="demo-hint">
+              <Ionicons name="key-outline" size={15} color={colors.primary} />
+              <AppText variant="caption" color="primary" align="center" style={{ flexShrink: 1 }}>
                 {config.app === 'all' ? t('auth.demoHint') : t('auth.demoLogin', { phone: PARTNER ? '+91 90000 10002' : '+91 90000 00001' })}
               </AppText>
             </View>
           ) : null}
+          {PARTNER ? null : <TrustStrip />}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

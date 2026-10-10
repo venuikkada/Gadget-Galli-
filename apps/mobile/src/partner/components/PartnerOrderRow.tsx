@@ -15,7 +15,7 @@ export function PartnerOrderRow({ o }: { o: OrderCard }) {
   const { colors } = useTheme();
   const isNew = o.status === 'REQUESTED';
   return (
-    <Card onPress={() => router.push(`/partner/order/${o.id}`)} style={isNew ? { borderWidth: 2, borderColor: colors.action } : undefined} testID={`porder-${o.order_no}`}>
+    <Card onPress={() => router.push(`/partner/order/${o.id}`)} style={isNew ? { borderWidth: 2, borderColor: colors.accent, backgroundColor: colors.surface } : undefined} testID={`porder-${o.order_no}`}>
       <Row align="flex-start" gap={12}>
         <ProductImage path={o.first_photo} name={o.first_item ?? ''} size={50} />
         <View style={{ flex: 1, gap: 4 }}>
@@ -37,7 +37,7 @@ export function PartnerOrderRow({ o }: { o: OrderCard }) {
             )}
           </Row>
           <Row justify="space-between">
-            <AppText variant="caption" color={isNew ? 'action' : 'textSubtle'} weight={isNew ? 'semibold' : 'regular'}>
+            <AppText variant="caption" color={isNew ? 'accentInk' : 'textSubtle'} weight={isNew ? 'bold' : 'regular'}>
               {t('p.order.requestedAgo', { time: tAgo(o.requested_at) })}
             </AppText>
             <AppText variant="price" style={{ fontSize: 15 }}>{formatINR(o.grand_total)}</AppText>

@@ -1,13 +1,14 @@
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ShopOrderFilter } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Chip, EmptyState, ErrorState, SkeletonCard } from '@/shared/ui';
+import { AppText, BrandGradient, Chip, EmptyState, ErrorState, SkeletonCard } from '@/shared/ui';
 
 import { useMyShop, useShopOrders } from '../api';
 import { PartnerOrderRow } from '../components/PartnerOrderRow';
@@ -17,17 +18,19 @@ const FILTERS: Exclude<ShopOrderFilter, 'all'>[] = ['active', 'new', 'confirmed'
 export default function PartnerOrdersScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data: shop } = useMyShop();
   const [filter, setFilter] = useState<ShopOrderFilter>('active');
   const q = useShopOrders(shop?.id, filter);
   const counts = q.data?.counts;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-        <AppText variant="h1">{t('p.orders.title')}</AppText>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingVertical: 10 }} style={{ flexGrow: 0 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="light" />
+      <BrandGradient variant="partner" style={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 18, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}>
+        <AppText variant="h1" color="onBrand">{t('p.orders.title')}</AppText>
+      </BrandGradient>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 }} style={{ flexGrow: 0 }}>
         {FILTERS.map((f) => (
           <Chip
             key={f}
@@ -57,6 +60,6 @@ export default function PartnerOrdersScreen() {
           ListEmptyComponent={<EmptyState icon="receipt-outline" title={t('p.orders.empty')} />}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
@@ -50,6 +51,9 @@ export default function OtpScreen() {
   return (
     <Screen header={<Header />}>
       <View style={{ gap: 8 }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+          <Ionicons name="chatbubble-ellipses" size={26} color={colors.primary} />
+        </View>
         <AppText variant="h1">{t('auth.otpTitle')}</AppText>
         <AppText variant="body" color="textMuted">{t('auth.otpSent', { phone: formatPhone(phone) })}</AppText>
       </View>
@@ -63,9 +67,9 @@ export default function OtpScreen() {
                 width: 48,
                 height: 58,
                 borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: error ? colors.error : code.length === i ? colors.primary : colors.border,
-                backgroundColor: colors.surface,
+                borderWidth: code.length === i ? 2 : 1.5,
+                borderColor: error ? colors.error : code.length === i || code[i] ? colors.primary : colors.border,
+                backgroundColor: code[i] ? colors.primarySoft : colors.surface,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}

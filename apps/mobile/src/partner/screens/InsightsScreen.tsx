@@ -44,13 +44,14 @@ function SalesChart({ series }: { series: ShopInsights['series'] }) {
       onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
       contentContainerStyle={{ gap: 10, paddingTop: 18, alignItems: 'flex-end' }}
     >
-      {series.map((s) => {
+      {series.map((s, i) => {
+        const latest = i === series.length - 1;
         const h = s.sales > 0 ? Math.max(6, (s.sales / max) * H) : 3;
         return (
           <View key={s.bucket} style={{ alignItems: 'center', width: 44, gap: 4 }} accessibilityLabel={`${s.label}: ${formatINR(s.sales)}, ${s.orders} ${t('p.ins.orders')}`}>
             <AppText variant="caption" color="textMuted" style={{ fontSize: 10 }}>{s.sales ? formatINRCompact(s.sales).replace('₹', '') : ''}</AppText>
             <View style={{ height: H, justifyContent: 'flex-end' }}>
-              <View style={{ width: 26, height: h, borderRadius: 7, backgroundColor: s.sales ? colors.primary : colors.border }} />
+              <View style={{ width: 26, height: h, borderRadius: 7, backgroundColor: !s.sales ? colors.border : latest ? colors.accent : colors.primary }} />
             </View>
             <AppText variant="caption" color="textSubtle" style={{ fontSize: 10 }} numberOfLines={1}>{s.label.replace('Wk ', '')}</AppText>
             <AppText variant="caption" color="action" weight="semibold" style={{ fontSize: 10 }}>{s.orders || ''}</AppText>
@@ -72,7 +73,7 @@ export default function InsightsScreen() {
   const conversion = d && d.totals.orders ? Math.round((d.totals.confirmed / d.totals.orders) * 100) : null;
 
   return (
-    <Screen header={<Header title={t('p.ins.title')} back={false} />} refreshing={q.isRefetching} onRefresh={() => { q.refetch(); demand.refetch(); }}>
+    <Screen brand header={<Header variant="partner" title={t('p.ins.title')} back={false} />} refreshing={q.isRefetching} onRefresh={() => { q.refetch(); demand.refetch(); }}>
       <Segmented value={period} onChange={setPeriod} options={[{ value: 'day', label: t('p.ins.day') }, { value: 'week', label: t('p.ins.week') }, { value: 'month', label: t('p.ins.month') }]} />
       {q.isError ? <ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} /> : null}
 
@@ -126,9 +127,9 @@ export default function InsightsScreen() {
       )}
 
       {/* Demand near you: what nearby customers searched for that this shop does not list */}
-      <Card style={{ gap: 10, borderWidth: 1.5, borderColor: colors.action }} testID="demand-card">
+      <Card style={{ gap: 10, borderWidth: 1.5, borderColor: colors.accent }} testID="demand-card">
         <Row gap={8}>
-          <Ionicons name="flame" size={20} color={colors.action} />
+          <Ionicons name="flame" size={20} color={colors.warning} />
           <AppText variant="h3">{t('p.ins.demand')}</AppText>
         </Row>
         <AppText variant="caption" color="textMuted">{t('p.ins.demandBody')}</AppText>

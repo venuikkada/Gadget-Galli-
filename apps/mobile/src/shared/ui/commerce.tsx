@@ -234,13 +234,15 @@ export function StatusChip({ status, label, onBrand }: { status: OrderStatus; la
   );
 }
 
-export function VerifiedBadge({ small }: { small?: boolean }) {
+/** Teal tick (and "Verified" unless small); `onBrand` makes it white for the brand gradients. */
+export function VerifiedBadge({ small, onBrand }: { small?: boolean; onBrand?: boolean }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const color = onBrand ? colors.onBrand : colors.primary;
   return (
     <Row gap={3}>
-      <Ionicons name="checkmark-circle" size={small ? 14 : 16} color={colors.primary} />
-      {!small ? <AppText variant="caption" color="primary" weight="semibold">{t('common.verified')}</AppText> : null}
+      <Ionicons name="checkmark-circle" size={small ? 14 : 16} color={color} />
+      {!small ? <AppText variant="caption" color={color} weight="semibold">{t('common.verified')}</AppText> : null}
     </Row>
   );
 }

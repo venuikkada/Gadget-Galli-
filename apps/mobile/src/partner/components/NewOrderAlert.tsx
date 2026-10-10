@@ -156,11 +156,13 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
 
   return (
     <Modal visible={!!current} transparent animationType="fade" onRequestClose={() => dismiss(false)}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.75)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <View style={{ width: '100%', maxWidth: 420, backgroundColor: colors.surface, borderRadius: 24, padding: 24, alignItems: 'center', gap: 14 }}>
-          <Animated.View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pulse }] }}>
-            <Ionicons name="notifications" size={48} color="#fff" />
-          </Animated.View>
+          <View style={{ width: 128, height: 128, borderRadius: 64, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pulse }] }}>
+              <Ionicons name="notifications" size={48} color={colors.onAccent} />
+            </Animated.View>
+          </View>
           <AppText variant="display" align="center">{t('p.alert.title')}</AppText>
           <AppText variant="h3" align="center">{current?.order_no}</AppText>
           {current?.grand_total ? (
@@ -168,7 +170,7 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
               {[current.customer_name, formatINR(current.grand_total)].filter(Boolean).join(' · ')}
             </AppText>
           ) : null}
-          {queue.length > 1 ? <AppText variant="caption" color="action">+{queue.length - 1}</AppText> : null}
+          {queue.length > 1 ? <AppText variant="label" color="accentInk">+{queue.length - 1}</AppText> : null}
           <Row gap={10}>
             <Button title={t('p.alert.later')} variant="outline" size="lg" onPress={() => dismiss(false)} />
             <Button testID="alert-view-order" title={t('p.alert.view')} variant="action" size="lg" icon="eye" onPress={() => dismiss(true)} />

@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { formatPhone } from '@gg/shared';
 
@@ -34,23 +35,31 @@ export default function MoreScreen() {
   };
 
   return (
-    <Screen header={<Header title={t('p.more.title')} back={false} />}>
-      {shop ? (
-        <Card onPress={() => router.push({ pathname: '/partner/register', params: { edit: '1' } })}>
-          <Row gap={12}>
-            <ShopAvatar name={shop.name ?? 'Shop'} path={shop.logo_path} size={52} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <Row gap={6}>
-                <AppText variant="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{shop.name}</AppText>
-                {shop.verified ? <VerifiedBadge /> : null}
+    <Screen
+      brand
+      header={
+        <Header variant="partner" title={t('p.more.title')} back={false}>
+          {shop ? (
+            <Pressable onPress={() => router.push({ pathname: '/partner/register', params: { edit: '1' } })}>
+              <Row gap={12}>
+                <View style={{ borderRadius: 18, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' }}>
+                  <ShopAvatar name={shop.name ?? 'Shop'} path={shop.logo_path} size={54} />
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Row gap={6}>
+                    <AppText variant="h3" color="onBrand" numberOfLines={1} style={{ flexShrink: 1 }}>{shop.name}</AppText>
+                    {shop.verified ? <VerifiedBadge onBrand /> : null}
+                  </Row>
+                  <AppText variant="caption" color="onBrandMuted">{[profile?.user.name, formatPhone(profile?.user.phone)].filter(Boolean).join(' · ')}</AppText>
+                  <Tag label={t(`p.status.${shop.status}`)} tone={STATUS_TONE[shop.status] ?? 'neutral'} />
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.onBrand} />
               </Row>
-              <AppText variant="caption" color="textMuted">{[profile?.user.name, formatPhone(profile?.user.phone)].filter(Boolean).join(' · ')}</AppText>
-              <Tag label={t(`p.status.${shop.status}`)} tone={STATUS_TONE[shop.status] ?? 'neutral'} />
-            </View>
-          </Row>
-        </Card>
-      ) : null}
-
+            </Pressable>
+          ) : null}
+        </Header>
+      }
+    >
       <Card padded={false} style={{ paddingHorizontal: 10 }}>
         <ListItem icon="storefront-outline" title={t('p.more.shopProfile')} onPress={() => router.push({ pathname: '/partner/register', params: { edit: '1' } })} testID="more-shop" />
         <Divider />

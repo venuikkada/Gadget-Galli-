@@ -1,38 +1,42 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, Switch, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatINR, formatINRCompact } from '@gg/shared';
+import { chartColors, formatINR, formatINRCompact } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, ErrorState, IconButton, InfoBanner, Rating, Row, Screen, ShopAvatar, Skeleton, toast } from '@/shared/ui';
+import { shadow } from '@/shared/theme/tokens';
+import { AppText, BrandGradient, Button, Card, ErrorState, IconButton, InfoBanner, Row, Screen, ShopAvatar, Skeleton, toast } from '@/shared/ui';
 
 import { setShopOpen, useDashboard, useMyShop } from '../api';
 import { PartnerOrderRow } from '../components/PartnerOrderRow';
 
-function Stat({ label, value, icon, tone }: { label: string; value: string | number; icon: React.ComponentProps<typeof Ionicons>['name']; tone: string }) {
+function Stat({ label, value, icon, tone, highlight }: { label: string; value: string | number; icon: React.ComponentProps<typeof Ionicons>['name']; tone: string; highlight?: boolean }) {
   const { colors } = useTheme();
   return (
-    <Card style={{ width: '48%', gap: 6 }} padded>
+    <Card style={[{ width: '48%', gap: 8 }, highlight ? { backgroundColor: colors.accentSoft, borderWidth: 1.5, borderColor: colors.accent } : null]} padded>
       <Row gap={8}>
-        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${tone}1F`, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={icon} size={17} color={tone} />
+        <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: highlight ? colors.accent : `${tone}1F`, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={icon} size={18} color={highlight ? colors.onAccent : tone} />
         </View>
         <AppText variant="caption" color="textMuted" style={{ flex: 1 }} numberOfLines={2}>{label}</AppText>
       </Row>
-      <AppText variant="h2" style={{ color: colors.text }}>{value}</AppText>
+      <AppText variant="h1">{value}</AppText>
     </Card>
   );
 }
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, dark, gradients } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
   const { data: shop } = useMyShop();
   const dash = useDashboard(shop?.id);
@@ -63,17 +67,24 @@ export default function DashboardScreen() {
     <Screen
       refreshing={dash.isRefetching}
       onRefresh={() => dash.refetch()}
+      brand
       header={
-        <Row style={{ paddingHorizontal: 16, paddingTop: 8 }} justify="space-between">
-          <Row gap={10} style={{ flex: 1 }}>
-            {shop ? <ShopAvatar name={shop.name ?? 'Shop'} path={shop.logo_path} size={42} /> : null}
-            <View style={{ flex: 1 }}>
-              <AppText variant="caption" color="textMuted">{t('p.dash.hello', { name: profile?.user.name?.split(' ')[0] ?? '' })}</AppText>
-              <AppText variant="h3" numberOfLines={1}>{shop?.name}</AppText>
-            </View>
+        <BrandGradient variant="partner" style={{ paddingTop: insets.top + 10, paddingHorizontal: 16, paddingBottom: 18, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}>
+          <Row justify="space-between">
+            <Row gap={12} style={{ flex: 1 }}>
+              {shop ? (
+                <View style={{ borderRadius: 17, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' }}>
+                  <ShopAvatar name={shop.name ?? 'Shop'} path={shop.logo_path} size={46} />
+                </View>
+              ) : null}
+              <View style={{ flex: 1 }}>
+                <AppText variant="bodySmall" color="onBrandMuted">{t('p.dash.hello', { name: profile?.user.name?.split(' ')[0] ?? '' })}</AppText>
+                <AppText variant="h2" color="onBrand" numberOfLines={1}>{shop?.name}</AppText>
+              </View>
+            </Row>
+            <IconButton icon="notifications-outline" tone="onBrand" badge={profile?.unread} label={t('notifications.title')} onPress={() => router.push({ pathname: '/notifications', params: { app: 'partner' } })} />
           </Row>
-          <IconButton icon="notifications-outline" badge={profile?.unread} onPress={() => router.push({ pathname: '/notifications', params: { app: 'partner' } })} />
-        </Row>
+        </BrandGradient>
       }
     >
       {dash.isError ? <ErrorState message={errorText(dash.error, t)} onRetry={() => dash.refetch()} /> : null}
@@ -96,23 +107,37 @@ export default function DashboardScreen() {
         </Card>
       ) : null}
 
-      {/* Open / Closed switch */}
-      <Card style={{ backgroundColor: d?.shop.is_open ? colors.success : colors.error, gap: 4 }} testID="open-switch-card">
-        <Row justify="space-between">
-          <View style={{ flex: 1 }}>
-            <AppText variant="h2" color="#FFFFFF">{d?.shop.is_open ? t('p.dash.open') : t('p.dash.closed')}</AppText>
-            <AppText variant="bodySmall" color="#FFFFFFDD">{d?.shop.is_open ? t('p.dash.openHint') : t('p.dash.closedHint')}</AppText>
-          </View>
-          <Switch testID="open-switch" value={!!d?.shop.is_open} onValueChange={toggleOpen} trackColor={{ true: '#86EFAC', false: '#FCA5A5' }} thumbColor="#fff" style={{ transform: [{ scale: 1.25 }] }} />
-        </Row>
-        {d ? (
-          <Row gap={10} style={{ marginTop: 6 }}>
-            <Rating value={d.shop.rating_avg} />
-            {d.shop.rating_count ? <AppText variant="caption" color="#FFFFFFDD">({d.shop.rating_count})</AppText> : null}
-            <AppText variant="caption" color="#FFFFFFDD">{d.shop.orders_delivered} {t('p.dash.delivered').toLowerCase()}</AppText>
+      {/* Open / Closed switch: green when taking orders, red when closed (white text only on both) */}
+      <View testID="open-switch-card" style={[{ borderRadius: 22, overflow: 'hidden' }, shadow(2, dark)]}>
+        <LinearGradient colors={d?.shop.is_open ? gradients.open : gradients.closed} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 8 }}>
+          <View pointerEvents="none" style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, right: -70, top: -100, backgroundColor: '#FFFFFF', opacity: 0.1 }} />
+          <Row justify="space-between" gap={12}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={d?.shop.is_open ? 'storefront' : 'moon'} size={24} color={colors.onBrand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="h2" color="onBrand">{d?.shop.is_open ? t('p.dash.open') : t('p.dash.closed')}</AppText>
+              <AppText variant="bodySmall" color="onBrand">{d?.shop.is_open ? t('p.dash.openHint') : t('p.dash.closedHint')}</AppText>
+            </View>
+            <Switch
+              testID="open-switch"
+              value={!!d?.shop.is_open}
+              onValueChange={toggleOpen}
+              trackColor={{ true: 'rgba(255,255,255,0.45)', false: 'rgba(0,0,0,0.28)' }}
+              thumbColor="#FFFFFF"
+              style={{ transform: [{ scale: 1.3 }] }}
+            />
           </Row>
-        ) : null}
-      </Card>
+          {d ? (
+            <Row gap={6} style={{ marginTop: 2 }}>
+              <Ionicons name="star" size={14} color={colors.star} />
+              <AppText variant="label" color="onBrand">
+                {[d.shop.rating_avg ? Number(d.shop.rating_avg).toFixed(1) : null, d.shop.rating_count ? `(${d.shop.rating_count})` : null, `${d.shop.orders_delivered} ${t('p.dash.delivered').toLowerCase()}`].filter(Boolean).join(' · ')}
+              </AppText>
+            </Row>
+          ) : null}
+        </LinearGradient>
+      </View>
 
       {/* Today */}
       <AppText variant="h3">{t('p.dash.today')}</AppText>
@@ -124,11 +149,11 @@ export default function DashboardScreen() {
         </Row>
       ) : (
         <Row wrap gap={10} justify="space-between">
-          <Stat label={t('p.dash.newRequests')} value={d.today.new_requests} icon="notifications" tone={colors.action} />
+          <Stat label={t('p.dash.newRequests')} value={d.today.new_requests} icon="notifications" tone={colors.warning} highlight={d.today.new_requests > 0} />
           <Stat label={t('p.dash.active')} value={d.today.active_orders} icon="time" tone={colors.primary} />
           <Stat label={t('p.dash.delivered')} value={d.today.delivered} icon="checkmark-done" tone={colors.success} />
-          <Stat label={t('p.dash.sales')} value={formatINRCompact(d.today.sales)} icon="wallet" tone="#0891B2" />
-          <Stat label={t('p.dash.views')} value={d.today.views} icon="eye" tone="#7C3AED" />
+          <Stat label={t('p.dash.sales')} value={formatINRCompact(d.today.sales)} icon="wallet" tone={chartColors[2]} />
+          <Stat label={t('p.dash.views')} value={d.today.views} icon="eye" tone={chartColors[4]} />
           <Stat label={`${t('p.dash.calls')} / ${t('p.dash.whatsapp')}`} value={`${d.today.call_taps} / ${d.today.whatsapp_taps}`} icon="call" tone={colors.whatsapp} />
         </Row>
       )}

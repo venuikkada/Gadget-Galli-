@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Switch, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatINR, type Listing } from '@gg/shared';
 
@@ -10,8 +11,8 @@ import { errorText } from '@/shared/api/rpc';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { fonts, webNoOutline } from '@/shared/theme/tokens';
-import { AppText, Button, Card, Chip, confirmDialog, EmptyState, IconButton, Input, Loading, ProductImage, QtyStepper, Row, Tag, toast } from '@/shared/ui';
+import { fonts, shadow, webNoOutline } from '@/shared/theme/tokens';
+import { AppText, BrandGradient, Button, Card, Chip, confirmDialog, EmptyState, IconButton, Input, Loading, ProductImage, QtyStepper, Row, Tag, toast } from '@/shared/ui';
 
 import { productActions, useMyListings, useMyShop } from '../api';
 
@@ -102,7 +103,8 @@ function QuickRow({ l }: { l: Listing }) {
 
 export default function ProductsScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data: shop } = useMyShop();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -121,16 +123,19 @@ export default function ProductsScreen() {
   const total = q.data?.pages[0]?.total ?? 0;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="light" />
+      <BrandGradient variant="partner" style={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 16, gap: 12, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}>
         <Row justify="space-between">
           <View>
-            <AppText variant="h1">{t('p.products.title')}</AppText>
-            <AppText variant="caption" color="textMuted">{t('p.products.count', { count: total })}</AppText>
+            <AppText variant="h1" color="onBrand">{t('p.products.title')}</AppText>
+            <AppText variant="caption" color="onBrandMuted">{t('p.products.count', { count: total })}</AppText>
           </View>
-          <Button title={t('p.products.bulk')} icon="cloud-upload-outline" variant="outline" size="sm" onPress={() => router.push('/partner/product/bulk')} />
+          <Button title={t('p.products.bulk')} icon="cloud-upload-outline" variant="onBrand" size="sm" onPress={() => router.push('/partner/product/bulk')} />
         </Row>
         <Input icon="search" placeholder={t('p.products.search')} value={query} onChangeText={setQuery} />
+      </BrandGradient>
+      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
         <Row gap={8}>
           <Chip label={t('p.products.all')} selected={filter === 'all'} onPress={() => setFilter('all')} />
           <Chip label={t('p.products.inStock')} selected={filter === 'in'} onPress={() => setFilter('in')} />
@@ -152,9 +157,9 @@ export default function ProductsScreen() {
           ListFooterComponent={q.isFetchingNextPage ? <Loading /> : null}
         />
       )}
-      <View style={{ position: 'absolute', right: 16, bottom: 20 }}>
-        <Button testID="add-product" title={t('p.products.add')} icon="add" variant="action" size="lg" onPress={() => router.push('/partner/product/add')} />
+      <View style={[{ position: 'absolute', right: 16, bottom: 20, borderRadius: 999 }, shadow(3, dark)]}>
+        <Button testID="add-product" title={t('p.products.add')} icon="add-circle" variant="action" size="lg" style={{ borderRadius: 999, paddingHorizontal: 22 }} onPress={() => router.push('/partner/product/add')} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

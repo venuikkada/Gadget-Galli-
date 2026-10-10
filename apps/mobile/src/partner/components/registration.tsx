@@ -23,7 +23,7 @@ export function WizardProgress({ step, total, title }: { step: number; total: nu
       </Row>
       <Row gap={4}>
         {Array.from({ length: total }).map((_, i) => (
-          <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < step ? colors.primary : colors.border }} />
+          <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < step - 1 ? colors.primary : i === step - 1 ? colors.accent : colors.border }} />
         ))}
       </Row>
     </View>
