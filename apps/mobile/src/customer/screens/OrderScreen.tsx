@@ -6,14 +6,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, upiPaymentUrl, variantText } from '@gg/shared';
+import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, upiPaymentUrl, variantText } from '@gg/shared';
+import { directionsUrl } from '@gg/shared/map';
 
 import { errorText } from '@/shared/api/rpc';
 import { publicUrl, signedUrl } from '@/shared/api/storage';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
 import { tDateTime } from '@/shared/i18n/format';
-import { callPhone, copyText, openInBrowser, openMaps, openUpi, openWhatsApp } from '@/shared/lib/linking';
+import { callPhone, copyText, openInBrowser, openMaps, openUpi, openUrl, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AppText,
@@ -40,6 +41,7 @@ import {
 
 import { useOrder, useOrderActions } from '../api';
 import { OrderTimeline } from '@/shared/components/OrderTimeline';
+import { RouteFacts, RouteMap } from '@/shared/components/RouteMap';
 
 export default function OrderScreen() {
   const { t } = useTranslation();
@@ -105,6 +107,15 @@ export default function OrderScreen() {
                 : status === 'PACKED'
                   ? [t('order.packedWaiting'), null]
                   : [null, null];
+  // After dispatch: the shop's ETA if it gave one, otherwise the dispatch time plus the ride and a few minutes' handover.
+  const arrival =
+    status === 'DISPATCHED' && o.fulfilment === 'delivery'
+      ? o.dispatch?.eta
+        ? t('order.eta', { time: formatTimeIST(o.dispatch.eta) })
+        : o.dispatched_at && o.distance_km != null
+          ? t('map.arrivingBy', { time: formatTimeIST(new Date(new Date(o.dispatched_at).getTime() + (rideMins(o.distance_km) + 5) * 60_000)) })
+          : null
+      : null;
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
@@ -152,10 +163,10 @@ export default function OrderScreen() {
             </View>
           ) : null}
           {showProgress ? <OrderProgress status={status} onBrand /> : null}
-          {o.dispatch?.eta && status === 'DISPATCHED' ? (
+          {arrival ? (
             <Row gap={6}>
               <Ionicons name="time-outline" size={16} color={colors.onBrand} />
-              <AppText variant="label" color="onBrand">{t('order.eta', { time: formatTimeIST(o.dispatch.eta) })}</AppText>
+              <AppText variant="label" color="onBrand" testID="arrival">{arrival}</AppText>
             </Row>
           ) : null}
           {['REJECTED', 'EXPIRED', 'CANCELLED'].includes(o.status) && o.items[0]?.catalog_product_id ? (
@@ -206,6 +217,17 @@ export default function OrderScreen() {
                 </View>
               )}
             </View>
+          </Card>
+        ) : null}
+
+        {/* Where the shop and the delivery address are, how far and how long the ride is */}
+        {!ended ? (
+          <Card style={{ gap: 10 }} level={2}>
+            <RouteMap shop={shop} home={o.fulfilment === 'delivery' ? o.address : null} testID="order-map" />
+            {o.fulfilment === 'delivery' ? <RouteFacts km={o.distance_km} /> : null}
+            {o.fulfilment === 'pickup' && shop.lat != null && shop.lng != null ? (
+              <Button title={t('map.directions')} icon="navigate" variant="secondary" size="sm" onPress={() => openUrl(directionsUrl(shop.lat!, shop.lng!))} style={{ alignSelf: 'flex-start' }} />
+            ) : null}
           </Card>
         ) : null}
 

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLocation from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -8,10 +9,13 @@ import type { Address, Area } from '@gg/shared';
 import { errorText } from '@/shared/api/rpc';
 import { AreaList } from '@/shared/components/AreaList';
 import { MapPicker } from '@/shared/components/MapPicker';
+import { PlaceResults } from '@/shared/components/PlaceResults';
 import { useLocationStore } from '@/shared/hooks/location';
+import { usePlaceSearch } from '@/shared/hooks/places';
 import { useProfile } from '@/shared/hooks/profile';
 import { useAreas } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
+import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Chip, Header, Input, Row, Screen, Tag, toast } from '@/shared/ui';
 
 import { cartUpdate, resolveLocation, saveAddress } from '../api';
@@ -19,6 +23,7 @@ import { cartUpdate, resolveLocation, saveAddress } from '../api';
 /** Add or edit a saved address: house/flat, building, street, landmark, area, pincode and map pin. */
 export default function AddressScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const { id, forCart } = useLocalSearchParams<{ id?: string; forCart?: string }>();
   const { data: profile } = useProfile();
   const { data: areas = [] } = useAreas();
@@ -37,6 +42,11 @@ export default function AddressScreen() {
   const [pincode, setPincode] = useState('');
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
+  // The pin counts as placed once the person drags the map, uses GPS or picks a search result (or the address had one).
+  const [pinSet, setPinSet] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [placeQuery, setPlaceQuery] = useState('');
+  const places = usePlaceSearch();
   const [isDefault, setIsDefault] = useState(false);
   const [areaPicker, setAreaPicker] = useState(false);
   const [areaQuery, setAreaQuery] = useState('');
@@ -55,6 +65,7 @@ export default function AddressScreen() {
       setPincode(existing.pincode ?? '');
       setLat(existing.lat);
       setLng(existing.lng);
+      setPinSet(existing.lat != null && existing.lng != null);
       setIsDefault(existing.is_default);
     } else {
       setContactName(profile?.user.name ?? '');
@@ -74,9 +85,13 @@ export default function AddressScreen() {
     }
   }, [areas, existing, location, area, pincode]);
 
-  const onPin = async (la: number, ln: number) => {
+  const onPin = async (la: number, ln: number, byUser = false) => {
     setLat(la);
     setLng(ln);
+    if (byUser) {
+      setPinSet(true);
+      setErrors((e) => ({ ...e, pin: '' }));
+    }
     try {
       const r = await resolveLocation(la, ln);
       if (r.in_service && r.area_id) {
@@ -92,18 +107,26 @@ export default function AddressScreen() {
   };
 
   const useGps = async () => {
-    const perm = await ExpoLocation.requestForegroundPermissionsAsync();
-    if (!perm.granted) return toast(t('location.permissionDenied'), 'error');
-    const pos = await ExpoLocation.getCurrentPositionAsync({});
-    onPin(pos.coords.latitude, pos.coords.longitude);
+    setLocating(true);
+    try {
+      const perm = await ExpoLocation.requestForegroundPermissionsAsync();
+      if (!perm.granted) return toast(t('location.permissionDenied'), 'error');
+      const pos = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.High });
+      await onPin(pos.coords.latitude, pos.coords.longitude, true);
+    } catch {
+      toast(t('location.permissionDenied'), 'error');
+    } finally {
+      setLocating(false);
+    }
   };
 
   const save = async () => {
     const errs: Record<string, string> = {};
     if (!house.trim()) errs.house = t('address.houseRequired');
     if (!area) errs.area = t('address.areaRequired');
+    if (!pinSet || lat == null || lng == null) errs.pin = t('map.pinRequired');
     setErrors(errs);
-    if (Object.keys(errs).length || !area) return;
+    if (Object.keys(errs).some((k) => errs[k]) || !area || lat == null || lng == null) return;
     setSaving(true);
     try {
       const saved = await saveAddress({
@@ -118,16 +141,16 @@ export default function AddressScreen() {
         area_id: area.id,
         area_name: area.name,
         pincode: pincode || area.pincode,
-        lat: lat ?? area.lat,
-        lng: lng ?? area.lng,
+        lat,
+        lng,
         is_default: isDefault,
       });
       setLocation({
         areaId: area.id,
         areaName: area.name,
         pincode: pincode || area.pincode,
-        lat: lat ?? area.lat,
-        lng: lng ?? area.lng,
+        lat,
+        lng,
         addressId: saved.id,
         label: label === 'other' ? labelCustom || null : t(`address.${label}`),
       });
@@ -146,12 +169,35 @@ export default function AddressScreen() {
       header={<Header title={existing ? t('address.title') : t('address.addNew')} />}
       footer={<Button testID="save-address" title={t('address.saveAddress')} variant="action" size="lg" full loading={saving} onPress={save} />}
     >
-      <View style={{ gap: 8 }}>
-        <MapPicker lat={lat} lng={lng} height={220} onChange={onPin} />
-        <Row justify="space-between">
-          <AppText variant="caption" color="textMuted">{t('location.moveMap')}</AppText>
-          <AppText variant="label" color="primary" onPress={useGps}>{t('location.useCurrent')}</AppText>
+      <View style={{ gap: 10 }}>
+        <MapPicker lat={lat} lng={lng} height={260} onChange={onPin} />
+        <Row gap={6} align="flex-start">
+          <Ionicons name={pinSet ? 'checkmark-circle' : 'hand-left-outline'} size={16} color={pinSet ? colors.success : errors.pin ? colors.error : colors.textMuted} style={{ marginTop: 1 }} />
+          <AppText variant="caption" color={pinSet ? 'success' : errors.pin ? 'error' : 'textMuted'} weight={pinSet || errors.pin ? 'semibold' : undefined} style={{ flex: 1 }} testID="pin-status">
+            {pinSet ? t('map.pinSet') : errors.pin || t('location.moveMap')}
+          </AppText>
         </Row>
+        <Button testID="addr-gps" title={locating ? t('location.detecting') : t('location.useCurrent')} icon="navigate" variant="secondary" loading={locating} onPress={useGps} full />
+        <Input
+          icon="search"
+          placeholder={t('location.searchPlaces')}
+          value={placeQuery}
+          onChangeText={(v) => {
+            setPlaceQuery(v);
+            places.clear();
+          }}
+          onSubmitEditing={() => places.run(placeQuery)}
+          returnKeyType="search"
+        />
+        <PlaceResults
+          query={placeQuery}
+          search={places}
+          onPick={(p) => {
+            places.clear();
+            setPlaceQuery('');
+            onPin(p.lat, p.lng, true);
+          }}
+        />
       </View>
       <View style={{ gap: 8 }}>
         <AppText variant="label" color="textMuted">{t('address.label')}</AppText>

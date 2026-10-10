@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, View, type DimensionValue } from 'react-native';
 
-import { ACTIVE_STATUSES, formatDateIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
+import { ACTIVE_STATUSES, deliveryEtaMins, formatDateIST, formatDistance, formatINR, variantText, type Offer, type OrderCard, type ProductCard as ProductCardT, type Review, type ShopCard as ShopCardT } from '@gg/shared';
 
 import { thumbUrl } from '@/shared/api/storage';
 import { useTranslation } from '@/shared/i18n';
@@ -117,7 +117,7 @@ export function ShopTile({ s, width = 248, coverHeight = 118, fastest }: { s: Sh
         </View>
         <Row gap={3} style={{ position: 'absolute', right: 10, bottom: 8 }}>
           <Ionicons name="flash" size={12} color={colors.accent} />
-          <AppText variant="caption" color="onBrand" weight="bold">{tDuration(s.delivery_mins)}</AppText>
+          <AppText variant="caption" color="onBrand" weight="bold">{tDuration(deliveryEtaMins(s.delivery_mins, s.distance_km))}</AppText>
         </Row>
       </ShopCover>
       <View style={{ position: 'absolute', top: coverHeight - 26, left: 12, borderRadius: 16, borderWidth: 3, borderColor: colors.surface }}>
@@ -177,7 +177,7 @@ export function OfferRow({ o, qty, onAdd, onQty, productId, badge }: { o: Offer;
           </Row>
           {o.delivers ? (
             <AppText variant="caption" color="textMuted">
-              {tDeliversIn(o.delivery_mins)} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
+              {tDeliversIn(deliveryEtaMins(o.delivery_mins, o.distance_km))} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
             </AppText>
           ) : (
             <Row gap={4}>

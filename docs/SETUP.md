@@ -11,7 +11,7 @@ This takes Gadget Galli from the repo to a real Supabase project, real phones an
 | [Expo / EAS](https://expo.dev) | Building the Android/iOS apps and sending push notifications | Free tier is enough to start |
 | Google Play Console | Publishing on Android | US$25 one time |
 | Apple Developer Program | Publishing on iPhone (optional at first; most Hyderabad customers use Android) | US$99/year |
-| Google Cloud (Maps SDK + Places API) | Map pin and address search (optional: the app falls back to the area list) | Free monthly credit covers early usage |
+| Maps | OpenStreetMap: map pin, place search and shop/customer maps, no account or key | Free (move to a tile provider's free tier as traffic grows, see DECISIONS #12) |
 | A domain such as `gadgetgalli.in` + static hosting (Vercel / Netlify / Cloudflare Pages) | Admin panel and share links | Domain ₹700–1,000/year; hosting free |
 
 **Start these on day one, because they take days or weeks:**
@@ -90,10 +90,7 @@ Every new row in `notifications` (order updates, the new-order alert for shops, 
    - `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`: from step 1.
    - `EXPO_PUBLIC_SHARE_BASE_URL`: where the admin panel is hosted, e.g. `https://gadgetgalli.in`. Shared links look like `https://gadgetgalli.in/s/product/<id>`.
    - `EXPO_PUBLIC_SUPPORT_PHONE`, `EXPO_PUBLIC_SUPPORT_WHATSAPP`: your support line, shown in Help.
-   - Optional maps (Google Cloud Console → enable *Maps SDK for Android*, *Maps SDK for iOS*, *Places API (New)*; restrict each key to your app):
-     - `GOOGLE_MAPS_ANDROID_API_KEY`
-     - `GOOGLE_MAPS_IOS_API_KEY`
-     - `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`: used for Places address search.
+   - Maps need no key: they use OpenStreetMap. When traffic grows, set `EXPO_PUBLIC_MAP_TILE_URL` and `EXPO_PUBLIC_MAP_ATTRIBUTION` to a tile provider's free tier (for example MapTiler).
 2. Link the app to EAS:
    ```bash
    cd apps/mobile

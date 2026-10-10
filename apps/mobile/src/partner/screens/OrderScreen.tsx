@@ -4,16 +4,18 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { formatDistance, formatINR, formatPhone, nextShopStep, variantText } from '@gg/shared';
+import { formatINR, formatPhone, mapsUrl, nextShopStep, variantText } from '@gg/shared';
+import { directionsUrl } from '@gg/shared/map';
 
 import { OrderTimeline } from '@/shared/components/OrderTimeline';
+import { RouteFacts, RouteMap } from '@/shared/components/RouteMap';
 import { errorText } from '@/shared/api/rpc';
 import { signedUrl } from '@/shared/api/storage';
 import { useOrder } from '@/shared/hooks/order';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
 import { tAgo } from '@/shared/i18n/format';
-import { callPhone, openMaps, openWhatsApp } from '@/shared/lib/linking';
+import { callPhone, openMaps, openUrl, openWhatsApp, shareOnWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, ErrorState, Header, InfoBanner, Loading, ProductImage, Row, Screen, StatusChip, Tag } from '@/shared/ui';
 
@@ -48,6 +50,18 @@ export default function PartnerOrderScreen() {
   const status = o.status === 'ISSUE_REPORTED' && o.status_before_issue ? o.status_before_issue : o.status;
   const step = nextShopStep(status);
   const issue = o.issues.find((i) => i.status !== 'resolved');
+  const addressText = [o.address?.house, o.address?.building, o.address?.street, o.address?.area, o.address?.pincode].filter(Boolean).join(', ');
+  // Everything a rider needs in one WhatsApp message, with a map link to the customer's exact pin.
+  const sendToRider = () =>
+    shareOnWhatsApp(
+      t('map.riderMessage', {
+        order: o.order_no,
+        name: o.customer_name ?? '',
+        phone: o.customer_phone ? formatPhone(o.customer_phone) : '',
+        address: [addressText, o.address?.landmark].filter(Boolean).join(', '),
+        link: mapsUrl(o.address?.lat, o.address?.lng),
+      }),
+    );
 
   return (
     <Screen
@@ -98,15 +112,26 @@ export default function PartnerOrderScreen() {
         {o.fulfilment === 'pickup' ? (
           <Tag label={t('p.order.pickupOrder')} tone="primary" icon="storefront-outline" />
         ) : (
-          <Row align="flex-start" gap={10}>
-            <Ionicons name="location" size={18} color={colors.action} />
-            <View style={{ flex: 1 }}>
-              <AppText variant="bodySmall">{[o.address?.house, o.address?.building, o.address?.street, o.address?.area, o.address?.pincode].filter(Boolean).join(', ')}</AppText>
-              {o.address?.landmark ? <AppText variant="caption" color="textMuted">{o.address.landmark}</AppText> : null}
-              {o.distance_km != null ? <AppText variant="caption" color="textMuted">{t('common.km', { km: formatDistance(o.distance_km) })}</AppText> : null}
-            </View>
-            <Button title={t('p.order.openMap')} icon="map" variant="ghost" size="sm" onPress={() => openMaps(o.address?.lat, o.address?.lng, o.address?.area ?? undefined)} />
-          </Row>
+          <View style={{ gap: 10 }}>
+            <Row align="flex-start" gap={10}>
+              <Ionicons name="location" size={18} color={colors.action} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="bodySmall">{addressText}</AppText>
+                {o.address?.landmark ? <AppText variant="caption" color="textMuted">{o.address.landmark}</AppText> : null}
+              </View>
+            </Row>
+            {/* The customer's exact pin from their saved address, with the distance and ride time from the shop */}
+            <RouteMap shop={o.shop} home={o.address} homeLabel="customer" testID="customer-map" />
+            <RouteFacts km={o.distance_km} />
+            {o.address?.lat != null && o.address?.lng != null ? (
+              <View style={{ gap: 8 }}>
+                <Button testID="navigate-customer" title={t('map.directions')} icon="navigate" variant="secondary" size="sm" full onPress={() => openUrl(directionsUrl(o.address!.lat!, o.address!.lng!))} />
+                <Button testID="send-to-rider" title={t('map.sendToRider')} icon="logo-whatsapp" variant="whatsapp" size="sm" full onPress={sendToRider} />
+              </View>
+            ) : (
+              <Button title={t('p.order.openMap')} icon="map" variant="ghost" size="sm" onPress={() => openMaps(o.address?.lat, o.address?.lng, o.address?.area ?? undefined)} />
+            )}
+          </View>
         )}
         {o.note ? (
           <View style={{ backgroundColor: colors.warningSoft, borderRadius: 10, padding: 10 }}>

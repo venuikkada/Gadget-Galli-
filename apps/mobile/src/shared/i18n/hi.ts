@@ -620,6 +620,22 @@ export const hi: Translations = {
     generic: 'कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।',
     notConfigured: 'ऐप अभी किसी सर्वर से नहीं जुड़ा है। EXPO_PUBLIC_SUPABASE_URL और EXPO_PUBLIC_SUPABASE_ANON_KEY जोड़ें।',
   },
+  map: {
+    searchFor: 'मैप पर “{{q}}” खोजें',
+    searchFailed: 'अभी खोज नहीं हो सकी। इसकी जगह मैप को खिसकाएँ।',
+    noResults: 'कोई जगह नहीं मिली। दूसरा नाम आज़माएँ या मैप को खिसकाएँ।',
+    pinRequired: 'पिन को अपनी बिल्डिंग पर रखें',
+    pinSet: 'सटीक लोकेशन सेट हो गई',
+    shop: 'दुकान',
+    you: 'आप',
+    customer: 'ग्राहक',
+    byRoad: 'सड़क से ≈ {{km}}',
+    ride: 'लगभग {{time}} का सफ़र',
+    arrivingBy: 'लगभग {{time}} तक पहुँचेगा',
+    directions: 'रास्ता देखें',
+    sendToRider: 'लोकेशन राइडर को भेजें',
+    riderMessage: 'Gadget Galli डिलीवरी {{order}}\nग्राहक: {{name}} {{phone}}\nपता: {{address}}\nसटीक लोकेशन: {{link}}',
+  },
   p: {
     tabs: {
       dashboard: 'डैशबोर्ड',

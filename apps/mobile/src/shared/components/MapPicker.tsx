@@ -1,44 +1,72 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRef } from 'react';
-import { Platform, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
+import { useEffect, useMemo, useRef } from 'react';
+import { View } from 'react-native';
 
-import { HYDERABAD_CENTER } from '@gg/shared';
+import { mapHtml, type MapCommand } from '@gg/shared/map';
 
+import { config } from '../config';
+import { useTranslation } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
+import { MapFrame, type MapFrameHandle } from './MapFrame';
 
 export interface MapPickerProps {
   lat?: number | null;
   lng?: number | null;
   height?: number;
-  onChange: (lat: number, lng: number) => void;
+  /** Called when the map stops moving; `byUser` is true when the person dragged or zoomed it. */
+  onChange: (lat: number, lng: number, byUser: boolean) => void;
+  testID?: string;
 }
 
-/** Map with a fixed centre pin: drag the map to place the pin on the building. */
-export function MapPicker({ lat, lng, height = 260, onChange }: MapPickerProps) {
-  const { colors } = useTheme();
-  const ref = useRef<MapView>(null);
-  const initial: Region = {
-    latitude: lat ?? HYDERABAD_CENTER.lat,
-    longitude: lng ?? HYDERABAD_CENTER.lng,
-    latitudeDelta: lat ? 0.008 : 0.25,
-    longitudeDelta: lng ? 0.008 : 0.25,
+/**
+ * OpenStreetMap with a fixed centre pin: drag the map to put the pin on the building. Works the same on the
+ * websites, Android and iOS. New lat/lng props (GPS, a search result) move the map without reloading it.
+ */
+export function MapPicker({ lat, lng, height = 260, onChange, testID = 'map-picker' }: MapPickerProps) {
+  const { colors, dark } = useTheme();
+  const { t } = useTranslation();
+  const frame = useRef<MapFrameHandle>(null);
+  const shown = useRef<{ lat: number; lng: number } | null>(lat != null && lng != null ? { lat, lng } : null);
+  const ready = useRef(false);
+  const pending = useRef<MapCommand | null>(null);
+
+  // Built once per theme; it opens where the map was last shown.
+  const html = useMemo(
+    () => mapHtml({ mode: 'pick', center: shown.current, dark, tileUrl: config.mapTileUrl, attribution: config.mapAttribution }),
+    [dark],
+  );
+
+  const send = (cmd: MapCommand) => {
+    if (ready.current) frame.current?.send(cmd);
+    else pending.current = cmd;
   };
+
+  useEffect(() => {
+    if (lat == null || lng == null) return;
+    const s = shown.current;
+    if (s && Math.abs(s.lat - lat) < 1e-6 && Math.abs(s.lng - lng) < 1e-6) return;
+    shown.current = { lat, lng };
+    send({ type: 'center', lat, lng, zoom: 17 });
+  }, [lat, lng]);
+
   return (
-    <View style={{ height, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surfaceAlt }}>
-      <MapView
-        ref={ref}
+    <View style={{ height, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border }}>
+      <MapFrame
+        ref={frame}
+        html={html}
         style={{ flex: 1 }}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        initialRegion={initial}
-        showsUserLocation
-        onRegionChangeComplete={(r) => onChange(r.latitude, r.longitude)}
+        testID={testID}
+        label={t('location.moveMap')}
+        onMessage={(m) => {
+          if (m.type === 'ready') {
+            ready.current = true;
+            if (pending.current) frame.current?.send(pending.current);
+            pending.current = null;
+          } else if (m.type === 'move') {
+            shown.current = { lat: m.lat, lng: m.lng };
+            onChange(m.lat, m.lng, m.user);
+          }
+        }}
       />
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-        <View style={{ marginBottom: 34 }}>
-          <Ionicons name="location" size={42} color={colors.action} />
-        </View>
-      </View>
     </View>
   );
 }

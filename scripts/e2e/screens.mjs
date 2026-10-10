@@ -5,7 +5,7 @@
 // Fails on any uncaught page error. Run after `pnpm e2e` or on a fresh seed:
 //   pnpm e2e:prepare && pnpm dev-stack --serve-admin apps/admin/dist --serve-mobile apps/mobile/dist
 //   node scripts/e2e/screens.mjs
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,7 +32,8 @@ const results = [];
 const pageErrors = [];
 let failed = false;
 const browser = await chromium.launch();
-const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+// Location is allowed and set to Kondapur, so "Use my current location" places the address pin.
+const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4596, longitude: 78.3639 } };
 
 async function step(name, fn) {
   const t0 = Date.now();
@@ -49,8 +50,11 @@ async function step(name, fn) {
   console.log(results.at(-1));
 }
 
+// Map tiles come from OpenStreetMap, which this machine may not reach; serve a plain stand-in tile instead.
+const TILE = readFileSync(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
 async function mobilePage(label) {
   const ctx = await browser.newContext(phone);
+  await ctx.route(/tile\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'image/png', body: TILE }));
   const page = await ctx.newPage();
   page.on('pageerror', (e) => pageErrors.push(`${label}: ${e.message}`));
   page.on('popup', (p) => p.close().catch(() => undefined));
@@ -121,6 +125,7 @@ await step('customer: order from KPHB on WhatsApp (shop will reject it)', async 
   await c.getByTestId('whatsapp-order').click();
   await c.waitForURL(/\/order\/[0-9a-f-]{36}/, { timeout: 20000 });
   kphbOrderId = c.url().match(/order\/([0-9a-f-]{36})/)[1];
+  await c.getByTestId('order-map').waitFor({ timeout: 15000 });
 });
 await step('customer: orders (active and past), favourites, reviews, referral, notifications', async () => {
   await visit(c, '/orders', 'c-07-orders-active');
@@ -132,10 +137,16 @@ await step('customer: orders (active and past), favourites, reviews, referral, n
   await visit(c, '/referral', 'c-11-referral');
   await visit(c, '/notifications', 'c-12-notifications');
 });
-await step('customer: add a saved address with the area list', async () => {
+await step('customer: add a saved address with an exact GPS pin', async () => {
   await visit(c, '/addresses', 'c-13-addresses');
   await c.goto(`${MOBILE}/address`);
+  await c.getByTestId('map-picker').waitFor({ timeout: 15000 });
+  // Saving without placing the pin is refused
   await c.getByTestId('addr-house').fill('Flat 101, Green Meadows');
+  await c.getByTestId('save-address').click();
+  await c.getByText('Place the pin on your building').waitFor({ timeout: 5000 });
+  await c.getByTestId('addr-gps').click();
+  await c.getByText('Exact location set').waitFor({ timeout: 15000 });
   await c.getByTestId('addr-area').click();
   await c.getByTestId('area-Kondapur').last().click();
   await c.screenshot({ path: join(OUT, 'c-14-address-form.png') });
@@ -197,6 +208,7 @@ await step('partner: login, dashboard, orders with filters', async () => {
 await step('partner: rejects the customer request (out of stock)', async () => {
   await s.goto(`${MOBILE}/partner/order/${kphbOrderId}`);
   await dismissAlerts(s);
+  await s.getByTestId('customer-map').waitFor({ timeout: 15000 });
   await s.getByText('Reject', { exact: true }).first().click();
   await s.getByTestId('reject-order').click();
   await s.getByText('Rejected').first().waitFor({ timeout: 15000 });

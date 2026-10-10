@@ -19,6 +19,9 @@ type RuntimeConfig = {
   customerAppUrl?: string;
   partnerAppUrl?: string;
   playStoreUrl?: string;
+  /** Map tiles; empty means OpenStreetMap's own (see docs/DEPLOY-HOSTINGER.md before traffic grows). */
+  mapTileUrl?: string;
+  mapAttribution?: string;
 };
 
 const runtime: RuntimeConfig = (globalThis as { GG_CONFIG?: RuntimeConfig }).GG_CONFIG ?? {};
@@ -39,4 +42,7 @@ export const config = {
   partnerAppUrl: trimSlash(runtime.partnerAppUrl || process.env.EXPO_PUBLIC_PARTNER_APP_URL || ''),
   /** Where invite links send friends when there is no customer website. */
   playStoreUrl: runtime.playStoreUrl || process.env.EXPO_PUBLIC_PLAY_STORE_URL || 'https://play.google.com/store/apps/details?id=in.gadgetgalli.app',
+  /** Map tiles and their credit line; empty means OpenStreetMap's own tiles. */
+  mapTileUrl: (runtime.mapTileUrl || process.env.EXPO_PUBLIC_MAP_TILE_URL || '').trim(),
+  mapAttribution: (runtime.mapAttribution || process.env.EXPO_PUBLIC_MAP_ATTRIBUTION || '').trim(),
 };

@@ -9,6 +9,8 @@ type RuntimeConfig = {
   customerAppUrl?: string;
   playStoreUrl?: string;
   appStoreUrl?: string;
+  mapTileUrl?: string;
+  mapAttribution?: string;
 };
 
 const runtime: RuntimeConfig = (window as unknown as { GG_CONFIG?: RuntimeConfig }).GG_CONFIG ?? {};
@@ -22,4 +24,7 @@ export const config = {
   customerAppUrl: trimSlash(runtime.customerAppUrl || env(import.meta.env.VITE_CUSTOMER_APP_URL)),
   playStoreUrl: runtime.playStoreUrl || env(import.meta.env.VITE_PLAY_STORE_URL) || 'https://play.google.com/store/apps/details?id=in.gadgetgalli.app',
   appStoreUrl: runtime.appStoreUrl || env(import.meta.env.VITE_APP_STORE_URL),
+  /** Map tiles and their credit line; empty means OpenStreetMap's own tiles. */
+  mapTileUrl: (runtime.mapTileUrl || env(import.meta.env.VITE_MAP_TILE_URL)).trim(),
+  mapAttribution: (runtime.mapAttribution || env(import.meta.env.VITE_MAP_ATTRIBUTION)).trim(),
 };

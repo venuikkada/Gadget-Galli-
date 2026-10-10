@@ -620,6 +620,22 @@ export const te: Translations = {
     generic: 'ఏదో పొరపాటు జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.',
     notConfigured: 'యాప్ ఇంకా సర్వర్కి కనెక్ట్ కాలేదు. EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY జోడించండి.',
   },
+  map: {
+    searchFor: 'మ్యాప్లో “{{q}}” వెతకండి',
+    searchFailed: 'ఇప్పుడు వెతకడం కుదరలేదు. బదులుగా మ్యాప్ను జరపండి.',
+    noResults: 'ప్రదేశాలు దొరకలేదు. వేరే పేరు ప్రయత్నించండి లేదా మ్యాప్ను జరపండి.',
+    pinRequired: 'పిన్ను మీ భవనంపై ఉంచండి',
+    pinSet: 'ఖచ్చితమైన లొకేషన్ సెట్ అయింది',
+    shop: 'షాప్',
+    you: 'మీరు',
+    customer: 'కస్టమర్',
+    byRoad: 'రోడ్డు మార్గంలో ≈ {{km}}',
+    ride: 'సుమారు {{time}} ప్రయాణం',
+    arrivingBy: 'సుమారు {{time}} కల్లా చేరుతుంది',
+    directions: 'దారి చూపించు',
+    sendToRider: 'లొకేషన్ను రైడర్కు పంపండి',
+    riderMessage: 'Gadget Galli డెలివరీ {{order}}\nకస్టమర్: {{name}} {{phone}}\nచిరునామా: {{address}}\nఖచ్చితమైన లొకేషన్: {{link}}',
+  },
   p: {
     tabs: {
       dashboard: 'డాష్బోర్డ్',

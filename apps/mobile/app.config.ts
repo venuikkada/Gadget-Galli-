@@ -1,8 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 // Values come from apps/mobile/.env (see .env.example). EXPO_PUBLIC_* are inlined into the app bundle.
-const GOOGLE_MAPS_ANDROID_KEY = process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
-const GOOGLE_MAPS_IOS_KEY = process.env.GOOGLE_MAPS_IOS_API_KEY ?? '';
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? '';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -18,7 +16,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'in.gadgetgalli.app',
     supportsTablet: false,
-    config: GOOGLE_MAPS_IOS_KEY ? { googleMapsApiKey: GOOGLE_MAPS_IOS_KEY } : undefined,
     infoPlist: {
       NSLocationWhenInUseUsageDescription: 'Gadget Galli uses your location to show shops that deliver to you.',
       NSCameraUsageDescription: 'Take photos of your shop, products, packages and reviews.',
@@ -36,7 +33,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'CAMERA', 'VIBRATE', 'POST_NOTIFICATIONS'],
-    config: GOOGLE_MAPS_ANDROID_KEY ? { googleMaps: { apiKey: GOOGLE_MAPS_ANDROID_KEY } } : undefined,
     intentFilters: [
       {
         action: 'VIEW',

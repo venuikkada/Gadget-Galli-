@@ -30,6 +30,8 @@ const settings = {
   partnerAppUrl: url('PARTNER_URL'),
   adminUrl: url('ADMIN_URL'),
   demo: process.env.DEMO !== '0',
+  mapTileUrl: (process.env.MAP_TILE_URL ?? '').trim(),
+  mapAttribution: (process.env.MAP_ATTRIBUTION ?? '').trim(),
 };
 const run = (cwd, cmd, args, env) => execFileSync(cmd, args, { cwd: join(ROOT, cwd), stdio: 'inherit', env: { ...process.env, ...env } });
 
@@ -85,6 +87,11 @@ window.GG_CONFIG = {
   customerAppUrl: ${q(settings.customerAppUrl)},
   partnerAppUrl: ${q(settings.partnerAppUrl)},
   adminUrl: ${q(settings.adminUrl)},
+
+  // Maps. Empty uses OpenStreetMap's free tiles, fine while traffic is small. When the apps get busy, sign up
+  // for a free map-tile key (for example MapTiler) and paste its tile address and credit line here.
+  mapTileUrl: ${q(settings.mapTileUrl)},
+  mapAttribution: ${q(settings.mapAttribution)},
 ${
   app
     ? `

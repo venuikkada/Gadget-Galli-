@@ -21,7 +21,14 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 9. **57 areas in 5 zones, with real pincodes:** West Hyderabad, Central Hyderabad, Secunderabad & North, East Hyderabad and South Hyderabad. Admins can add areas and pincodes.
 10. **Shops choose their own delivery coverage.** A shop can tick whole zones, single areas, or deliver within a radius (5, 10, 15 or 20 km). It also sets its delivery charge (free, flat or per km), a free-delivery threshold, a minimum order, its usual delivery time and whether it offers store pickup.
 11. **"Delivers to my area" is on by default in search.** Customers see only what they can actually get, and a hint says how many more products exist elsewhere in the city.
-12. **Google Maps is optional.** Without an API key, customers pick their area from a list and addresses still work. With a key, they get a draggable map pin and Places address search.
+12. **Maps run on OpenStreetMap, with no account or key.**
+    - One map engine everywhere: Leaflet with OpenStreetMap tiles, shown in a WebView on Android and iOS and in an iframe on the websites and in the admin panel (`packages/shared/src/map`). Leaflet is bundled (`pnpm map:assets`), so no CDN is needed.
+    - Saving an address needs an exact pin: from GPS ("Use my current location"), dragging the map, or a place search. The old silent fallback to the area's centre is gone, so shops and riders get the customer's real door.
+    - Place search uses OpenStreetMap's free Nominatim service, limited to Hyderabad and run only when the person submits (its usage policy allows about one search a second and no search-as-you-type).
+    - "Directions" and "Navigate" open Google Maps with a plain link to the exact pin; no Google key or billing.
+    - OpenStreetMap's own tile servers are fine while traffic is small. Before the apps get busy, set `mapTileUrl` and `mapAttribution` in each website's `config.js` (and `EXPO_PUBLIC_MAP_TILE_URL` for the phone apps) to a tile provider's free-tier key, for example MapTiler. **(changeable)**
+    - The exact pin is visible only to the customer, the shop handling that order and admins. A rider gets it only when the shop taps "Send location to rider".
+12a. **Delivery time depends on distance.** A shop's usual time (its real average once it has three deliveries, otherwise what it declared) is taken to cover a typical 4 km trip. Each customer sees it shortened or lengthened by the ride time for their actual distance: roads about 40% longer than the straight line, 18 km/h on a two-wheeler in Hyderabad traffic. Rounded to 5 minutes, never under 20. The search filter, "fastest" sorting, the "Fastest delivery" tag and every "Delivers in" use it. After dispatch, an order without a shop-entered ETA shows the dispatch time plus the ride and 5 minutes' handover. The same formula is in `packages/shared/src/map/eta.ts` and in SQL (`gg_delivery_eta_mins`), and tests on both sides check the same examples. **(changeable: the constants)**
 
 ## Accounts and roles
 

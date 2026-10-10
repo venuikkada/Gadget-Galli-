@@ -97,6 +97,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 - **Supabase's free projects pause after a week with no activity.** Open the Supabase dashboard to wake the project up.
 - **The web Shop Partner app rings for new orders only while it is open in the browser.** For the loud alarm with the phone locked, shops need the Android app (see [SETUP.md](SETUP.md), section 4).
 - **Share links** from the customer app open on the admin website (`/s/product/…`), which offers "Open in your browser".
+- **Maps** need no key. Customers drop an exact pin when they save an address (GPS, dragging the map or searching a place); shops see it on every order with the distance, ride time, "Directions" and "Send location to rider".
 
 ## Going live for real later
 
@@ -104,4 +105,5 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 2. Set up real SMS with DLT registration (see [SETUP.md](SETUP.md), section 2).
 3. Set `demo: false` in the two app websites' `config.js`, so the demo numbers no longer show.
 4. Connect your own domains to the three websites in hPanel (for example `gadgetgalli.in`, `partner.gadgetgalli.in` and `admin.gadgetgalli.in`), and update the addresses in every `config.js`.
+   - Maps use OpenStreetMap's free tiles. Before you advertise widely, get a free map-tile key (for example from MapTiler) and fill in `mapTileUrl` and `mapAttribution` in every `config.js`, so busy days don't hit OpenStreetMap's limits.
 5. Publish the Android app for customers and shops (see [SETUP.md](SETUP.md), section 4).

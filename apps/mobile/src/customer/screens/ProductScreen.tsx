@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { formatINR, percentOff, type Offer } from '@gg/shared';
+import { deliveryEtaMins, formatINR, percentOff, type Offer } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoGallery } from '@/shared/components/PhotoViewer';
@@ -28,10 +28,11 @@ function offerBadges(near: Offer[]) {
   if (pool.length < 2) return badges;
   const best = pool.reduce((a, b) => (b.price < a.price ? b : a));
   badges.set(best.shop_product_id, 'best');
+  const eta = (o: Offer) => deliveryEtaMins(o.delivery_mins, o.distance_km) ?? Infinity;
   const open = pool.filter((o) => o.is_open_now && o.delivery_mins > 0);
   if (open.length) {
-    const fastest = open.reduce((a, b) => (b.delivery_mins < a.delivery_mins ? b : a));
-    if (fastest.shop_product_id !== best.shop_product_id && fastest.delivery_mins < best.delivery_mins) badges.set(fastest.shop_product_id, 'fastest');
+    const fastest = open.reduce((a, b) => (eta(b) < eta(a) ? b : a));
+    if (fastest.shop_product_id !== best.shop_product_id && eta(fastest) < eta(best)) badges.set(fastest.shop_product_id, 'fastest');
   }
   return badges;
 }

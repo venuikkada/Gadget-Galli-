@@ -8,7 +8,7 @@
 //   GG_SHARE_BASE_URL=https://gadgetgalli.in pnpm e2e:prepare   # builds both apps; share links show the real domain
 //   pnpm dev-stack:reset && pnpm dev-stack --serve-admin apps/admin/dist --serve-mobile apps/mobile/dist
 //   pnpm screenshots
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,10 +56,16 @@ async function shot(page, section, file, title, caption, who) {
 
 const browser = await chromium.launch({ headless: process.env.HEADED !== '1' });
 const india = { locale: 'en-IN', timezoneId: 'Asia/Kolkata' };
-const phone = { ...india, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+// Location is allowed and set to Kukatpally, so "Use my current location" can place an address pin.
+const phone = { ...india, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
+// Map tiles come from OpenStreetMap, which this machine may not reach: serve a stand-in tile (real streets show live).
+const TILE = readFileSync(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
+const stubTiles = (ctx) => ctx.route(/tile\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'image/png', body: TILE }));
 
 async function newPhonePage() {
-  const page = await (await browser.newContext(phone)).newPage();
+  const ctx = await browser.newContext(phone);
+  await stubTiles(ctx);
+  const page = await ctx.newPage();
   // WhatsApp / tel: / UPI links open popups or external handlers; close them so the app carries on.
   page.on('popup', (p) => p.close().catch(() => undefined));
   return page;
@@ -227,6 +233,12 @@ await step('customer tour', async () => {
   await customer.getByTestId('open-filters').click();
   await customer.getByText('Condition', { exact: false }).first().waitFor();
   await shot(customer, 'customer', 'c-filters', 'Filters', 'Filter by category, brand, price, condition, delivery time and rating; sort by price, distance or speed.');
+  await visit(customer, '/address');
+  await customer.getByTestId('map-picker').waitFor({ timeout: 15000 });
+  await customer.getByTestId('addr-gps').click();
+  await customer.getByText('Exact location set').waitFor({ timeout: 15000 });
+  await customer.waitForTimeout(800);
+  await shot(customer, 'customer', 'c-address-pin', 'Exact delivery pin', 'Customers drop a pin on their building with GPS, by dragging the map or by searching a place, so the shop and the rider find the right door.');
   await visit(customer, '/orders', 'Past');
   const anyOrder = customer.getByText(/GG-\d{2}-\d{6}/).first();
   if (!(await anyOrder.waitFor({ timeout: 4000 }).then(() => true, () => false))) await customer.getByText('Past', { exact: true }).click();
@@ -338,7 +350,9 @@ await step('new shop registration', async () => {
 // Admin panel tour
 // ---------------------------------------------------------------------------
 await step('admin tour', async () => {
-  const admin = await (await browser.newContext({ ...india, viewport: { width: 1440, height: 900 } })).newPage();
+  const actx = await browser.newContext({ ...india, viewport: { width: 1440, height: 900 } });
+  await stubTiles(actx);
+  const admin = await actx.newPage();
   const go = async (path, waitForText) => {
     await admin.goto(`${ADMIN}${path}`);
     if (waitForText) await admin.getByText(waitForText, { exact: false }).first().waitFor({ timeout: 15000 });

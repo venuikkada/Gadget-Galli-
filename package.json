@@ -17,6 +17,7 @@
     "e2e": "node scripts/e2e/smoke.mjs && node scripts/e2e/screens.mjs",
     "screenshots": "node scripts/e2e/screenshots.mjs",
     "brand:assets": "node scripts/brand/render.mjs",
+    "map:assets": "node scripts/maps/leaflet-assets.mjs",
     "deploy:hostinger": "node scripts/deploy/hostinger.mjs",
     "deploy:check": "node scripts/deploy/check-sites.mjs",
     "dev-stack:reset": "node scripts/dev-stack/reset.mjs",

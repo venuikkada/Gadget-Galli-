@@ -15,6 +15,7 @@ import {
   type ShopType,
 } from '@gg/shared';
 
+import { MiniMap } from '@/components/MiniMap';
 import { Badge, Button, Card, ErrorBox, PageHeader, ReasonModal, ShopStatusBadge, Spinner, Textarea, toast, Toggle } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 
@@ -176,9 +177,12 @@ export default function ShopDetailPage() {
                     .join(', ') || '—'}
                 </div>
                 {s.lat != null ? (
-                  <a href={mapsUrl(s.lat, s.lng, s.name ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
-                    <MapPin className="size-3.5" /> Open pin in Google Maps
-                  </a>
+                  <>
+                    <MiniMap shop={s} height={200} />
+                    <a href={mapsUrl(s.lat, s.lng, s.name ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
+                      <MapPin className="size-3.5" /> Open pin in Google Maps
+                    </a>
+                  </>
                 ) : null}
               </Row>
               <Row label="Phones">

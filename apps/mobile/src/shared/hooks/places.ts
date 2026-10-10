@@ -1,57 +1,50 @@
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { Platform } from 'react-native';
 
-import { HYDERABAD_CENTER } from '@gg/shared';
-
-const KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
-export const placesEnabled = KEY.length > 0;
-
-export interface PlaceSuggestion {
-  placeId: string;
+export interface Place {
+  id: string;
   main: string;
   secondary: string;
+  lat: number;
+  lng: number;
 }
 
-/** Google Places (New) autocomplete biased to Hyderabad. Disabled when no API key is configured. */
-export function usePlaces(query: string) {
-  return useQuery({
-    queryKey: ['places', query],
-    enabled: placesEnabled && query.trim().length >= 3,
-    staleTime: 10 * 60_000,
-    queryFn: async (): Promise<PlaceSuggestion[]> => {
-      const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': KEY },
-        body: JSON.stringify({
-          input: query,
-          includedRegionCodes: ['in'],
-          locationBias: { circle: { center: { latitude: HYDERABAD_CENTER.lat, longitude: HYDERABAD_CENTER.lng }, radius: 40000 } },
-        }),
-      });
-      const json = (await res.json()) as {
-        suggestions?: { placePrediction?: { placeId: string; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } } } }[];
-      };
-      return (json.suggestions ?? [])
-        .map((s) => s.placePrediction)
-        .filter((p): p is NonNullable<typeof p> => !!p)
-        .map((p) => ({ placeId: p.placeId, main: p.structuredFormat?.mainText?.text ?? '', secondary: p.structuredFormat?.secondaryText?.text ?? '' }));
-    },
+// Hyderabad and its suburbs: west, north, east, south.
+const VIEWBOX = '78.20,17.65,78.75,17.15';
+
+/**
+ * Place search on OpenStreetMap (Nominatim, free), limited to Hyderabad. Call it when the person submits, never on
+ * every keystroke: Nominatim allows about one request a second and asks apps not to search-as-you-type.
+ */
+export async function searchPlaces(query: string): Promise<Place[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+  const url =
+    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=in&bounded=1&accept-language=en' +
+    `&viewbox=${VIEWBOX}&q=${encodeURIComponent(q)}`;
+  // Nominatim asks apps to identify themselves; browsers send their own User-Agent and the page address.
+  const res = await fetch(url, { headers: Platform.OS === 'web' ? {} : { 'User-Agent': 'GadgetGalli/1.0 (+https://gadgetgalli.in)' } });
+  if (!res.ok) throw new Error(`place search failed: ${res.status}`);
+  const rows = (await res.json()) as { place_id: number; name?: string; display_name: string; lat: string; lon: string }[];
+  return rows.map((r) => {
+    const parts = r.display_name.split(', ');
+    const main = r.name || parts[0] || r.display_name;
+    return { id: String(r.place_id), main, secondary: parts.filter((p) => p !== main).slice(0, 3).join(', '), lat: Number(r.lat), lng: Number(r.lon) };
   });
 }
 
-export async function placeDetails(placeId: string): Promise<{ lat: number; lng: number; address: string; pincode: string | null } | null> {
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: { 'X-Goog-Api-Key': KEY, 'X-Goog-FieldMask': 'location,formattedAddress,addressComponents' },
-  });
-  const json = (await res.json()) as {
-    location?: { latitude: number; longitude: number };
-    formattedAddress?: string;
-    addressComponents?: { longText: string; types: string[] }[];
-  };
-  if (!json.location) return null;
-  return {
-    lat: json.location.latitude,
-    lng: json.location.longitude,
-    address: json.formattedAddress ?? '',
-    pincode: json.addressComponents?.find((c) => c.types.includes('postal_code'))?.longText ?? null,
-  };
+/** Runs searchPlaces on demand and keeps the results, loading and failure state. */
+export function usePlaceSearch() {
+  const [state, setState] = useState<{ loading: boolean; results: Place[] | null; failed: boolean }>({ loading: false, results: null, failed: false });
+  const run = useCallback(async (query: string) => {
+    if (query.trim().length < 3) return;
+    setState({ loading: true, results: null, failed: false });
+    try {
+      setState({ loading: false, results: await searchPlaces(query), failed: false });
+    } catch {
+      setState({ loading: false, results: null, failed: true });
+    }
+  }, []);
+  const clear = useCallback(() => setState({ loading: false, results: null, failed: false }), []);
+  return { ...state, run, clear };
 }

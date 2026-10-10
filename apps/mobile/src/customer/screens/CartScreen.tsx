@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
+import { buildWhatsAppOrderMessage, deliveryEtaMins, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
@@ -163,7 +163,7 @@ export default function CartScreen() {
           <ShopAvatar name={shop.name} path={shop.logo_path} size={48} />
           <View style={{ flex: 1, gap: 2 }}>
             <AppText variant="title">{shop.name}</AppText>
-            <AppText variant="caption" color="textMuted">{[shop.area, tDeliversIn(shop.delivery_mins)].filter(Boolean).join(' · ')}</AppText>
+            <AppText variant="caption" color="textMuted">{[shop.area, tDeliversIn(deliveryEtaMins(shop.delivery_mins, shop.distance_km))].filter(Boolean).join(' · ')}</AppText>
             <OpenDot open={shop.is_open_now} />
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />

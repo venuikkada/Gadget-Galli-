@@ -6,14 +6,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatINR, hoursTable, type Listing } from '@gg/shared';
+import { deliveryEtaMins, formatINR, hoursTable, type Listing } from '@gg/shared';
+import { directionsUrl } from '@gg/shared/map';
 
 import { errorText } from '@/shared/api/rpc';
 import { publicUrl } from '@/shared/api/storage';
+import { RouteFacts, RouteMap } from '@/shared/components/RouteMap';
+import { useLocationStore } from '@/shared/hooks/location';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
-import { tDuration, tOpening, tWeekday } from '@/shared/i18n/format';
-import { callPhone, openMaps, openWhatsApp, shareText, shopShareUrl } from '@/shared/lib/linking';
+import { tDeliversIn, tOpening, tWeekday } from '@/shared/i18n/format';
+import { callPhone, openMaps, openUrl, openWhatsApp, shareText, shopShareUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { shadow } from '@/shared/theme/tokens';
 import {
@@ -108,6 +111,7 @@ export default function ShopScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const myLocation = useLocationStore((st) => st.location);
   const { id, highlight } = useLocalSearchParams<{ id: string; highlight?: string }>();
   const shop = useShopPage(id);
   const [tab, setTab] = useState<'products' | 'reviews' | 'about'>('products');
@@ -205,7 +209,7 @@ export default function ShopScreen() {
               <Ionicons name="bicycle" size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <AppText variant="label">{t('shop.usuallyDelivers', { time: tDuration(d.delivery_mins) })}</AppText>
+              <AppText variant="label">{tDeliversIn(deliveryEtaMins(d.delivery_mins, d.distance_km))}</AppText>
               {d.avg_mins && d.orders_delivered ? <AppText variant="caption" color="textMuted">{t('shop.basedOn', { count: d.orders_delivered })}</AppText> : null}
               <AppText variant="caption" color="textMuted">
                 {d.charge_type === 'free' ? t('product.freeDelivery') : d.charge_type === 'per_km' ? t('shop.perKm', { amount: formatINR(d.charge) }) : t('shop.flat', { amount: formatINR(d.charge) })}
@@ -332,15 +336,27 @@ export default function ShopScreen() {
                 )}
                 <AppText variant="bodySmall" color="textMuted">{d.store_pickup ? t('shop.pickupYes') : t('shop.pickupNo')}</AppText>
               </Card>
-              <Card style={{ gap: 8 }}>
+              <Card style={{ gap: 10 }}>
                 <AppText variant="title">{t('address.title')}</AppText>
+                <RouteMap shop={s} home={myLocation} testID="shop-map" />
+                <RouteFacts km={d.distance_km} />
                 <AppText variant="bodySmall" color="textMuted">{[s.address_line, s.landmark, s.area?.name, s.pincode].filter(Boolean).join(', ')}</AppText>
-                <Pressable onPress={() => openMaps(s.lat, s.lng, s.name)}>
-                  <Row gap={6}>
-                    <Ionicons name="map" size={16} color={colors.primary} />
-                    <AppText variant="label" color="primary">{t('shop.openInMaps')}</AppText>
-                  </Row>
-                </Pressable>
+                <Row gap={18} wrap>
+                  {s.lat != null && s.lng != null ? (
+                    <Pressable onPress={() => openUrl(directionsUrl(s.lat!, s.lng!))}>
+                      <Row gap={6}>
+                        <Ionicons name="navigate" size={16} color={colors.primary} />
+                        <AppText variant="label" color="primary">{t('map.directions')}</AppText>
+                      </Row>
+                    </Pressable>
+                  ) : null}
+                  <Pressable onPress={() => openMaps(s.lat, s.lng, s.name)}>
+                    <Row gap={6}>
+                      <Ionicons name="map" size={16} color={colors.primary} />
+                      <AppText variant="label" color="primary">{t('shop.openInMaps')}</AppText>
+                    </Row>
+                  </Pressable>
+                </Row>
               </Card>
             </View>
           )

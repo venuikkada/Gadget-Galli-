@@ -618,6 +618,22 @@ export const en = {
     generic: 'Something went wrong. Please try again.',
     notConfigured: 'The app is not connected to a server yet. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.',
   },
+  map: {
+    searchFor: 'Search the map for “{{q}}”',
+    searchFailed: "Couldn't search right now. Move the map instead.",
+    noResults: 'No places found. Try another name or move the map.',
+    pinRequired: 'Place the pin on your building',
+    pinSet: 'Exact location set',
+    shop: 'Shop',
+    you: 'You',
+    customer: 'Customer',
+    byRoad: '≈ {{km}} by road',
+    ride: 'about {{time}} ride',
+    arrivingBy: 'Arriving by about {{time}}',
+    directions: 'Directions',
+    sendToRider: 'Send location to rider',
+    riderMessage: 'Gadget Galli delivery {{order}}\nCustomer: {{name}} {{phone}}\nAddress: {{address}}\nExact location: {{link}}',
+  },
   p: {
     tabs: {
       dashboard: 'Dashboard',

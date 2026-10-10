@@ -4,6 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { deliveryEtaMins } from '@gg/shared';
+
 import { errorText } from '@/shared/api/rpc';
 import { useLocationStore } from '@/shared/hooks/location';
 import { useProfile } from '@/shared/hooks/profile';
@@ -34,10 +36,11 @@ export default function HomeScreen() {
 
   const firstName = profile?.user.name?.split(' ')[0];
   const data = feed.data;
-  // The open shop that usually delivers fastest gets a "Fastest delivery" tag.
+  // The open shop that should reach this customer first gets a "Fastest delivery" tag.
   const fastestId = useMemo(() => {
+    const eta = (s: { delivery_mins: number; distance_km: number | null }) => deliveryEtaMins(s.delivery_mins, s.distance_km) ?? Infinity;
     const open = (data?.shops_near ?? []).filter((s) => s.is_open_now && s.delivery_mins > 0);
-    return open.length > 1 ? open.reduce((a, b) => (b.delivery_mins < a.delivery_mins ? b : a)).id : null;
+    return open.length > 1 ? open.reduce((a, b) => (eta(b) < eta(a) ? b : a)).id : null;
   }, [data?.shops_near]);
 
   return (

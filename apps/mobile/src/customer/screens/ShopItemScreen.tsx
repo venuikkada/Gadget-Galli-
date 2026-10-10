@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { formatINR, percentOff, variantText } from '@gg/shared';
+import { deliveryEtaMins, formatINR, percentOff, variantText } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoGallery } from '@/shared/components/PhotoViewer';
@@ -100,7 +100,7 @@ export default function ShopItemScreen() {
               <Row gap={8}>
                 <Rating value={item.shop.rating_avg} count={item.shop.rating_count} />
                 <AppText variant="caption" color={item.shop.delivers_to_me ? 'textMuted' : 'warning'}>
-                  {item.shop.delivers_to_me ? tDeliversIn(item.shop.delivery_mins) : t('product.doesNotDeliver')}
+                  {item.shop.delivers_to_me ? tDeliversIn(deliveryEtaMins(item.shop.delivery_mins, item.shop.distance_km)) : t('product.doesNotDeliver')}
                 </AppText>
               </Row>
             </View>

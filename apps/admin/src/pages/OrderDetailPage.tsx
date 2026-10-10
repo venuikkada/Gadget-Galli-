@@ -20,6 +20,7 @@ import {
   type OrderStatus,
 } from '@gg/shared';
 
+import { MiniMap } from '@/components/MiniMap';
 import { Badge, Button, Card, ErrorBox, Field, Modal, OrderStatusBadge, PageHeader, Select, Spinner, Textarea, toast } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 
@@ -241,9 +242,12 @@ export default function OrderDetailPage() {
               <div className="mt-3 text-sm">
                 <div className="whitespace-pre-line">{addressLines(o.address)}</div>
                 {o.address.lat != null ? (
-                  <a href={mapsUrl(o.address.lat, o.address.lng, o.address.area ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
-                    <MapPin className="size-3.5" /> Map {o.distance_km != null ? `· ${o.distance_km} km from shop` : ''}
-                  </a>
+                  <>
+                    <MiniMap shop={o.shop} home={o.address} height={200} />
+                    <a href={mapsUrl(o.address.lat, o.address.lng, o.address.area ?? undefined)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-link">
+                      <MapPin className="size-3.5" /> Map {o.distance_km != null ? `· ${o.distance_km} km from shop` : ''}
+                    </a>
+                  </>
                 ) : null}
               </div>
             ) : null}

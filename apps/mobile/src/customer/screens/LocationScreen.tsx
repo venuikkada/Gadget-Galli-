@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLocation from 'expo-location';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { Address, Area } from '@gg/shared';
 
 import { AreaList } from '@/shared/components/AreaList';
+import { PlaceResults } from '@/shared/components/PlaceResults';
 import { useLocationStore } from '@/shared/hooks/location';
-import { placeDetails, placesEnabled, usePlaces } from '@/shared/hooks/places';
+import { usePlaceSearch } from '@/shared/hooks/places';
 import { useProfile, useUpdateProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -26,7 +27,7 @@ export default function LocationScreen() {
   const updateProfile = useUpdateProfile();
   const [query, setQuery] = useState('');
   const [detecting, setDetecting] = useState(false);
-  const places = usePlaces(query);
+  const places = usePlaceSearch();
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/home'));
 
@@ -100,24 +101,19 @@ export default function LocationScreen() {
       ) : null}
       <Button title={t('address.addNew')} icon="add" variant="ghost" onPress={() => router.push('/address')} style={{ alignSelf: 'flex-start' }} />
 
-      <Input testID="area-search" icon="search" placeholder={placesEnabled ? t('location.searchPlaces') : t('location.searchArea')} value={query} onChangeText={setQuery} />
-      {placesEnabled && places.data?.length ? (
-        <Card style={{ gap: 2 }}>
-          {places.data.map((p) => (
-            <Pressable
-              key={p.placeId}
-              onPress={async () => {
-                const d = await placeDetails(p.placeId);
-                if (d && (await fromCoords(d.lat, d.lng, p.main))) done();
-              }}
-              style={{ paddingVertical: 10 }}
-            >
-              <AppText variant="title" numberOfLines={1}>{p.main}</AppText>
-              <AppText variant="caption" color="textMuted" numberOfLines={1}>{p.secondary}</AppText>
-            </Pressable>
-          ))}
-        </Card>
-      ) : null}
+      <Input
+        testID="area-search"
+        icon="search"
+        placeholder={t('location.searchPlaces')}
+        value={query}
+        onChangeText={(v) => {
+          setQuery(v);
+          places.clear();
+        }}
+        onSubmitEditing={() => places.run(query)}
+        returnKeyType="search"
+      />
+      <PlaceResults query={query} search={places} onPick={async (p) => { if (await fromCoords(p.lat, p.lng, p.main)) done(); }} />
       <AppText variant="label" color="textMuted">{t('location.pickArea')}</AppText>
       <AreaList query={query} onPick={pickArea} selectedId={current?.areaId} />
     </Screen>
