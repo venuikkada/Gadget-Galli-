@@ -60,8 +60,9 @@ export default function LoginScreen() {
           </View>
         </SafeAreaView>
       </BrandGradient>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 16, marginTop: -28 }} keyboardShouldPersistTaps="handled">
+      {/* The form scrolls over the bottom of the gradient, so the card's rounded top is not clipped. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, marginTop: -48 }}>
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
           <View style={[{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, gap: 16 }, shadow(3, dark)]}>
             <Input
               testID="phone-input"
