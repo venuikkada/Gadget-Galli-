@@ -96,9 +96,15 @@ ${o.mode === 'pick' ? `<div class="gg-shadow"></div><div class="gg-center" id="p
 
   if (O.mode === 'pick') {
     var c = O.center || O.fallback;
-    var user = false, pin = document.getElementById('pin');
+    var user = false, pin = document.getElementById('pin'), box = map.getContainer();
     map.setView([c.lat, c.lng], O.zoom);
-    map.on('dragstart zoomstart', function () { user = true; });
+    // Only a touch, click, wheel or key on the map counts as the person moving it; Leaflet's own zoom events also
+    // fire for the opening view and for moves the app asks for.
+    function touched() { user = true; }
+    box.addEventListener('pointerdown', touched);
+    box.addEventListener('touchstart', touched, { passive: true });
+    box.addEventListener('wheel', touched, { passive: true });
+    box.addEventListener('keydown', touched);
     map.on('movestart', function () { pin.className = 'gg-center lift'; });
     map.on('moveend', function () {
       pin.className = 'gg-center';
