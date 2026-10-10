@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
@@ -16,6 +17,7 @@ import { callPhone, copyText, openInBrowser, openMaps, openUpi, openWhatsApp } f
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AppText,
+  BillDetails,
   Button,
   Card,
   Celebration,
@@ -25,6 +27,7 @@ import {
   Header,
   InfoBanner,
   Loading,
+  OrderProgress,
   ProductImage,
   Rating,
   Row,
@@ -40,7 +43,7 @@ import { OrderTimeline } from '@/shared/components/OrderTimeline';
 
 export default function OrderScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useOrder(id);
   const { cancel, received } = useOrderActions(id);
@@ -81,6 +84,27 @@ export default function OrderScreen() {
     address: o.address,
     note: o.note,
   });
+  const ended = ['REJECTED', 'EXPIRED', 'CANCELLED'].includes(o.status);
+  const heroTone = ended ? 'closed' : o.status === 'DELIVERED' ? 'open' : 'header';
+  // 85% white only passes contrast on the teal gradient; the green and red ones keep full white.
+  const heroMuted = heroTone === 'header' ? 'onBrandMuted' : 'onBrand';
+  const showProgress = !ended;
+  const [headline, headlineBody] =
+    o.status === 'REQUESTED'
+      ? [t('order.waitingShop'), t('order.waitingShopBody')]
+      : o.status === 'DELIVERED'
+        ? [t('order.delivered'), o.delivered_by === 'auto' ? t('order.autoDelivered') : null]
+        : o.status === 'REJECTED'
+          ? [`${t('order.rejected')}${o.reject_reason ? ` · ${t(`reject.${o.reject_reason}`)}` : ''}`, null]
+          : o.status === 'EXPIRED'
+            ? [t('order.expired'), null]
+            : o.status === 'CANCELLED'
+              ? [t('order.cancelled'), null]
+              : status === 'PAID'
+                ? [t('order.paidWaiting'), null]
+                : status === 'PACKED'
+                  ? [t('order.packedWaiting'), null]
+                  : [null, null];
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
@@ -114,41 +138,34 @@ export default function OrderScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen header={<Header title={t('order.title', { no: o.order_no })} subtitle={tDateTime(o.requested_at)} />} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
-        {/* Status headline */}
-        <Card style={{ gap: 10 }}>
+        {/* Tracking hero: teal while the order is moving, green when delivered, red when it ended without delivery */}
+        <LinearGradient colors={gradients[heroTone]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 16, gap: 12, overflow: 'hidden' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', width: 220, height: 220, borderRadius: 110, right: -80, top: -110, backgroundColor: '#FFFFFF', opacity: 0.08 }} />
           <Row justify="space-between">
-            <StatusChip status={o.status} />
-            <AppText variant="caption" color="textMuted">{t('order.placedVia', { method: o.contact_method === 'call' ? t('order.viaCall') : t('order.viaWhatsapp') })}</AppText>
+            <StatusChip status={o.status} onBrand />
+            <AppText variant="caption" color={heroMuted}>{t('order.placedVia', { method: o.contact_method === 'call' ? t('order.viaCall') : t('order.viaWhatsapp') })}</AppText>
           </Row>
-          {o.status === 'REQUESTED' ? (
-            <>
-              <AppText variant="h3">{t('order.waitingShop')}</AppText>
-              <AppText variant="bodySmall" color="textMuted">{t('order.waitingShopBody')}</AppText>
-            </>
-          ) : o.status === 'DELIVERED' ? (
-            <>
-              <AppText variant="h3">{t('order.delivered')}</AppText>
-              {o.delivered_by === 'auto' ? <AppText variant="bodySmall" color="textMuted">{t('order.autoDelivered')}</AppText> : null}
-            </>
-          ) : o.status === 'REJECTED' ? (
-            <AppText variant="h3" color="error">{t('order.rejected')}{o.reject_reason ? ` · ${t(`reject.${o.reject_reason}`)}` : ''}</AppText>
-          ) : o.status === 'EXPIRED' ? (
-            <AppText variant="h3" color="error">{t('order.expired')}</AppText>
-          ) : o.status === 'CANCELLED' ? (
-            <AppText variant="h3" color="error">{t('order.cancelled')}</AppText>
-          ) : status === 'PAID' ? (
-            <AppText variant="h3">{t('order.paidWaiting')}</AppText>
-          ) : status === 'PACKED' ? (
-            <AppText variant="h3">{t('order.packedWaiting')}</AppText>
+          {headline ? (
+            <View style={{ gap: 4 }}>
+              <AppText variant="h2" color="onBrand">{headline}</AppText>
+              {headlineBody ? <AppText variant="bodySmall" color={heroMuted}>{headlineBody}</AppText> : null}
+            </View>
+          ) : null}
+          {showProgress ? <OrderProgress status={status} onBrand /> : null}
+          {o.dispatch?.eta && status === 'DISPATCHED' ? (
+            <Row gap={6}>
+              <Ionicons name="time-outline" size={16} color={colors.onBrand} />
+              <AppText variant="label" color="onBrand">{t('order.eta', { time: formatTimeIST(o.dispatch.eta) })}</AppText>
+            </Row>
           ) : null}
           {['REJECTED', 'EXPIRED', 'CANCELLED'].includes(o.status) && o.items[0]?.catalog_product_id ? (
-            <Button title={t('order.findElsewhere')} variant="secondary" icon="search" onPress={() => router.push(`/product/${o.items[0]!.catalog_product_id}`)} />
+            <Button title={t('order.findElsewhere')} variant="onBrand" icon="search" onPress={() => router.push(`/product/${o.items[0]!.catalog_product_id}`)} />
           ) : null}
           <Row gap={8}>
-            <Button title={t('order.callShop')} icon="call" variant="outline" size="sm" style={{ flex: 1 }} onPress={() => callPhone(shop.contact_phone)} />
+            <Button title={t('order.callShop')} icon="call" variant="onBrand" size="sm" style={{ flex: 1 }} onPress={() => callPhone(shop.contact_phone)} />
             <Button title={t('order.whatsappShop')} icon="logo-whatsapp" variant="whatsapp" size="sm" style={{ flex: 1 }} onPress={() => openWhatsApp(shop.whatsapp_phone, o.status === 'REQUESTED' ? waText : `Hi, about my order ${o.order_no}`)} />
           </Row>
-        </Card>
+        </LinearGradient>
 
         {openIssue ? <InfoBanner tone="warning" icon="alert-circle" text={t('order.issueOpen')} /> : null}
         {resolvedIssue?.resolution ? <InfoBanner tone="success" text={t('order.issueResolved', { text: resolvedIssue.resolution })} /> : null}
@@ -156,11 +173,16 @@ export default function OrderScreen() {
 
         {/* Pay by UPI */}
         {status === 'CONFIRMED' && upiLink ? (
-          <Card style={{ gap: 12, borderWidth: 2, borderColor: colors.action }} level={2}>
-            <AppText variant="h3">{t('order.payTitle')}</AppText>
+          <Card style={{ gap: 12, backgroundColor: colors.accentSoft, borderWidth: 1.5, borderColor: colors.accent }} level={2}>
+            <Row gap={10}>
+              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="wallet" size={19} color={colors.onAccent} />
+              </View>
+              <AppText variant="h3" style={{ flex: 1 }}>{t('order.payTitle')}</AppText>
+            </Row>
             <AppText variant="bodySmall" color="textMuted">{t('order.payBody')}</AppText>
             <Pressable onPress={() => { copyText(shop.upi_id!); toast(t('common.copied'), 'success'); }}>
-              <Row justify="space-between" style={{ backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 12 }}>
+              <Row justify="space-between" style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
                 <View style={{ flex: 1 }}>
                   <AppText variant="caption" color="textMuted">{t('order.upiId')}</AppText>
                   <Row gap={6}>
@@ -179,7 +201,7 @@ export default function OrderScreen() {
               {shop.upi_qr_path ? (
                 <Image source={{ uri: publicUrl('shop-media', shop.upi_qr_path) ?? undefined }} style={{ width: 180, height: 180, borderRadius: 12 }} contentFit="contain" />
               ) : (
-                <View style={{ padding: 12, backgroundColor: '#fff', borderRadius: 12 }}>
+                <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 12 }}>
                   <QRCode value={upiLink} size={160} />
                 </View>
               )}
@@ -189,7 +211,7 @@ export default function OrderScreen() {
 
         {/* Dispatch details */}
         {o.dispatch && ['DISPATCHED', 'DELIVERED'].includes(status) ? (
-          <Card style={{ gap: 10 }}>
+          <Card style={{ gap: 10 }} level={2}>
             <AppText variant="h3">{o.fulfilment === 'pickup' ? t('order.pickupReady') : t('order.delivery')}</AppText>
             {o.fulfilment === 'delivery' ? (
               <>
@@ -205,11 +227,13 @@ export default function OrderScreen() {
                   {o.dispatch.rider_phone ? <Button title={t('common.call')} icon="call" size="sm" variant="secondary" onPress={() => callPhone(o.dispatch!.rider_phone)} /> : null}
                 </Row>
                 {o.dispatch.rider_phone ? <AppText variant="caption" color="textMuted">{formatPhone(o.dispatch.rider_phone)}</AppText> : null}
-                {o.dispatch.eta && status === 'DISPATCHED' ? <Tag label={t('order.eta', { time: formatTimeIST(o.dispatch.eta) })} tone="primary" icon="time-outline" /> : null}
                 {o.dispatch.delivery_otp && status === 'DISPATCHED' ? (
-                  <View style={{ backgroundColor: colors.primarySoft, borderRadius: 14, padding: 12, gap: 4 }}>
-                    <AppText variant="caption" color="primary">{t('order.otp')}</AppText>
-                    <AppText variant="display" color="primary" style={{ letterSpacing: 6 }}>{o.dispatch.delivery_otp}</AppText>
+                  <View style={{ backgroundColor: colors.accentSoft, borderRadius: 14, padding: 12, gap: 4, borderWidth: 1, borderColor: colors.accent }}>
+                    <Row gap={6}>
+                      <Ionicons name="key" size={14} color={colors.accentInk} />
+                      <AppText variant="caption" color="accentInk" weight="bold">{t('order.otp')}</AppText>
+                    </Row>
+                    <AppText variant="display" color="accentInk" style={{ letterSpacing: 8 }}>{o.dispatch.delivery_otp}</AppText>
                     <AppText variant="caption" color="textMuted">{t('order.otpHint')}</AppText>
                   </View>
                 ) : null}
@@ -232,8 +256,11 @@ export default function OrderScreen() {
         ) : null}
 
         {o.status === 'DELIVERED' && !o.review ? (
-          <Card style={{ gap: 10, alignItems: 'center' }}>
-            <AppText variant="title">{t('order.deliveredBody')}</AppText>
+          <Card style={{ gap: 12, alignItems: 'center', paddingVertical: 18 }} level={2}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="star" size={26} color={colors.star} />
+            </View>
+            <AppText variant="title" align="center">{t('order.deliveredBody')}</AppText>
             <Button testID="rate-order" title={t('order.rate')} icon="star" variant="action" onPress={() => router.push(`/review/${o.id}`)} />
           </Card>
         ) : null}
@@ -280,27 +307,25 @@ export default function OrderScreen() {
             </View>
           ))}
           <Divider />
-          <Row justify="space-between">
-            <AppText variant="bodySmall" color="textMuted">{t('cart.itemTotal')}</AppText>
-            <AppText variant="bodySmall">{formatINR(o.item_total + o.installation_total)}</AppText>
-          </Row>
-          {o.fulfilment === 'delivery' ? (
-            <Row justify="space-between">
-              <AppText variant="bodySmall" color="textMuted">{t('cart.delivery')}</AppText>
-              <AppText variant="bodySmall">{o.delivery_charge ? formatINR(o.delivery_charge) : t('common.free')}</AppText>
-            </Row>
-          ) : null}
-          <Row justify="space-between">
-            <AppText variant="title">{t('cart.grandTotal')}</AppText>
-            <AppText variant="price">{formatINR(o.grand_total)}</AppText>
-          </Row>
+          <BillDetails
+            rows={[
+              { label: t('cart.itemTotal'), value: formatINR(o.item_total + o.installation_total) },
+              ...(o.fulfilment === 'delivery'
+                ? [{ label: t('cart.delivery'), value: o.delivery_charge ? formatINR(o.delivery_charge) : t('common.free'), tone: o.delivery_charge ? undefined : ('offer' as const) }]
+                : []),
+              { label: t('cart.grandTotal'), value: formatINR(o.grand_total) },
+            ]}
+          />
           {o.payments.map((p, i) => (
             <Tag key={i} tone="success" icon="checkmark-circle" label={t('order.paidVia', { method: t(`payment.${p.method}`) })} />
           ))}
         </Card>
 
         <Card style={{ gap: 6 }}>
-          <AppText variant="title">{o.fulfilment === 'pickup' ? t('order.pickupAt') : t('order.address')}</AppText>
+          <Row gap={8}>
+            <Ionicons name={o.fulfilment === 'pickup' ? 'storefront-outline' : 'location-outline'} size={18} color={colors.primary} />
+            <AppText variant="title">{o.fulfilment === 'pickup' ? t('order.pickupAt') : t('order.address')}</AppText>
+          </Row>
           <AppText variant="bodySmall" color="textMuted">
             {o.fulfilment === 'pickup'
               ? [shop.name, shop.address_line].filter(Boolean).join(', ')

@@ -12,7 +12,7 @@ import { LANGUAGES, useTranslation } from '@/shared/i18n';
 import { deleteAccount, signOut } from '@/shared/lib/auth';
 import { openUrl } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, confirmDialog, Divider, Header, Input, ListItem, Row, Screen, Sheet, toast } from '@/shared/ui';
+import { AppText, BrandGradient, Button, Card, confirmDialog, Divider, Header, Input, ListItem, Row, Screen, Sheet, toast } from '@/shared/ui';
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -33,28 +33,32 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen header={<Header title={t('profile.title')} back={false} />}>
-      <Card>
-        <Row gap={14}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-            <AppText variant="h2" color="#FFFFFF">{(user?.name ?? 'G')[0]}</AppText>
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="h3">{user?.name}</AppText>
-            <AppText variant="bodySmall" color="textMuted">{formatPhone(user?.phone)}</AppText>
-          </View>
-          <Button
-            title={t('common.edit')}
-            variant="ghost"
-            size="sm"
-            onPress={() => {
-              setName(user?.name ?? '');
-              setEditName(true);
-            }}
-          />
-        </Row>
-      </Card>
-
+    <Screen
+      brand
+      header={
+        <Header variant="brand" title={t('profile.title')} back={false}>
+          <Row gap={14}>
+            <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.35)' }}>
+              <AppText variant="h2" color="onAccent">{(user?.name ?? 'G')[0]}</AppText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="h3" color="onBrand">{user?.name}</AppText>
+              <AppText variant="bodySmall" color="onBrandMuted">{formatPhone(user?.phone)}</AppText>
+            </View>
+            <Button
+              title={t('common.edit')}
+              variant="onBrand"
+              size="sm"
+              icon="create-outline"
+              onPress={() => {
+                setName(user?.name ?? '');
+                setEditName(true);
+              }}
+            />
+          </Row>
+        </Header>
+      }
+    >
       <Card padded={false} style={{ paddingHorizontal: 10 }}>
         <ListItem icon="location-outline" title={t('profile.addresses')} onPress={() => router.push('/addresses')} />
         <Divider />
@@ -80,18 +84,19 @@ export default function ProfileScreen() {
       </Card>
 
       {config.app === 'all' || config.partnerAppUrl ? (
-        <Card style={{ backgroundColor: colors.actionSoft, gap: 8 }}>
-          <AppText variant="title">{t('profile.ownShop')}</AppText>
-          <AppText variant="bodySmall" color="textMuted">{t('profile.ownShopBody')}</AppText>
+        <BrandGradient style={{ borderRadius: 20, padding: 18, gap: 8 }}>
+          <AppText variant="h3" color="onBrand">{t('profile.ownShop')}</AppText>
+          <AppText variant="bodySmall" color="onBrandMuted">{t('profile.ownShopBody')}</AppText>
           <Button
             testID="switch-to-shop"
             title={t('profile.switchToShop')}
             icon="storefront"
-            variant="action"
+            variant="onBrand"
             onPress={config.app === 'all' ? switchRole : () => openUrl(config.partnerAppUrl)}
             loading={update.isPending}
+            style={{ alignSelf: 'flex-start', marginTop: 4 }}
           />
-        </Card>
+        </BrandGradient>
       ) : null}
 
       <Card padded={false} style={{ paddingHorizontal: 10 }}>
