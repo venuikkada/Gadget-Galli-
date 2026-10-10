@@ -127,6 +127,7 @@ Try this: log in as Ravi and search **`rtx 4060`**. Only KPHB Computer World and
 | `pnpm e2e:prepare && pnpm dev-stack --serve-admin apps/admin/dist --serve-mobile apps/mobile/dist`, then `pnpm e2e` | **End-to-end browser test (Playwright).** A customer searches "rtx4060", compares shops and orders on WhatsApp. The shop accepts, records the UPI payment with a photo, packs the order and sends it with Rapido. The customer confirms delivery and leaves a review. A new owner registers a shop through all 8 steps. The admin reviews the documents and approves the shop and a custom product. The app switches to Telugu, and a share page opens. Screenshots go to `test-results/smoke/`. Run `pnpm dev-stack:reset` first for fresh data. |
 | `pnpm deploy:hostinger`, then `pnpm deploy:check` (dev stack running, fresh data) | Builds the three website packages, then serves them on three local ports the way Hostinger will and checks each in a browser: the customer and partner sites keep to their own side, the switch buttons open the other site, addresses work on reload, and share pages link to the customer site. |
 | `pnpm screenshots` (same setup as `pnpm e2e`, on fresh data) | Captures 46 curated screens of all three apps: one order from search to review, customer and shop side by side, then a tour of every part. Writes them with captions and a gallery page to `test-results/screenshots/`. Useful for pitching shops, brochures and Reels. (Google Play wants screenshots no taller than 2:1, so take store screenshots on a phone.) Build with `GG_SHARE_BASE_URL=https://gadgetgalli.in pnpm e2e:prepare` so share links show your domain. |
+| `pnpm brand:assets` | Not a check: re-renders the app icon, Android adaptive icons, splash, favicons, the admin logo and the link-preview image from `brand/mark.svg`. Run it after changing the logo, then commit the PNGs. |
 
 ## Repository layout
 
@@ -135,9 +136,11 @@ apps/
   mobile/            Expo SDK 56 app (expo-router). src/customer, src/partner, src/shared, src/app (routes)
   admin/             React + Vite + Tailwind admin panel and public share pages
 packages/
-  shared/            Types, order status machine, ₹/phone/IST formatting, WhatsApp & UPI links (used by both apps)
+  shared/            Types, order status machine, ₹/phone/IST formatting, WhatsApp & UPI links, brand palette (used by both apps)
+brand/
+  mark.svg           The logo; pnpm brand:assets renders every icon from it
 supabase/
-  migrations/        Schema, search, order workflow, RLS, storage, realtime/push/jobs (10 files)
+  migrations/        Schema, search, order workflow, RLS, storage, realtime/push/jobs, brand palette (11 files)
   seed/              Demo data generator (zones, 57 areas, categories, 172 products, 16 shops, 90 orders…)
   seed.sql           Generated demo data (pnpm db:seed:generate)
   functions/         Edge functions: send-push, order-jobs, delete-account

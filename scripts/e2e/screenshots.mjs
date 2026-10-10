@@ -437,16 +437,16 @@ function gallery(list) {
 <style>
 /* Layout: one centred column; phone screens in a wrapping grid, admin screens two across. Colours and fonts are the app's own. */
 :root {
-  --bg: #F8FAFC; --surface: #FFFFFF; --text: #0F172A; --muted: #475569; --line: #E2E8F0; --frame: #0F172A;
-  --primary: #4F46E5; --primary-soft: #EEF2FF; --action: #C2410C; --action-soft: #FFF1EB;
-  --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 12px 28px rgb(15 23 42 / 0.08);
+  --bg: #F4F7F7; --surface: #FFFFFF; --text: #0E1B1D; --muted: #475A5D; --line: #DCE5E5; --frame: #0E1B1D;
+  --primary: #0B7A80; --primary-soft: #E8F5F5; --action: #7A4E00; --action-soft: #FFF3D6;
+  --shadow: 0 1px 2px rgb(10 46 49 / 0.06), 0 12px 28px rgb(10 46 49 / 0.08);
   --display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
   --body: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #0B1120; --surface: #121A2E; --text: #E2E8F0; --muted: #94A3B8; --line: #1F2A40; --frame: #334155; --primary: #A5B4FC; --primary-soft: #1E1B4B; --action: #FDBA8C; --action-soft: #3A1D10; --shadow: 0 1px 2px rgb(0 0 0 / 0.4); color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #061314; --surface: #0C1D1F; --text: #E6F2F1; --muted: #A7BDBD; --line: #1F3B3F; --frame: #33464A; --primary: #5FC0C1; --primary-soft: #0E3236; --action: #FFCF5C; --action-soft: #3A2C06; --shadow: 0 1px 2px rgb(0 0 0 / 0.4); color-scheme: dark; }
 }
-:root[data-theme="dark"] { --bg: #0B1120; --surface: #121A2E; --text: #E2E8F0; --muted: #94A3B8; --line: #1F2A40; --frame: #334155; --primary: #A5B4FC; --primary-soft: #1E1B4B; --action: #FDBA8C; --action-soft: #3A1D10; --shadow: 0 1px 2px rgb(0 0 0 / 0.4); color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #061314; --surface: #0C1D1F; --text: #E6F2F1; --muted: #A7BDBD; --line: #1F3B3F; --frame: #33464A; --primary: #5FC0C1; --primary-soft: #0E3236; --action: #FFCF5C; --action-soft: #3A2C06; --shadow: 0 1px 2px rgb(0 0 0 / 0.4); color-scheme: dark; }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--body); }
 .wrap { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; }

@@ -2397,10 +2397,10 @@ insert into public.shop_stats_daily (shop_id, day, views, call_taps, whatsapp_ta
   ('22222222-0000-4000-8000-00000000000f', (now() at time zone 'Asia/Kolkata')::date - 6, 51, 12, 16, 5);
 
 insert into public.banners (title, subtitle, bg_color, link_type, link_value, sort) values
-  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay the shop by UPI', '#4F46E5', 'none', null, 1),
-  ('Graphics cards in stock near you', 'RTX 4060 · RTX 5060 · RX 7600 from ₹25,999', '#0F172A', 'search', 'graphics card', 2),
-  ('Secure your home this festive season', 'CCTV kits with same-day installation', '#FF6B35', 'category', '11', 3),
-  ('Invite friends to Gadget Galli', 'Share your code on WhatsApp', '#16A34A', 'url', '/referral', 4);
+  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay the shop by UPI', '#0B7A80', 'none', null, 1),
+  ('Graphics cards in stock near you', 'RTX 4060 · RTX 5060 · RX 7600 from ₹25,999', '#03282C', 'search', 'graphics card', 2),
+  ('Secure your home this festive season', 'CCTV kits with same-day installation', '#FFB300', 'category', '11', 3),
+  ('Invite friends to Gadget Galli', 'Share your code on WhatsApp', '#237A2E', 'url', '/referral', 4);
 
 insert into public.featured (kind, shop_id, sort) values ('shop', '22222222-0000-4000-8000-000000000002', 1), ('shop', '22222222-0000-4000-8000-00000000000d', 2), ('shop', '22222222-0000-4000-8000-000000000008', 3);
 insert into public.featured (kind, catalog_product_id, sort) values ('product', '33333333-0000-4000-8000-00000000006b', 1), ('product', '33333333-0000-4000-8000-000000000001', 2), ('product', '33333333-0000-4000-8000-00000000004f', 3);

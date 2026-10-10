@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import { formatPhone, type MyShop } from '@gg/shared';
+import { extra, formatPhone, marigold, teal, type MyShop } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { i18n, useTranslation } from '@/shared/i18n';
@@ -13,10 +13,20 @@ import { qrSvg } from '@/shared/lib/qr';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { lightColors } from '@/shared/theme/tokens';
 import { AppText, Button, Card, Header, InfoBanner, Loading, Row, Screen, ShopAvatar, toast } from '@/shared/ui';
+import { BRAND_MARK } from '@/shared/ui/brandMark';
 
 import { useMyShop } from '../api';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** The brand mark on its teal tile, as an SVG string for the printed poster. */
+const markSvg = (size: number) =>
+  `<svg width="${size}" height="${size}" viewBox="${BRAND_MARK.viewBox}" xmlns="http://www.w3.org/2000/svg"><defs>` +
+  `<linearGradient id="gt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${teal[500]}"/><stop offset="0.55" stop-color="${teal[700]}"/><stop offset="1" stop-color="${teal[900]}"/></linearGradient>` +
+  `<linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${marigold[400]}"/><stop offset="1" stop-color="${marigold[500]}"/></linearGradient></defs>` +
+  `<rect width="1024" height="1024" rx="230" fill="url(#gt)"/><g transform="translate(512 512) scale(1.1) translate(-512 -525)">` +
+  `<path d="${BRAND_MARK.handle}" fill="none" stroke="${marigold[600]}" stroke-width="${BRAND_MARK.handleWidth}" stroke-linecap="round"/>` +
+  `<path d="${BRAND_MARK.bag}" fill="url(#gb)"/><path d="${BRAND_MARK.bolt}" fill="${teal[800]}" stroke="${teal[800]}" stroke-width="10" stroke-linejoin="round"/></g></svg>`;
 
 /** A4 counter poster: shop name, big QR and the same message in English, Telugu and Hindi. */
 function posterHtml(shop: MyShop, link: string) {
@@ -34,12 +44,11 @@ function posterHtml(shop: MyShop, link: string) {
   * { box-sizing: border-box; }
   body { margin: 0; font-family: Inter, 'Noto Sans Telugu', 'Noto Sans Devanagari', sans-serif; color: ${c.text}; background: #fff; }
   .page { width: 210mm; height: 297mm; padding: 16mm 14mm; display: flex; flex-direction: column; align-items: center; text-align: center; }
-  .brand { display: flex; align-items: center; gap: 10px; font-family: Poppins, sans-serif; font-weight: 700; font-size: 22px; color: ${c.primary}; }
-  .dot { width: 34px; height: 34px; border-radius: 10px; background: ${c.action}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-family: Poppins, sans-serif; font-weight: 700; font-size: 26px; color: ${teal[800]}; }
   h1 { font-family: Poppins, sans-serif; font-size: 40px; line-height: 1.15; margin: 14mm 0 4mm; }
   .area { font-size: 18px; color: ${c.textMuted}; margin: 0; }
-  .qr { margin: 10mm 0 6mm; padding: 6mm; border: 3px solid ${c.primary}; border-radius: 18px; }
-  .scan { font-family: Poppins, sans-serif; font-size: 26px; font-weight: 700; color: ${c.action}; margin: 0 0 4mm; }
+  .qr { margin: 10mm 0 6mm; padding: 6mm; border: 4px solid ${teal[600]}; border-radius: 22px; box-shadow: 0 0 0 6px ${teal[50]}; }
+  .scan { display: inline-block; font-family: Poppins, sans-serif; font-size: 24px; font-weight: 700; color: ${extra.ink}; background: ${marigold[500]}; border-radius: 999px; padding: 8px 26px; margin: 0 0 5mm; }
   .line { margin: 2mm 0; }
   .line b { display: block; font-size: 20px; }
   .line span { font-size: 15px; color: ${c.textMuted}; }
@@ -47,7 +56,7 @@ function posterHtml(shop: MyShop, link: string) {
   .link { margin-top: 3mm; font-size: 14px; color: ${c.primary}; word-break: break-all; }
   .footer { margin-top: 4mm; font-size: 12px; color: ${c.textSubtle}; }
 </style></head><body><div class="page">
-  <div class="brand"><div class="dot">⚡</div>Gadget Galli</div>
+  <div class="brand">${markSvg(48)}Gadget Galli</div>
   <h1>${esc(shop.name ?? '')}</h1>
   <p class="area">${esc([shop.area?.name, phone ? formatPhone(phone) : null].filter(Boolean).join(' · '))}</p>
   <div class="qr">${qrSvg(link, 330, c.text)}</div>

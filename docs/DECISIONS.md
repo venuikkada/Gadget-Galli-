@@ -74,11 +74,16 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - The Telugu and Hindi texts were machine-drafted with care for placeholders and brand names. **Have a native speaker review them before launch.** `pnpm i18n:check` keeps the three files in step.
     - Category names have Telugu and Hindi columns in the database. Shop and product names stay as the shop entered them, because that's how people search.
 36. **Fonts:** Poppins (headings) and Inter (body) for English. These don't contain Telugu or Devanagari letters, so the app switches to **Noto Sans Telugu** and **Noto Sans Devanagari** in those languages.
-37. **Design tokens follow the brief:**
-    - Indigo `#4F46E5` for primary actions and Orange `#FF6B35` for buying actions.
-    - Green, Amber and Red for statuses.
-    - Background `#F8FAFC` and text `#0F172A`.
-    - Light and dark mode.
+37. **Brand palette: "Peacock Teal + Marigold".** One brand colour that none of the big Indian shopping apps use (Flipkart and Paytm are blue, Amazon navy and orange, Swiggy orange, Zomato red, Zepto and PhonePe purple, Blinkit yellow and green, Meesho and Nykaa pink). Deep teal reads as trustworthy tech; with marigold gold it also feels Indian and festive.
+    - **One source of truth:** `packages/shared/src/palette.ts` holds the scales, the light and dark tokens, gradients, category colours, banner presets and status colours. The mobile theme, the admin's Tailwind theme (`apps/admin/src/index.css`) and the icons all follow it.
+    - **Teal 600 `#0B7A80`** is the primary colour: links, chips, tabs, icons.
+    - **Teal 700 `#08656B`** fills every buy button (cart bar, ADD, Call to order, Pay by UPI, Send OTP). It is one step darker so the 82%-white captions on those buttons still pass contrast.
+    - **Marigold `#FFB300`** is only for highlights: discount and "Best price" badges, stars, count bubbles, the current order step. It is never a button and never carries white text (dark ink text instead).
+    - **Statuses:** Requested marigold, Confirmed teal, Paid lagoon blue, Packed plum, Dispatched saffron, Delivered leaf green, Rejected or problem red, Cancelled or expired grey.
+    - **Contrast is tested:** `packages/shared/src/__tests__/palette.test.ts` checks every text-on-colour pair (4.5:1 for text, 3:1 for icons) in light and dark mode. On the green "open" and red "closed" gradients, text is full white only.
+    - **Dark mode** uses deep teal-black surfaces, lighter teal for actions with dark text on them, and borders instead of shadows.
+    - **Logo:** a marigold shopping bag with a teal lightning bolt (`brand/mark.svg`). `pnpm brand:assets` renders the app icon, Android adaptive icons, splash, favicons, the admin logo and the link-preview image from it.
+    - Banners saved with the old indigo palette are mapped to the new presets in code and by the migration `20261010000011_brand_palette.sql`.
 38. **Prices** use the Indian grouping (₹1,25,000) and all times are shown in IST.
 39. **Product images:** the demo catalog has no product photos, to avoid copyright problems. The app shows a neat tile with the category icon and brand instead. Shops are encouraged to upload real photos of their stock, which also builds trust.
 40. **Home banners are admin-managed content in one language** (usually English). Add per-language columns if you want localised campaigns.

@@ -643,10 +643,10 @@ emit(`insert into public.shop_stats_daily (shop_id, day, views, call_taps, whats
 // ---------------------------------------------------------------------------
 const bannersAt = out.length;
 emit(`insert into public.banners (title, subtitle, bg_color, link_type, link_value, sort) values
-  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay the shop by UPI', '#4F46E5', 'none', null, 1),
-  ('Graphics cards in stock near you', 'RTX 4060 · RTX 5060 · RX 7600 from ₹25,999', '#0F172A', 'search', 'graphics card', 2),
-  ('Secure your home this festive season', 'CCTV kits with same-day installation', '#FF6B35', 'category', ${q(String(catId['cctv-security']))}, 3),
-  ('Invite friends to Gadget Galli', 'Share your code on WhatsApp', '#16A34A', 'url', '/referral', 4);`);
+  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay the shop by UPI', '#0B7A80', 'none', null, 1),
+  ('Graphics cards in stock near you', 'RTX 4060 · RTX 5060 · RX 7600 from ₹25,999', '#03282C', 'search', 'graphics card', 2),
+  ('Secure your home this festive season', 'CCTV kits with same-day installation', '#FFB300', 'category', ${q(String(catId['cctv-security']))}, 3),
+  ('Invite friends to Gadget Galli', 'Share your code on WhatsApp', '#237A2E', 'url', '/referral', 4);`);
 emit(`insert into public.featured (kind, shop_id, sort) values ('shop', ${q(shopById.kphb.id)}, 1), ('shop', ${q(shopById.banjara.id)}, 2), ('shop', ${q(shopById.abids.id)}, 3);
 insert into public.featured (kind, catalog_product_id, sort) values ('product', ${q(productByMn['ZT-D40600H-10M'].id)}, 1), ('product', ${q(productByMn['MTP03HN/A'].id)}, 2), ('product', ${q(productByMn['HIK-4CH-2MP-KIT'].id)}, 3);`);
 
