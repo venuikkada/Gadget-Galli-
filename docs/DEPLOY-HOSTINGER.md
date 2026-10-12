@@ -41,11 +41,7 @@ Do this three times: once for the **customer** app, once for the **partner** app
    3. `3-change-admin-passwords.sql`. **Required.** The demo admin password is published, so change it before the admin site goes online.
       - At the top of the file, put your email and two strong passwords in the quotes, then run it.
       - From then on, you log in to the admin panel with your email and the new password.
-4. Turn on phone login for the demo numbers: go to **Authentication → Sign In / Providers → Phone** and switch it on.
-   - **SMS provider:** if the form asks for one, choose Twilio and type placeholder values. The test numbers never send a real SMS.
-   - **Test Phone Numbers and OTPs:** paste the line from `test-phone-numbers.txt`.
-   - **Test OTPs valid until:** pick a date next year.
-   - Click **Save**.
+4. Phone login needs nothing for the demo. On the demo websites (`demo: true`), the demo numbers sign in with OTP `123456` and no SMS is sent. Real numbers need an SMS provider, which comes with the real launch (see "Going live for real later").
 5. Go to **Project Settings → API** (or click **Connect** at the top of the dashboard) and copy two values:
    - the **Project URL**, like `https://abcdefgh.supabase.co`;
    - the **anon public** key. Newer projects call it the **publishable** key, and it starts with `sb_publishable_`.
@@ -89,7 +85,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 - **A page shows "The app is not connected to a server yet":** `config.js` is missing the Supabase URL or key.
 - **Pages other than the home page show "404" after a refresh:** the `.htaccess` file is missing from `public_html`.
 - **A change to `config.js` doesn't show up:** clear the cache in hPanel (**Performance → Cache Manager / CDN → Purge all**), then reload.
-- **Phone login fails:** check the test numbers and the "valid until" date in Supabase (step 2.4).
+- **Phone login fails:** the demo numbers need `demo: true` in the website's `config.js` and the demo data in Supabase. Other numbers need real SMS (see "Going live for real later").
 
 ## Good to know
 

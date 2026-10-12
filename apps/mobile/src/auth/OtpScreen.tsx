@@ -12,6 +12,8 @@ import { useTheme } from '@/shared/theme/ThemeProvider';
 import { fonts, webNoOutline } from '@/shared/theme/tokens';
 import { AppText, Button, Header, Row, Screen } from '@/shared/ui';
 
+import { demoEmail, demoPassword, isDemoLogin } from './demo';
+
 export default function OtpScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -31,7 +33,9 @@ export default function OtpScreen() {
     if (value.length !== 6 || !phone) return;
     setLoading(true);
     setError(null);
-    const { error: err } = await supabase.auth.verifyOtp({ phone, token: value, type: 'sms' });
+    const { error: err } = isDemoLogin(phone)
+      ? await supabase.auth.signInWithPassword({ email: demoEmail(phone), password: demoPassword(value) })
+      : await supabase.auth.verifyOtp({ phone, token: value, type: 'sms' });
     setLoading(false);
     if (err) {
       setError(t('auth.wrongOtp'));
@@ -45,6 +49,7 @@ export default function OtpScreen() {
   const resend = async () => {
     if (!phone) return;
     setSeconds(30);
+    if (isDemoLogin(phone)) return;
     await supabase.auth.signInWithOtp({ phone });
   };
 
@@ -56,6 +61,9 @@ export default function OtpScreen() {
         </View>
         <AppText variant="h1">{t('auth.otpTitle')}</AppText>
         <AppText variant="body" color="textMuted">{t('auth.otpSent', { phone: formatPhone(phone) })}</AppText>
+        {isDemoLogin(phone) ? (
+          <AppText variant="caption" color="primary" testID="otp-demo-hint">{t('auth.demoLogin', { phone: formatPhone(phone) })}</AppText>
+        ) : null}
       </View>
       <View>
         <Row gap={10} justify="center" style={{ marginVertical: 12 }}>

@@ -115,6 +115,11 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - Each site's switch button opens the other website.
 46. **The demo phone numbers show on the login screen only in demo mode** (`EXPO_PUBLIC_DEMO=1`, or `demo: true` in a website's `config.js`). Earlier builds always showed them, which a real launch must not do.
 47. **Hostinger serves the websites; Supabase stays the backend.** Hostinger's web hosting serves files and PHP but has no Postgres, so the database, logins, storage and realtime stay on Supabase (the free tier is enough for a demo). An `.htaccess` file in each site sends every address to `index.html`, so links like `/product/…` work.
+48. **On demo websites the demo numbers sign in without SMS.**
+    - Supabase sends OTPs only after an SMS provider is switched on in its dashboard, which a demo shouldn't need.
+    - So with `demo: true`, the apps turn a demo number (+91 90000 0xxxx or 1xxxx) and the OTP into an email and password login: `<number>@demo.gadgetgalli.in` with password `gg-demo-<OTP>`. The demo data gives every demo phone account this login (`apps/mobile/src/auth/demo.ts`).
+    - A wrong OTP fails as usual, and the made-up numbers are never texted. Other numbers, and every number when `demo` is off, use SMS OTP.
+    - A real launch starts from a project without the demo data, so these logins don't exist there.
 
 ## Development and testing
 

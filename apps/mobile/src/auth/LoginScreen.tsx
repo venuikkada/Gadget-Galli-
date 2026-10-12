@@ -15,6 +15,8 @@ import { useTheme } from '@/shared/theme/ThemeProvider';
 import { shadow } from '@/shared/theme/tokens';
 import { AppText, BrandGradient, BrandMark, Button, Chip, Input, Row, TrustStrip } from '@/shared/ui';
 
+import { isDemoLogin } from './demo';
+
 const PARTNER = config.app === 'partner';
 
 export default function LoginScreen() {
@@ -31,6 +33,10 @@ export default function LoginScreen() {
       return;
     }
     setError(null);
+    if (isDemoLogin(e164)) {
+      router.push({ pathname: '/otp', params: { phone: e164 } });
+      return;
+    }
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithOtp({ phone: e164 });
     setLoading(false);
