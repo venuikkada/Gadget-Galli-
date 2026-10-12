@@ -2,17 +2,21 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { buildSpecPatch, specTemplateFor, type SpecRow } from '@gg/shared';
+
 import { errorText } from '@/shared/api/rpc';
 import { useBrands, useCategories } from '@/shared/hooks/reference';
 import { localName, useTranslation } from '@/shared/i18n';
-import { AppText, Button, Chip, Header, InfoBanner, Input, Row, Screen, toast } from '@/shared/ui';
+import { AppText, Button, Card, Chip, Header, InfoBanner, Input, Row, Screen, toast } from '@/shared/ui';
 
 import { productActions } from '../api';
+import { SpecFields, SpecRowsEditor } from '../components/SpecFields';
 
 /**
  * Add a product that is not in the master catalog yet. It goes into the catalog as "pending":
  * the shop can list and sell it right away, and the admin team reviews it (or merges it with
- * an existing product) so names stay standard and searchable.
+ * an existing product) so names stay standard and searchable. Each category has its own
+ * specification form (packages/shared/src/specs.ts).
  */
 export default function CustomProductScreen() {
   const { t } = useTranslation();
@@ -24,17 +28,21 @@ export default function CustomProductScreen() {
   const [model, setModel] = useState('');
   const [modelNumber, setModelNumber] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [storage, setStorage] = useState('');
-  const [ram, setRam] = useState('');
-  const [colour, setColour] = useState('');
-  const [size, setSize] = useState('');
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [extra, setExtra] = useState<SpecRow[]>([]);
+  const [features, setFeatures] = useState('');
+  const [inBox, setInBox] = useState('');
   const [mrp, setMrp] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; category?: string }>({});
 
   const parents = categories.filter((c) => c.parent_id == null);
   const [parentId, setParentId] = useState<number | null>(null);
-  const children = categories.filter((c) => c.parent_id === parentId);
+  // Empty until a main category is picked: a null parent would match the main categories themselves.
+  const children = parentId == null ? [] : categories.filter((c) => c.parent_id === parentId);
+  const category = categories.find((c) => c.id === categoryId);
+  const parent = categories.find((c) => c.id === (category?.parent_id ?? parentId));
+  const template = specTemplateFor(category?.slug, parent?.slug);
   const brandSuggestions = useMemo(() => {
     const q = brand.trim().toLowerCase();
     if (q.length < 1) return [];
@@ -49,21 +57,15 @@ export default function CustomProductScreen() {
     if (e.name || e.category) return;
     setSaving(true);
     try {
-      const variant = Object.fromEntries(
-        [
-          ['storage', storage],
-          ['ram', ram],
-          ['colour', colour],
-          ['size', size],
-        ].filter(([, v]) => v.trim()),
-      );
       const created = await productActions.createCustom({
         name: name.trim(),
         brand: brand.trim() || null,
         model: model.trim() || null,
         model_number: modelNumber.trim() || null,
         category_id: categoryId,
-        variant,
+        ...buildSpecPatch(template, values, extra),
+        description: features.trim() || null,
+        in_the_box: inBox.trim() || null,
         mrp: mrp ? Number(mrp) : null,
       });
       router.replace({ pathname: '/partner/product/edit', params: { catalog: created.id, q: created.name } });
@@ -77,7 +79,7 @@ export default function CustomProductScreen() {
   return (
     <Screen header={<Header title={t('p.custom.title')} />} footer={<Button testID="custom-next" title={t('p.custom.next')} iconRight="arrow-forward" variant="action" size="lg" full loading={saving} onPress={save} />}>
       <InfoBanner text={t('p.add.customHint')} />
-      <Input testID="custom-name" label={t('p.custom.name')} value={name} onChangeText={setName} placeholder="Samsung Galaxy S24 FE 5G (8GB, 128GB, Blue)" error={errors.name} />
+      <Input testID="custom-name" label={t('p.custom.name')} value={name} onChangeText={setName} placeholder={template.nameExample ?? 'Samsung Galaxy S24 FE 5G (8GB, 128GB, Blue)'} error={errors.name} />
       <View style={{ gap: 6 }}>
         <Input label={t('p.custom.brand')} value={brand} onChangeText={setBrand} autoCapitalize="words" />
         {brandSuggestions.length ? (
@@ -110,14 +112,18 @@ export default function CustomProductScreen() {
         {errors.category ? <AppText variant="caption" color="error">{errors.category}</AppText> : null}
       </View>
 
-      <Row gap={10}>
-        <Input label={t('p.custom.storage')} value={storage} onChangeText={setStorage} placeholder="128GB" style={{ flex: 1 }} />
-        <Input label={t('p.custom.ram')} value={ram} onChangeText={setRam} placeholder="8GB" style={{ flex: 1 }} />
-      </Row>
-      <Row gap={10}>
-        <Input label={t('p.custom.colour')} value={colour} onChangeText={setColour} placeholder="Blue" style={{ flex: 1 }} />
-        <Input label={t('p.custom.size')} value={size} onChangeText={setSize} placeholder='24"' style={{ flex: 1 }} />
-      </Row>
+      {category ? (
+        <Card style={{ gap: 12 }} testID="custom-specs">
+          <AppText variant="h3">{t('p.custom.specsTitle', { category: localName(category) })}</AppText>
+          <SpecFields template={template} values={values} onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))} />
+          <AppText variant="label" color="textMuted">{t('p.custom.moreSpecs')}</AppText>
+          <SpecRowsEditor rows={extra} onChange={setExtra} />
+          <Input label={t('p.custom.features')} hint={t('p.custom.featuresHint')} value={features} onChangeText={setFeatures} multiline />
+          <Input label={t('p.edit.inBox')} value={inBox} onChangeText={setInBox} />
+        </Card>
+      ) : (
+        <AppText variant="caption" color="textMuted" testID="custom-pick-category">{t('p.custom.pickCategory')}</AppText>
+      )}
       <Input label={t('p.custom.mrp')} prefix="₹" keyboardType="number-pad" value={mrp} onChangeText={(v) => setMrp(v.replace(/[^\d]/g, ''))} />
     </Screen>
   );

@@ -2,20 +2,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { CONDITIONS, variantText, type CatalogLookupItem, type Condition } from '@gg/shared';
+import { CONDITIONS, variantText, type CatalogLookupItem, type Condition, type SpecRow } from '@gg/shared';
 
 import { errorText, rpc } from '@/shared/api/rpc';
 import { PhotoPicker } from '@/shared/components/PhotoPicker';
 import { useTranslation } from '@/shared/i18n';
-import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, Chip, Header, IconButton, InfoBanner, Input, Loading, ProductImage, Row, Screen, Segmented, SwitchRow, toast } from '@/shared/ui';
+import { AppText, Button, Card, Chip, Header, InfoBanner, Input, Loading, ProductImage, Row, Screen, Segmented, SwitchRow, toast } from '@/shared/ui';
 
 import { productActions, useListing, useMyShop } from '../api';
-
-interface SpecRow {
-  k: string;
-  v: string;
-}
+import { SpecRowsEditor } from '../components/SpecFields';
 
 /**
  * Price & stock form for a listing. Params:
@@ -26,7 +21,6 @@ interface SpecRow {
  */
 export default function ProductEditScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const { id, catalog, duplicate, q: nameHint } = useLocalSearchParams<{ id?: string; catalog?: string; duplicate?: string; q?: string }>();
   const { data: shop } = useMyShop();
   const source = useListing(id ?? duplicate);
@@ -198,14 +192,7 @@ export default function ProductEditScreen() {
       <Input label={t('p.edit.inBox')} value={inBox} onChangeText={setInBox} />
       <View style={{ gap: 8 }}>
         <AppText variant="label" color="textMuted">{t('p.edit.specs')}</AppText>
-        {specs.map((s, i) => (
-          <Row key={i} gap={8}>
-            <Input placeholder={t('p.edit.specName')} value={s.k} onChangeText={(v) => setSpecs(specs.map((x, j) => (j === i ? { ...x, k: v } : x)))} style={{ flex: 1 }} />
-            <Input placeholder={t('p.edit.specValue')} value={s.v} onChangeText={(v) => setSpecs(specs.map((x, j) => (j === i ? { ...x, v } : x)))} style={{ flex: 1.4 }} />
-            <IconButton icon="close" color={colors.error} onPress={() => setSpecs(specs.filter((_, j) => j !== i))} />
-          </Row>
-        ))}
-        <Button title={t('p.edit.addSpec')} icon="add" variant="ghost" size="sm" onPress={() => setSpecs([...specs, { k: '', v: '' }])} style={{ alignSelf: 'flex-start' }} />
+        <SpecRowsEditor rows={specs} onChange={setSpecs} />
       </View>
       <SwitchRow label={t('p.edit.active')} value={active} onValueChange={setActive} />
     </Screen>

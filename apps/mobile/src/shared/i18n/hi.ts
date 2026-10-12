@@ -918,6 +918,11 @@ export const hi: Translations = {
       colour: 'रंग',
       size: 'साइज़',
       mrp: 'MRP (₹)',
+      specsTitle: '{{category}} स्पेसिफ़िकेशन',
+      pickCategory: 'स्पेसिफ़िकेशन भरने के लिए कैटेगरी चुनें',
+      moreSpecs: 'और स्पेसिफ़िकेशन',
+      features: 'मुख्य फ़ीचर',
+      featuresHint: 'हर लाइन में एक, जैसे 120Hz डिस्प्ले',
       next: 'आगे: कीमत और स्टॉक',
     },
     bulk: {

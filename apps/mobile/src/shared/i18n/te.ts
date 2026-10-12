@@ -918,6 +918,11 @@ export const te: Translations = {
       colour: 'రంగు',
       size: 'సైజ్',
       mrp: 'MRP (₹)',
+      specsTitle: '{{category}} స్పెసిఫికేషన్లు',
+      pickCategory: 'స్పెసిఫికేషన్ వివరాల కోసం కేటగిరీని ఎంచుకోండి',
+      moreSpecs: 'మరిన్ని స్పెసిఫికేషన్లు',
+      features: 'ముఖ్య ఫీచర్లు',
+      featuresHint: 'ప్రతి లైన్ లో ఒకటి, ఉదా. 120Hz డిస్ప్లే',
       next: 'ధర & స్టాక్కి వెళ్లండి',
     },
     bulk: {

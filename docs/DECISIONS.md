@@ -65,6 +65,9 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 29. **Documents** (trade licence, Udyam or GST certificate, owner ID) go to a private storage bucket. Only admins can open them, through links that expire in 5 minutes.
 30. **Products come from one master catalog**, so "iPhone 15 128 GB Black" from ten shops appears as one product with ten prices.
     - Shops can add a **custom product**. It goes to the admin's review queue and appears in customer search once approved. Duplicates can be merged into the existing product.
+    - A custom product gets its category's specification form (`packages/shared/src/specs.ts`): a laptop asks for processor, RAM, storage, display and graphics; a CCTV camera for resolution, type, night vision and use; a graphics card for GPU, memory and power.
+      - Variant options are stored in lowercase (`ram`, `storage`) and become the variant chips. Specifications use the English names customers read (`Processor`), the same keys as the catalog.
+      - Free name/value rows cover anything else. A sub-category added later uses its main category's form.
     - A shop's listing has its own price, MRP, condition (new, open box, refurbished, used), warranty, stock, installation charge, photos and notes.
 31. **Bulk upload is CSV.** Excel and Google Sheets both "Save as CSV", and the current SheetJS releases aren't published on the npm registry. Rows are matched by model number, then by exact name. Rows that don't match become custom products for review. Up to 500 rows per upload, with errors shown per row.
 32. **New orders ring loudly.**

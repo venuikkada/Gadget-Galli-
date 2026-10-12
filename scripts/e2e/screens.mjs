@@ -219,9 +219,24 @@ await step('partner: custom product → price & stock → saved', async () => {
   await dismissAlerts(s);
   await s.getByText('Add a custom product').click();
   await s.getByTestId('custom-name').fill('Nothing Phone (3a) 8 GB 128 GB Black');
+  // No sub-categories and no form until a main category is picked
+  await s.getByTestId('custom-pick-category').waitFor();
+  if (await s.getByTestId('custom-cat-smartphones').count()) throw new Error('sub-categories shown before a main category was picked');
+  // Each category has its own form: a laptop asks for graphics, a phone for its rear camera
+  await s.getByText('Laptops & Computers', { exact: true }).first().click();
+  await s.getByTestId('custom-cat-laptops').click();
+  await s.getByTestId('spec-Graphics').waitFor();
   await s.getByText('Mobiles', { exact: true }).first().click();
   await s.getByTestId('custom-cat-smartphones').click();
+  await s.getByTestId('spec-Rear camera').waitFor();
+  if (await s.getByTestId('spec-Graphics').count()) throw new Error('laptop fields shown for a phone');
+  await s.getByTestId('spec-ram-8 GB').click();
+  await s.getByTestId('spec-storage-128 GB').click();
+  await s.getByTestId('spec-Display').fill('6.77-inch AMOLED, 120Hz');
+  await s.getByTestId('spec-Rear camera').fill('50 MP + 50 MP');
+  await s.screenshot({ path: join(OUT, 'p-04a-custom-specs.png') });
   await s.getByTestId('custom-next').click();
+  await s.getByText('8 GB · 128 GB', { exact: false }).first().waitFor({ timeout: 15000 });
   await s.getByTestId('listing-price').fill('24999');
   await s.screenshot({ path: join(OUT, 'p-04-custom-price.png') });
   await s.getByTestId('save-product').click();

@@ -916,6 +916,11 @@ export const en = {
       colour: 'Colour',
       size: 'Size',
       mrp: 'MRP (₹)',
+      specsTitle: '{{category}} specifications',
+      pickCategory: 'Pick a category to see its specification fields',
+      moreSpecs: 'More specifications',
+      features: 'Key features',
+      featuresHint: 'One per line, e.g. 120Hz display',
       next: 'Continue to price & stock',
     },
     bulk: {
