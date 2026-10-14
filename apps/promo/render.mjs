@@ -3,6 +3,7 @@
 //
 //   pnpm --filter @gg/promo render            both videos + feature graphic
 //   pnpm --filter @gg/promo render -- --stills  one still per scene, to check the layout quickly
+//   pnpm --filter @gg/promo render -- --poster  the "coming soon" WhatsApp Status posters
 //
 // Uses the pre-installed Chromium when PLAYWRIGHT_BROWSERS_PATH is set (cloud sandbox), else Remotion's own.
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
@@ -28,7 +29,14 @@ const browser = browserExecutable();
 const serveUrl = await bundle({ entryPoint: join(HERE, 'src', 'index.ts') });
 const common = { serveUrl, browserExecutable: browser, chromiumOptions: { gl: 'swangle' } };
 
-if (process.argv.includes('--stills')) {
+if (process.argv.includes('--poster')) {
+  for (const lang of ['en', 'te']) {
+    const composition = await selectComposition({ ...common, id: `status-poster-${lang}` });
+    const output = join(OUT, `gadget-galli-coming-soon-${lang}.png`);
+    await renderStill({ ...common, composition, output });
+    console.log('✔', output);
+  }
+} else if (process.argv.includes('--stills')) {
   const frames = [60, 200, 340, 450, 620, 720, 860, 1000];
   for (const lang of ['en', 'te']) {
     const composition = await selectComposition({ ...common, id: `promo-${lang}` });
