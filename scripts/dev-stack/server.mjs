@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { WebSocketServer } from 'ws';
 
+import { securityHeaders } from '../deploy/security-headers.mjs';
 import { ANON_KEY, SERVICE_KEY, sign, verify } from './jwt.mjs';
 import { DATA_DIR, startPostgres, stopPostgres } from './postgres.mjs';
 
@@ -547,8 +548,10 @@ function staticServer(dir, port, label) {
     console.warn(`! ${label}: ${root}/index.html not found (build it first)`);
     return;
   }
+  const headers = securityHeaders({ dev: true });
   http
     .createServer((req, res) => {
+      for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);
       const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
       const candidates = [urlPath, `${urlPath}.html`, join(urlPath, 'index.html')];
       for (const c of candidates) {

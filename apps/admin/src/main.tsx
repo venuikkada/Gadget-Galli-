@@ -20,6 +20,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import OrdersPage from './pages/OrdersPage';
 import ReportsPage from './pages/ReportsPage';
+import SecurityPage from './pages/SecurityPage';
 import SharePage from './pages/SharePage';
 import ShopDetailPage from './pages/ShopDetailPage';
 import ShopsPage from './pages/ShopsPage';
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
           { path: 'content', element: <ContentPage /> },
           { path: 'areas', element: <AreasPage /> },
           { path: 'reports', element: <ReportsPage /> },
+          { path: 'security', element: <SecurityPage /> },
         ],
       },
     ],

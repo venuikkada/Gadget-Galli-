@@ -124,12 +124,20 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - A wrong OTP fails as usual, and the made-up numbers are never texted. Other numbers, and every number when `demo` is off, use SMS OTP.
     - A real launch starts from a project without the demo data, so these logins don't exist there.
 
+## Security
+
+49. **Defence in depth, details in [SECURITY.md](SECURITY.md).**
+    - Every table has row-level security. Signed-out visitors can only run browsing functions, and every function has a fixed `search_path`.
+    - Per-user rate limits apply to the writes a spammer would abuse.
+    - Admin 2-step verification is **optional** (the founder's choice). Once an admin turns it on, `is_admin()` requires an `aal2` session, so the password alone is not enough.
+    - Websites send a CSP and security headers. Phone apps keep the session in the Keystore or Keychain.
+
 ## Development and testing
 
-48. **No Docker was available while building**, so:
+50. **No Docker was available while building**, so:
     - `supabase/tests` runs every migration and the seed on a throwaway local Postgres, with a small auth/storage shim, and asserts search, security, the order flow and jobs.
     - `scripts/dev-stack` is a small Supabase-compatible API on the same database, used for development and the Playwright end-to-end test.
     - Official `supabase start` (Docker) works too.
-49. **Seed data is generated** by `supabase/seed/generate-seed.mjs`, which is deterministic:
+51. **Seed data is generated** by `supabase/seed/generate-seed.mjs`, which is deterministic:
     - `seed.sql` is the full demo: 16 shops, 624 listings, 90 orders in every status, reviews and search history.
     - `seed-reference.sql` is the production starter: areas, categories, brands, synonyms, 172 catalog products and banners only.

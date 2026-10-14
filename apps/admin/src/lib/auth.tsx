@@ -12,7 +12,10 @@ interface AuthState {
   loading: boolean;
   isAdmin: boolean;
   isSuper: boolean;
+  /** Signed in with the password, but 2-step verification is on and the 6-digit code is still needed. */
+  needsCode: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  verifyCode: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -23,12 +26,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsCode, setNeedsCode] = useState(false);
 
   const loadProfile = useCallback(async (s: Session | null) => {
     if (!s) {
       setProfile(null);
+      setNeedsCode(false);
       return;
     }
+    setNeedsCode(await codeStillNeeded());
     try {
       setProfile(await rpc<Profile>('my_profile'));
     } catch {
@@ -62,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadProfile(data.session);
   }, [loadProfile]);
 
+  const verifyCode = useCallback(async (code: string) => {
+    const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+    if (listError) throw listError;
+    const factor = factors.totp[0];
+    if (!factor) throw new Error('2-step verification is not set up for this account.');
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.trim() });
+    if (error) throw error;
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session);
+    await loadProfile(data.session);
+  }, [loadProfile]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -74,15 +92,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
-      isAdmin: !!role && !profile?.user.is_blocked,
-      isSuper: role === 'super_admin',
+      isAdmin: !!role && !profile?.user.is_blocked && !needsCode,
+      isSuper: role === 'super_admin' && !needsCode,
+      needsCode,
       signIn,
+      verifyCode,
       signOut,
       reload: () => loadProfile(session),
     };
-  }, [session, profile, loading, signIn, signOut, loadProfile]);
+  }, [session, profile, loading, needsCode, signIn, verifyCode, signOut, loadProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/** True when this account has 2-step verification on and the session has not passed it yet. */
+async function codeStillNeeded(): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    return data?.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+  } catch {
+    return false;
+  }
 }
 
 export function useAuth(): AuthState {

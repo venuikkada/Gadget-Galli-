@@ -11,6 +11,8 @@ export class ApiError extends Error {
 
 const MESSAGES: Record<string, string> = {
   NOT_AUTHENTICATED: 'Your session expired. Please log in again.',
+  RATE_LIMITED: 'Too many tries for now. Please try again later.',
+  FORBIDDEN: 'You do not have permission to do this.',
   ADMIN_ONLY: 'Only Gadget Galli admins can do this.',
   SUPER_ADMIN_ONLY: 'Only a super admin can do this.',
   REASON_REQUIRED: 'Please write a reason. The shop owner will see it.',

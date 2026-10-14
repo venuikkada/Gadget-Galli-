@@ -10,6 +10,7 @@ import {
   Moon,
   ReceiptText,
   ShieldAlert,
+  ShieldCheck,
   Store,
   Sun,
   Users,
@@ -90,6 +91,7 @@ export function Layout() {
       <NavItem to="/content" icon={<Megaphone className="size-5" />} label="Content & growth" />
       <NavItem to="/areas" icon={<Map className="size-5" />} label="Areas" />
       <NavItem to="/reports" icon={<BarChart3 className="size-5" />} label="Reports" />
+      <NavItem to="/security" icon={<ShieldCheck className="size-5" />} label="Security" />
     </nav>
   );
 

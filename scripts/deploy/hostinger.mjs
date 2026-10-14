@@ -19,6 +19,8 @@ import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } f
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { htaccessHeaders } from './security-headers.mjs';
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'deploy', 'hostinger');
 const BUILD = join(OUT, '.build');
@@ -57,17 +59,28 @@ run('apps/mobile', 'npx', ['expo', 'export', '--platform', 'web', '--clear', '--
 
 // Apache / LiteSpeed: send every address that isn't a real file to index.html (single-page app),
 // and make browsers check for a new index.html and config.js on every visit.
-const HTACCESS = `# Gadget Galli: single-page app routing for Apache / LiteSpeed (Hostinger).
+const HTACCESS = `# Gadget Galli: HTTPS, security headers and single-page app routing for Apache / LiteSpeed (Hostinger).
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  # Always HTTPS
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # Hidden files (.git, .env…) and source maps are never served
+  RewriteRule (^|/)\\.(?!well-known/) - [F,L]
+  RewriteRule \\.map$ - [F,L]
   RewriteRule ^index\\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
 </IfModule>
 
+Options -Indexes
+ServerSignature Off
+
 <IfModule mod_headers.c>
+${htaccessHeaders()}
   <FilesMatch "^(index\\.html|config\\.js)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>

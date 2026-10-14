@@ -1,10 +1,10 @@
 import 'react-native-url-polyfill/auto';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
 import { config } from '../config';
+import { sessionStorage } from './sessionStorage';
 
 const url = config.supabaseUrl;
 const anonKey = config.supabaseAnonKey;
@@ -14,7 +14,7 @@ export const isConfigured = url.length > 0 && anonKey.length > 0;
 
 export const supabase = createClient(url || 'http://localhost:54321', anonKey || 'missing-anon-key', {
   auth: {
-    storage: AsyncStorage,
+    storage: sessionStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

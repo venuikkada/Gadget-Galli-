@@ -579,6 +579,7 @@ export const en = {
     OUT_OF_STOCK: 'This item is out of stock.',
     CART_EMPTY: 'Your cart is empty.',
     ADDRESS_REQUIRED: 'Add a delivery address.',
+    RATE_LIMITED: 'Too many tries for now. Please try again later.',
     TOO_MANY_PENDING_ORDERS: 'You already have 5 orders waiting for shops. Please wait for them to respond.',
     INVALID_TRANSITION: 'This order has already moved to another step. Pull down to refresh.',
     ISSUE_WINDOW_CLOSED: 'Problems can be reported only within 7 days of delivery.',
