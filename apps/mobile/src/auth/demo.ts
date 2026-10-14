@@ -1,7 +1,7 @@
 import { config } from '@/shared/config';
 
-/** The seeded demo numbers: customers +91 90000 0xxxx, shop owners +91 90000 1xxxx. */
-const DEMO_PHONE = /^\+9190000[01]\d{4}$/;
+/** The seeded demo numbers: customers +91 90000 00001-00012, shop owners 10001-10016 and the new owner 19999. */
+const DEMO_PHONE = /^\+9190000(000(0[1-9]|1[0-2])|100(0[1-9]|1[0-6])|19999)$/;
 
 /**
  * On demo servers (`config.demo`) the demo numbers sign in without SMS: the number and the demo OTP become an email

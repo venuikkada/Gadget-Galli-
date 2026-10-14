@@ -13,7 +13,7 @@ export function securityHeaders({ dev = false } = {}) {
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https:${local}`,
     "font-src 'self' data:",
-    `connect-src 'self' https: wss:${local}`,
+    `connect-src 'self' https: wss: data: blob:${local}`,
     `media-src 'self' data: blob:${local}`,
     "worker-src 'self' blob:",
     "frame-src 'self' blob:",
