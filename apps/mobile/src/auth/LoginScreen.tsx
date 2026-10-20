@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { normalizeIndianPhone } from '@gg/shared';
 
-import { errorText } from '@/shared/api/rpc';
 import { supabase } from '@/shared/api/supabase';
 import { config } from '@/shared/config';
 import { LANGUAGES, setLanguage, useTranslation } from '@/shared/i18n';
@@ -16,6 +15,7 @@ import { shadow } from '@/shared/theme/tokens';
 import { AppText, BrandGradient, BrandMark, Button, Chip, Input, Row, TrustStrip } from '@/shared/ui';
 
 import { isDemoLogin } from './demo';
+import { smsErrorText } from './smsError';
 
 const PARTNER = config.app === 'partner';
 
@@ -41,7 +41,7 @@ export default function LoginScreen() {
     const { error: err } = await supabase.auth.signInWithOtp({ phone: e164 });
     setLoading(false);
     if (err) {
-      setError(errorText(err, t));
+      setError(smsErrorText(err, t));
       return;
     }
     router.push({ pathname: '/otp', params: { phone: e164 } });

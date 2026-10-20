@@ -13,6 +13,7 @@ import { fonts, webNoOutline } from '@/shared/theme/tokens';
 import { AppText, Button, Header, Row, Screen } from '@/shared/ui';
 
 import { demoEmail, demoPassword, isDemoLogin } from './demo';
+import { smsErrorText } from './smsError';
 
 export default function OtpScreen() {
   const { t } = useTranslation();
@@ -50,7 +51,8 @@ export default function OtpScreen() {
     if (!phone) return;
     setSeconds(30);
     if (isDemoLogin(phone)) return;
-    await supabase.auth.signInWithOtp({ phone });
+    const { error: err } = await supabase.auth.signInWithOtp({ phone });
+    setError(err ? smsErrorText(err, t) : null);
   };
 
   return (

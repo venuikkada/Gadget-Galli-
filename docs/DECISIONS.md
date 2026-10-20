@@ -152,3 +152,12 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - **Protection:** a problem report (ISSUE_REPORTED) holds the payout until it is resolved. A confirmed order with no payment claim after 24 hours expires, so shops aren't kept waiting. A payment reference that isn't in the bank can be rejected with a reason, and the customer can try again.
     - **Settings:** the Gadget Galli UPI ID and name live in `app_config` (`platform_upi_id`, `platform_upi_name`). Until they are set, customers see "payment details coming soon" instead of a QR.
     - Code: `supabase/migrations/20261020000014_platform_payments.sql`, admin `PaymentsPage.tsx`, partner `PayoutsScreen.tsx`.
+
+## Login SMS
+
+53. **Login OTPs go by SMS through MSG91, via Supabase's Send SMS hook.** The founder chose MSG91: Indian, about ₹0.20 per OTP, with help for DLT registration.
+    - Supabase creates and checks the code as before. Only the sending is replaced: Supabase Auth calls the `send-sms` edge function, which checks the hook signature (Standard Webhooks) and posts the code to MSG91's Flow API with the DLT-approved template.
+    - **Guards:** only Indian mobile numbers (`+91` and 6–9) get an SMS, which stops SMS-pumping to premium foreign numbers. The made-up demo numbers are never texted, because they fall in a real mobile series. Logs show only the last 4 digits and never the code.
+    - **Errors reach the user in their language:** the function's message starts with a code (`SMS_NOT_SET_UP`, `SMS_SEND_FAILED`…), which `apps/mobile/src/auth/smsError.ts` translates.
+    - **Demo logins stay** (#48) until the real launch.
+    - Setup: [SETUP.md](SETUP.md) §2. Code: `supabase/functions/send-sms`.

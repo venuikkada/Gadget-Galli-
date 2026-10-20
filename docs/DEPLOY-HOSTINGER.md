@@ -41,7 +41,7 @@ Do this three times: once for the **customer** app, once for the **partner** app
    3. `3-change-admin-passwords.sql`. **Required.** The demo admin password is published, so change it before the admin site goes online.
       - At the top of the file, put your email and two strong passwords in the quotes, then run it.
       - From then on, you log in to the admin panel with your email and the new password.
-4. Phone login needs nothing for the demo. On the demo websites (`demo: true`), the demo numbers sign in with OTP `123456` and no SMS is sent. Real numbers need an SMS provider, which comes with the real launch (see "Going live for real later").
+4. Phone login needs nothing for the demo. On the demo websites (`demo: true`), the demo numbers sign in with OTP `123456` and no SMS is sent. Real numbers get their OTP by SMS through MSG91 once it is set up ([SETUP.md](SETUP.md), section 2).
 5. Go to **Project Settings → API** (or click **Connect** at the top of the dashboard) and copy two values:
    - the **Project URL**, like `https://abcdefgh.supabase.co`;
    - the **anon public** key. Newer projects call it the **publishable** key, and it starts with `sb_publishable_`.
@@ -85,7 +85,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 - **A page shows "The app is not connected to a server yet":** `config.js` is missing the Supabase URL or key.
 - **Pages other than the home page show "404" after a refresh:** the `.htaccess` file is missing from `public_html`.
 - **A change to `config.js` doesn't show up:** clear the cache in hPanel (**Performance → Cache Manager / CDN → Purge all**), then reload.
-- **Phone login fails:** the demo numbers need `demo: true` in the website's `config.js` and the demo data in Supabase. Other numbers need real SMS (see "Going live for real later").
+- **Phone login fails:** the demo numbers need `demo: true` in the website's `config.js` and the demo data in Supabase. Other numbers need MSG91 set up ([SETUP.md](SETUP.md), section 2); the app says "SMS login is not switched on yet" until then.
 
 ## Good to know
 
@@ -99,7 +99,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 ## Going live for real later
 
 1. Create a new Supabase project and run `1-schema.sql` with `2-launch-data.sql`, not the demo data.
-2. Set up real SMS with DLT registration (see [SETUP.md](SETUP.md), section 2).
+2. Set up real SMS: MSG91 with DLT registration (see [SETUP.md](SETUP.md), section 2).
 3. Set `demo: false` in the two app websites' `config.js`, so the demo numbers no longer show.
 4. Connect your own domains to the three websites in hPanel (for example `gadgetgalli.in`, `partner.gadgetgalli.in` and `admin.gadgetgalli.in`), and update the addresses in every `config.js`.
    - Maps use OpenStreetMap's free tiles. Before you advertise widely, get a free map-tile key (for example from MapTiler) and fill in `mapTileUrl` and `mapAttribution` in every `config.js`, so busy days don't hit OpenStreetMap's limits.

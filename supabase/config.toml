@@ -86,12 +86,12 @@ max_frequency = "30s"
 919000010016 = "123456"
 919000019999 = "123456"
 
-# Real SMS: enable one provider (Twilio, Textlocal for India, Vonage or MessageBird) in the dashboard.
-[auth.sms.twilio]
+# Real SMS goes through MSG91 (India, DLT) via the Send SMS hook: supabase/functions/send-sms, docs/SETUP.md section 2.
+# Locally the test OTPs above are enough; to try the hook against MSG91, set enabled = true and the secrets in .env.
+[auth.hook.send_sms]
 enabled = false
-account_sid = ""
-message_service_sid = ""
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+uri = "http://host.docker.internal:54321/functions/v1/send-sms"
+secrets = "env(SEND_SMS_HOOK_SECRET)"
 
 [edge_runtime]
 enabled = true
@@ -101,6 +101,10 @@ policy = "per_worker"
 verify_jwt = false
 
 [functions.order-jobs]
+verify_jwt = false
+
+# Called by Supabase Auth, which signs each request (Standard Webhooks) instead of sending a user JWT
+[functions.send-sms]
 verify_jwt = false
 
 [functions.delete-account]

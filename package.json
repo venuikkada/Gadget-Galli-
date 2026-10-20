@@ -21,7 +21,8 @@
     "deploy:hostinger": "node scripts/deploy/hostinger.mjs",
     "deploy:check": "node scripts/deploy/check-sites.mjs",
     "dev-stack:reset": "node scripts/dev-stack/reset.mjs",
-    "i18n:check": "node scripts/check-i18n.cjs"
+    "i18n:check": "node scripts/check-i18n.cjs",
+    "functions:test": "cd supabase/functions && npx -y deno@2 test send-sms/ && npx -y deno@2 check */index.ts"
   },
   "engines": {
     "node": ">=20"

@@ -7,7 +7,7 @@ This takes Gadget Galli from the repo to a real Supabase project, real phones an
 | Service | Why | Cost |
 |---|---|---|
 | [Supabase](https://supabase.com) | Database, login, storage, realtime, edge functions | Free to start; **Pro (US$25/month)** before launch for daily backups and no pausing |
-| SMS provider with **DLT registration** (MSG91, Textlocal, Twilio…) | OTP login SMS in India | About ₹0.15–0.25 per SMS |
+| [MSG91](https://msg91.com) with **DLT registration** | OTP login SMS in India | About ₹0.15–0.25 per SMS |
 | [Expo / EAS](https://expo.dev) | Building the Android/iOS apps and sending push notifications | Free tier is enough to start |
 | Google Play Console | Publishing on Android | US$25 one time |
 | Apple Developer Program | Publishing on iPhone (optional at first; most Hyderabad customers use Android) | US$99/year |
@@ -47,16 +47,43 @@ This takes Gadget Galli from the repo to a real Supabase project, real phones an
    ```
    A super admin can then give other team members the `support` role from **Admin → Customers → Admins**. Each team member first needs their own login, created the same way in step 1.
 
-## 2. Phone OTP login (SMS)
+## 2. Phone OTP login (SMS through MSG91)
 
-Customers and shop owners log in with their phone number.
+Customers and shop owners log in with their phone number and a 6-digit code. Supabase creates the code; the **`send-sms`** edge function sends it through **MSG91** (DECISIONS #53). The apps need no change.
 
-1. **Dashboard → Authentication → Sign In / Providers → Phone**: enable it and pick a provider. Supabase supports Twilio, Twilio Verify, MessageBird, Vonage and **Textlocal (India)**. To use **MSG91** or another Indian gateway, set up a [Send SMS Auth Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-sms-hook) that calls the gateway's API.
-2. **India DLT is mandatory.** Register your company, sender ID (e.g. `GDGTGL`) and this template on your provider's DLT portal (Jio, Airtel, Vi…):
-   `{#var#} is your Gadget Galli login code. Do not share it with anyone.`
-   SMS that don't match a registered template are blocked by telecom operators.
-3. **For app store review and demos**, add test numbers under **Authentication → Phone → Test OTPs**, e.g. `919000000001=123456`. `supabase/config.toml` lists the demo numbers. Remove them from production once the stores have approved the app.
-4. **Authentication → Rate limits**: keep OTP sending at about 30 per hour per IP to stop SMS abuse.
+**A. MSG91 and DLT (start on day one; approval takes days)**
+1. Sign up at [msg91.com](https://msg91.com) and finish the KYC with your business details.
+2. **Register on a DLT portal** (Jio, Airtel, Vi or BSNL; MSG91 support can guide you). Indian operators block SMS without it.
+   - **Entity:** your business (PAN, GST or registration). Note the **Entity ID**.
+   - **Header (sender ID):** 6 letters, e.g. `GDGTGL`, type *Transactional / Service Implicit*.
+   - **Content template:** category *Service Implicit (OTP)*, exactly:
+     `{#var#} is your Gadget Galli login code. Do not share it with anyone.`
+     Note the **DLT Template ID** once approved.
+3. In MSG91, add the Entity ID and the sender ID. Then **SMS → Templates → Create**, with the same text but MSG91's variable:
+   `##otp## is your Gadget Galli login code. Do not share it with anyone.`
+   Enter the DLT Template ID and sender ID, save, and copy MSG91's **Template ID**.
+4. **MSG91 → Authkey:** create an auth key (don't restrict it to IP addresses; Supabase's servers change). Add SMS credit (about ₹0.15–0.25 per OTP).
+
+**B. Supabase (dashboard)**
+1. **Authentication → Sign In / Providers → Phone:** turn on *Enable Phone provider* and *Enable phone confirmations*. The SMS provider fields are not used once the hook below is on. If the dashboard won't save without a provider, pick one and leave its fields as placeholders.
+2. **Authentication → Hooks → Add hook → Send SMS hook → HTTPS**:
+   - URL: `https://<project-ref>.supabase.co/functions/v1/send-sms`
+   - Click **Generate secret**, copy it (it starts with `v1,whsec_`), then **Create**.
+3. **Edge Functions → Secrets** (enter them here yourself; never paste keys into a chat or the code):
+   | Name | Value |
+   |---|---|
+   | `SEND_SMS_HOOK_SECRET` | the hook secret from step 2 |
+   | `MSG91_AUTH_KEY` | MSG91 auth key |
+   | `MSG91_TEMPLATE_ID` | MSG91's Template ID (not the DLT one) |
+   | `MSG91_OTP_VAR` | only if your template's variable isn't `##otp##`, e.g. `OTP` for `##OTP##` |
+4. The function is deployed already on the demo project. On a new project: `supabase functions deploy send-sms --no-verify-jwt`.
+5. **Authentication → Rate limits:** keep SMS sending at about 30 per hour. The function also refuses non-Indian numbers, which stops SMS-pumping fraud.
+
+**C. Test it:** log in with your own number. The SMS should arrive within about 10 seconds. If it doesn't, look at **Edge Functions → send-sms → Logs** (phone numbers show only the last 4 digits). The app tells the user what went wrong:
+- "SMS login is not switched on yet": a secret is missing.
+- "We could not send the SMS": MSG91 refused, for example a wrong key or template, no credit, or a template not yet approved on DLT.
+
+**Demo numbers.** `+91 90000 xxxxx` are made up but sit in a real mobile series, so the function never texts them. On the demo websites (`demo: true`) they sign in with OTP `123456` by password, as before. For the store apps' reviewers, add them under **Authentication → Phone → Test phone numbers**, e.g. `919000000001=123456` (`supabase/config.toml` lists them). Remove these, and set `demo: false`, at the real launch.
 
 ## 3. Storage, realtime, scheduled jobs, push
 
