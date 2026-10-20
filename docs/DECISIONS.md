@@ -150,7 +150,12 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - **Payment method:** UPI to Gadget Galli only; there is no cash on delivery. The shop's own UPI ID is used only for its payouts.
     - **Payout amount:** the full order total while `commission_pct` is 0. A super admin can change the commission (0–50%) in Admin → Payments → Settings; each payout stores its commission and amount.
     - **Protection:** a problem report (ISSUE_REPORTED) holds the payout until it is resolved. A confirmed order with no payment claim after 24 hours expires, so shops aren't kept waiting. A payment reference that isn't in the bank can be rejected with a reason, and the customer can try again.
-    - **Settings:** the Gadget Galli UPI ID and name live in `app_config` (`platform_upi_id`, `platform_upi_name`). Until they are set, customers see "payment details coming soon" instead of a QR.
+    - **Ways to pay** (migration 0016):
+      - **UPI:** a one-tap button, a QR the app makes with the exact amount and order number, and optionally Gadget Galli's own uploaded QR image (bank / PhonePe Business), on which the customer types the amount.
+      - **Bank transfer (NEFT / IMPS):** account name, number, IFSC and the order number as the remark, each with a copy button. It's for orders above a customer's UPI limit.
+      - The customer enters the UPI reference or the bank UTR, and the order records the method.
+    - **Settings** (Admin → Payments → Settings, super admin): UPI ID and name, QR image (`banners/payments/…`), bank account and commission, stored in `app_config`. Customers can pay once a UPI ID **or** a complete bank account is saved (`pay_to.ready`); until then they see "payment details are being set up". The admin Dashboard and Payments page warn while nothing is saved.
+    - **Speed:** every new payment claim rings and shows a pop-up in the admin panel (realtime notification, 15 s polling as a fallback), so you can confirm within minutes. The customer's order screen updates live when you confirm.
     - Code: `supabase/migrations/20261020000014_platform_payments.sql`, admin `PaymentsPage.tsx`, partner `PayoutsScreen.tsx`.
 
 ## Login SMS

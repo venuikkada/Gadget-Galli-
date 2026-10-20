@@ -3,10 +3,9 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
+import { Platform, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, upiPaymentUrl, variantText } from '@gg/shared';
+import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, variantText } from '@gg/shared';
 import { directionsUrl } from '@gg/shared/map';
 
 import { errorText } from '@/shared/api/rpc';
@@ -14,7 +13,7 @@ import { signedUrl } from '@/shared/api/storage';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
 import { tDateTime } from '@/shared/i18n/format';
-import { callPhone, copyText, openInBrowser, openMaps, openUpi, openUrl, openWhatsApp } from '@/shared/lib/linking';
+import { callPhone, openInBrowser, openMaps, openUrl, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AppText,
@@ -27,7 +26,6 @@ import {
   ErrorState,
   Header,
   InfoBanner,
-  Input,
   Loading,
   OrderProgress,
   ProductImage,
@@ -37,10 +35,10 @@ import {
   StatusChip,
   Tag,
   toast,
-  VerifiedBadge,
 } from '@/shared/ui';
 
 import { useOrder, useOrderActions } from '../api';
+import { PayCard } from '../components/PayCard';
 import { OrderTimeline } from '@/shared/components/OrderTimeline';
 import { RouteFacts, RouteMap } from '@/shared/components/RouteMap';
 
@@ -52,7 +50,6 @@ export default function OrderScreen() {
   const { cancel, received, submitPayment } = useOrderActions(id);
   const [celebrate, setCelebrate] = useState(false);
   const [packageUri, setPackageUri] = useState<string | null>(null);
-  const [utr, setUtr] = useState('');
   const prevStatus = useRef<string | null>(null);
 
   // Live updates: order row and its timeline
@@ -76,8 +73,7 @@ export default function OrderScreen() {
   const status = effectiveStatus(o.status, o.status_before_issue);
   const shop = o.shop;
   // Customers pay Gadget Galli, which pays the shop after delivery (docs/DECISIONS.md #52).
-  const payTo = o.pay_to;
-  const upiLink = payTo?.upi_id ? upiPaymentUrl({ upiId: payTo.upi_id, payeeName: payTo.upi_name, amount: o.grand_total, orderNo: o.order_no }) : null;
+  const payReady = !!o.pay_to?.ready;
   const waText = buildWhatsAppOrderMessage({
     orderNo: o.order_no,
     shopName: shop.name,
@@ -123,19 +119,14 @@ export default function OrderScreen() {
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
-  const pay = async () => {
-    if (!upiLink) return;
-    const ok = await openUpi(upiLink);
-    if (!ok) toast(t('order.noUpiApp'), 'error');
-  };
-
-  const sendPaymentRef = async () => {
+  const sendPaymentRef = async (ref: string, method: 'upi' | 'bank_transfer') => {
     try {
-      await submitPayment.mutateAsync(utr);
-      setUtr('');
+      await submitPayment.mutateAsync({ ref, method });
       toast(t('order.paymentSent'), 'success');
+      return true;
     } catch (e) {
       toast(errorText(e, t), 'error');
+      return false;
     }
   };
 
@@ -196,66 +187,21 @@ export default function OrderScreen() {
         {resolvedIssue?.resolution ? <InfoBanner tone="success" text={t('order.issueResolved', { text: resolvedIssue.resolution })} /> : null}
         {o.updated_by_shop && status === 'CONFIRMED' ? <InfoBanner tone="warning" text={t('order.shopUpdated')} /> : null}
 
-        {/* Pay Gadget Galli by UPI, then enter the UPI reference */}
-        {status === 'CONFIRMED' && !upiLink ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
-        {status === 'CONFIRMED' && upiLink && o.payment_claimed_at ? (
+        {/* Pay Gadget Galli by UPI or bank transfer, then enter the reference */}
+        {status === 'CONFIRMED' && !payReady ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
+        {status === 'CONFIRMED' && payReady && o.payment_claimed_at ? (
           <Card style={{ gap: 8, backgroundColor: colors.primarySoft, borderWidth: 1.5, borderColor: colors.primary }} level={2} testID="payment-verifying">
             <Row gap={10}>
               <Ionicons name="hourglass-outline" size={22} color={colors.primary} />
               <AppText variant="h3" style={{ flex: 1 }}>{t('order.paymentSent')}</AppText>
             </Row>
             <AppText variant="bodySmall" color="textMuted">{t('order.paymentVerifying')}</AppText>
-            <AppText variant="caption" color="textMuted">{t('order.utrShown', { ref: o.payment_ref ?? '' })}</AppText>
+            <AppText variant="caption" color="textMuted">
+              {o.payment_method === 'bank_transfer' ? t('order.bankUtrShown', { ref: o.payment_ref ?? '' }) : t('order.utrShown', { ref: o.payment_ref ?? '' })}
+            </AppText>
           </Card>
         ) : null}
-        {status === 'CONFIRMED' && upiLink && !o.payment_claimed_at ? (
-          <Card style={{ gap: 12, backgroundColor: colors.accentSoft, borderWidth: 1.5, borderColor: colors.accent }} level={2}>
-            <Row gap={10}>
-              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="wallet" size={19} color={colors.onAccent} />
-              </View>
-              <AppText variant="h3" style={{ flex: 1 }}>{t('order.payTitle')}</AppText>
-            </Row>
-            <AppText variant="bodySmall" color="textMuted">{t('order.payBody', { amount: formatINR(o.grand_total) })}</AppText>
-            {o.payment_rejected_reason ? <InfoBanner tone="error" text={t('order.paymentRejected', { reason: o.payment_rejected_reason })} /> : null}
-            <Pressable onPress={() => { copyText(payTo!.upi_id!); toast(t('common.copied'), 'success'); }}>
-              <Row justify="space-between" style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="caption" color="textMuted">{t('order.upiId')}</AppText>
-                  <Row gap={6}>
-                    <AppText variant="title" selectable testID="pay-upi-id">{payTo!.upi_id}</AppText>
-                    <VerifiedBadge small />
-                  </Row>
-                  <AppText variant="caption" color="textMuted">{payTo!.upi_name}</AppText>
-                </View>
-                <Ionicons name="copy-outline" size={18} color={colors.primary} />
-              </Row>
-            </Pressable>
-            <Button testID="pay-upi" title={t('order.pay', { amount: formatINR(o.grand_total) })} icon="flash" variant="action" size="xl" full onPress={pay} />
-            <View style={{ alignItems: 'center', gap: 8, paddingTop: 4 }}>
-              <AppText variant="caption" color="textMuted">{t('order.scanQr')}</AppText>
-              <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 12 }}>
-                <QRCode value={upiLink} size={160} />
-              </View>
-            </View>
-            <Divider />
-            <AppText variant="title">{t('order.afterPaying')}</AppText>
-            <Input
-              testID="payment-ref"
-              label={t('order.utrLabel')}
-              hint={t('order.utrHint')}
-              value={utr}
-              onChangeText={(v) => setUtr(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30))}
-              autoCapitalize="characters"
-              keyboardType="default"
-            />
-            <Button testID="payment-done" title={t('order.iPaid')} icon="checkmark-circle" variant="primary" full disabled={utr.length < 6} loading={submitPayment.isPending} onPress={sendPaymentRef} />
-            <Row gap={8} align="flex-start">
-              <Ionicons name="shield-checkmark" size={16} color={colors.success} style={{ marginTop: 2 }} />
-              <AppText variant="caption" color="textMuted" style={{ flex: 1 }}>{t('order.payTrust')}</AppText>
-            </Row>
-          </Card>
-        ) : null}
+        {status === 'CONFIRMED' && payReady && !o.payment_claimed_at ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
 
         {/* Where the shop and the delivery address are, how far and how long the ride is */}
         {!ended ? (

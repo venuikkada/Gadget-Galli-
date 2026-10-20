@@ -588,11 +588,14 @@ emit(`insert into public.dispatch_details (order_id, service, rider_name, rider_
 emit(`insert into public.payments_log (order_id, method, amount, upi_txn_id, recorded_by, created_at) values\n${paymentRows.join(',\n')};`);
 // Payments to Gadget Galli and payouts to shops: the UPI reference on paid orders, one payment waiting to be
 // verified, and payouts paid (delivered over 3 days ago), due (recent) or held (problem reported after delivery).
-emit(`insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0')
+// Demo payment details (fictional account): customers can pay by UPI or bank transfer.
+emit(`insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0'),
+  ('platform_bank_account_name', 'Gadget Galli Technologies'), ('platform_bank_account_number', '000123456789'),
+  ('platform_bank_ifsc', 'HDFC0001234'), ('platform_bank_name', 'HDFC Bank, Kukatpally')
   on conflict (key) do update set value = excluded.value;
-update public.orders o set payment_ref = p.upi_txn_id, payment_claimed_at = o.paid_at - interval '4 minutes'
+update public.orders o set payment_ref = p.upi_txn_id, payment_method = p.method, payment_claimed_at = o.paid_at - interval '4 minutes'
   from public.payments_log p where p.order_id = o.id;
-update public.orders set payment_ref = '415628930417', payment_claimed_at = confirmed_at + interval '6 minutes'
+update public.orders set payment_ref = '415628930417', payment_method = 'upi', payment_claimed_at = confirmed_at + interval '6 minutes'
  where id = (select id from public.orders where status = 'CONFIRMED' order by confirmed_at desc limit 1);
 update public.orders set payout_amount = grand_total, commission_amount = 0,
        payout_status = case when status = 'ISSUE_REPORTED' then 'held'

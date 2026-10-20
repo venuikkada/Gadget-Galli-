@@ -168,6 +168,13 @@ try {
   await step('customer pays Gadget Galli and enters the UPI reference', async () => {
     await customer.goto(`${MOBILE}/order/${orderId}`);
     await customer.getByTestId('pay-upi-id').getByText('gadgetgalli@ybl').waitFor({ timeout: 15000 });
+    await customer.getByTestId('pay-qr').waitFor();
+    // Bank transfer is the other way to pay: account details with copy buttons
+    await customer.getByText('Bank transfer', { exact: true }).click();
+    await customer.getByTestId('bank-ifsc').getByText('HDFC0001234').waitFor({ timeout: 5000 });
+    await customer.getByTestId('bank-remark').getByText(orderNo).waitFor();
+    await shot(customer, '06a-customer-bank-transfer');
+    await customer.getByText('UPI', { exact: true }).click();
     await customer.getByTestId('payment-ref').fill('412345678901');
     await shot(customer, '06b-customer-pays-gadget-galli');
     await customer.getByTestId('payment-done').click();

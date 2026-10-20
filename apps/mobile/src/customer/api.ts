@@ -229,7 +229,8 @@ export function useOrderActions(orderId: string) {
   });
   // "I've paid": the UPI reference of the payment to Gadget Galli, which an admin then confirms.
   const submitPayment = useMutation({
-    mutationFn: (ref: string) => rpc<Order>('customer_submit_payment', { p_order_id: orderId, p_ref: ref }),
+    mutationFn: ({ ref, method }: { ref: string; method: 'upi' | 'bank_transfer' }) =>
+      rpc<Order>('customer_submit_payment', { p_order_id: orderId, p_ref: ref, p_method: method }),
     onSuccess: afterOrderChange,
   });
   return { cancel, received, submitPayment };

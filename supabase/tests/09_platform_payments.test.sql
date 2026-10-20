@@ -5,7 +5,7 @@ begin;
 -- Settings: only valid UPI IDs and commissions, super admins only
 select pg_temp.act_as('ravi');
 set role authenticated;
-select pg_temp.expect_error($q$select public.admin_save_payment_settings('x@ybl', 'X', 0)$q$, 'SUPER_ADMIN_ONLY%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"upi_id": "x@ybl"}')$q$, 'SUPER_ADMIN_ONLY%');
 select pg_temp.expect_error($q$select public.admin_list_payouts('due')$q$, 'ADMIN_ONLY%');
 select pg_temp.expect_error($q$select public.admin_confirm_payment((select id from public.orders limit 1))$q$, 'ADMIN_ONLY%');
 -- A customer cannot pay for someone else's order
@@ -17,13 +17,30 @@ reset role;
 
 select pg_temp.act_as('admin');
 set role authenticated;
-select pg_temp.expect_error($q$select public.admin_save_payment_settings('not a upi', 'Gadget Galli', 0)$q$, 'INVALID_UPI%');
-select pg_temp.expect_error($q$select public.admin_save_payment_settings('gadgetgalli@ybl', 'Gadget Galli', 60)$q$, 'INVALID_COMMISSION%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"upi_id": "not a upi"}')$q$, 'INVALID_UPI%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"upi_id": "gadgetgalli@ybl", "commission_pct": 60}')$q$, 'INVALID_COMMISSION%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"bank_account_name": "GG", "bank_account_number": "12345678901", "bank_ifsc": "HDFC1234"}')$q$, 'INVALID_IFSC%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"bank_account_name": "GG", "bank_account_number": "12AB", "bank_ifsc": "HDFC0001234"}')$q$, 'INVALID_BANK_ACCOUNT%');
+select pg_temp.expect_error($q$select public.admin_save_payment_settings('{"qr_path": "../secret.png"}')$q$, 'INVALID_QR%');
 do $$
 declare
-  r jsonb := public.admin_save_payment_settings('GadgetGalli@ybl', 'Gadget Galli', 5);
+  r jsonb;
+  o jsonb;
+  oid uuid := (select id from public.orders where status = 'CONFIRMED' and payment_claimed_at is null limit 1);
 begin
-  assert r->>'upi_id' = 'gadgetgalli@ybl' and (r->>'commission_pct')::numeric = 5, format('settings not saved: %s', r);
+  -- Nothing saved: customers cannot pay yet
+  r := public.admin_save_payment_settings('{}');
+  assert not (r->>'ready')::boolean and r->>'upi_id' is null and r->'bank' = 'null'::jsonb, format('empty settings should not be ready: %s', r);
+
+  -- Bank account only: ready, and pay_to carries it
+  r := public.admin_save_payment_settings('{"bank_account_name": "Gadget Galli Technologies", "bank_account_number": "0001 2345 6789", "bank_ifsc": "hdfc0001234", "bank_name": "HDFC Bank"}');
+  assert (r->>'ready')::boolean and r->'bank'->>'account_number' = '000123456789' and r->'bank'->>'ifsc' = 'HDFC0001234', format('bank not saved: %s', r);
+
+  -- Everything: UPI, QR image, bank, commission
+  r := public.admin_save_payment_settings('{"upi_id": "GadgetGalli@ybl", "upi_name": "Gadget Galli", "qr_path": "payments/qr.png", "bank_account_name": "Gadget Galli Technologies", "bank_account_number": "000123456789", "bank_ifsc": "HDFC0001234", "bank_name": "HDFC Bank", "commission_pct": 5}');
+  assert r->>'upi_id' = 'gadgetgalli@ybl' and r->>'qr_path' = 'payments/qr.png' and (r->>'commission_pct')::numeric = 5, format('settings not saved: %s', r);
+  o := public.get_order(oid);
+  assert o->'pay_to'->>'upi_id' = 'gadgetgalli@ybl' and o->'pay_to'->'bank'->>'ifsc' = 'HDFC0001234', format('admin order view misses pay_to: %s', o->'pay_to');
 end $$;
 
 -- Rejecting a claimed payment clears it and tells the customer
@@ -43,6 +60,57 @@ do $$ begin
   assert exists (select 1 from public.notifications n join public.orders x on x.id = (n.data->>'order_id')::uuid
                  where n.user_id = x.customer_id and n.kind = 'payment_not_found'), 'customer not told';
 end $$;
+set role authenticated;
+
+-- A customer pays by bank transfer; the confirmation records it as a bank transfer (undone afterwards, so the
+-- later tests still have their unpaid orders)
+reset role;
+savepoint bank_payment;
+do $$
+declare
+  oid uuid;
+  cust uuid;
+begin
+  select id, customer_id into oid, cust from public.orders
+   where status = 'CONFIRMED' and payment_claimed_at is null order by confirmed_at desc limit 1;
+  assert oid is not null, 'demo data has no unpaid confirmed order';
+  perform set_config('test.bank_order', oid::text, false);
+  perform set_config('test.bank_customer', cust::text, false);
+end $$;
+select pg_temp.act_as('bank_customer');
+set role authenticated;
+do $$
+declare
+  oid uuid := current_setting('test.bank_order')::uuid;
+  o jsonb := public.get_order(oid);
+begin
+  assert o->'pay_to'->'bank'->>'account_number' = '000123456789' and (o->'pay_to'->>'ready')::boolean,
+    format('customer should see the bank account: %s', o->'pay_to');
+  perform pg_temp.expect_error(format('select public.customer_submit_payment(%L, %L, %L)', oid, '412345678901', 'cash'), 'PAYMENT_METHOD_UNAVAILABLE%');
+  o := public.customer_submit_payment(oid, 'hdfc n5202 4102 0123 45678', 'bank_transfer');
+  assert o->>'payment_method' = 'bank_transfer' and o->>'payment_ref' = 'HDFCN52024102012345678', format('bank claim not saved: %s', o);
+end $$;
+reset role;
+select pg_temp.act_as('admin');
+set role authenticated;
+do $$
+declare
+  oid uuid := current_setting('test.bank_order')::uuid;
+  o jsonb;
+begin
+  assert exists (select 1 from jsonb_array_elements(public.admin_list_payments_to_verify()->'items') e
+                 where (e->>'id')::uuid = oid and e->>'payment_method' = 'bank_transfer'), 'bank payment not listed with its method';
+  o := public.admin_confirm_payment(oid);
+  assert o->>'status' = 'PAID', 'bank payment not confirmed';
+end $$;
+reset role;
+do $$ begin
+  assert (select method from public.payments_log where order_id = current_setting('test.bank_order')::uuid order by id desc limit 1) = 'bank_transfer',
+    'payments_log should record a bank transfer';
+  assert exists (select 1 from public.notifications where kind = 'payment_claimed' and data->>'method' = 'bank_transfer'), 'admins not alerted with the method';
+end $$;
+rollback to savepoint bank_payment;
+select pg_temp.act_as('admin');
 set role authenticated;
 
 -- Delivery makes the payout due (with the 5% commission set above); a problem report holds it
@@ -99,6 +167,8 @@ declare
   p jsonb := public.shop_payouts();
 begin
   assert jsonb_array_length(p->'items') > 0, 'shop sees no payouts';
+  assert not exists (select 1 from public.orders o where o.shop_id = current_setting('test.kphb')::uuid
+                     and public.get_order(o.id)->'pay_to' <> 'null'::jsonb), 'a shop must not see where customers pay';
   assert not exists (select 1 from jsonb_array_elements(p->'items') e join public.orders o on o.id = (e->>'id')::uuid
                      where o.shop_id <> current_setting('test.kphb')::uuid), 'shop sees another shop''s payouts';
 end $$;

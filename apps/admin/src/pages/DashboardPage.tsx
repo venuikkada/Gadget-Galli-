@@ -9,7 +9,7 @@ import { useOverview } from '@/components/Layout';
 import { Badge, Card, Empty, ErrorBox, OrderStatusBadge, PageHeader, ShopStatusBadge, Spinner, Stat } from '@/components/ui';
 import { errorMessage, rpc } from '@/lib/api';
 import { chartTheme, useIsDark } from '@/lib/chartTheme';
-import type { AdminIssueRow, AdminOrderRow, AdminShopRow, Paged, Reports } from '@/lib/types';
+import type { AdminIssueRow, AdminOrderRow, AdminShopRow, Paged, PaymentSettings, Reports } from '@/lib/types';
 
 function istDate(offsetDays = 0) {
   const d = new Date(Date.now() + 5.5 * 3600_000 + offsetDays * 86_400_000);
@@ -25,11 +25,17 @@ export default function DashboardPage() {
   const shops = useQuery({ queryKey: ['shops', 'under_review', 'dash'], queryFn: () => rpc<Paged<AdminShopRow>>('admin_list_shops', { p_status: 'under_review', p_limit: 5 }) });
   const stuck = useQuery({ queryKey: ['orders', 'stuck', 'dash'], queryFn: () => rpc<Paged<AdminOrderRow>>('admin_list_orders', { p_filters: { stuck_only: true }, p_limit: 6 }) });
   const issues = useQuery({ queryKey: ['issues', 'open', 'dash'], queryFn: () => rpc<AdminIssueRow[]>('admin_list_issues', { p_status: 'open', p_limit: 5 }) });
+  const payInfo = useQuery({ queryKey: ['payments', 'settings'], queryFn: () => rpc<PaymentSettings>('platform_payment_info') });
 
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard" subtitle={`Today in Hyderabad · ${formatDateIST(new Date())}`} />
       {overview.isError ? <ErrorBox error={errorMessage(overview.error)} onRetry={() => overview.refetch()} /> : null}
+      {payInfo.data && !payInfo.data.ready ? (
+        <Link to="/payments?tab=settings" className="block rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
+          <strong>Customers cannot pay yet.</strong> Add Gadget Galli's UPI ID, QR or bank account in Payments → Settings.
+        </Link>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat hero label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} icon={<ReceiptText className="size-5" />} />

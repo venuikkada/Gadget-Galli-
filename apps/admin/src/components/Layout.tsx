@@ -23,6 +23,7 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { rpc } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { Overview } from '@/lib/types';
+import { useAdminAlerts } from '@/lib/useAdminAlerts';
 
 import { cx } from './ui';
 
@@ -76,6 +77,7 @@ function NavItem({ to, icon, label, count, end, onClick }: { to: string; icon: R
 export function Layout() {
   const { profile, isSuper, signOut } = useAuth();
   const { data: o } = useOverview();
+  useAdminAlerts();
   const [dark, setDark] = useDarkMode();
   const [open, setOpen] = useState(false);
   const location = useLocation();

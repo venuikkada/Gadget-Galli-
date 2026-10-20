@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Copy, Phone, Wallet, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, Phone, Upload, Wallet, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
@@ -7,20 +7,27 @@ import { formatDateTimeIST, formatINR, formatPhone, isValidUpiId, timeAgo } from
 
 import { UpiQr } from '@/components/UpiQr';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, PageHeader, ReasonModal, Spinner, Table, Tabs, Td, Th, toast, Tr } from '@/components/ui';
-import { errorMessage, rpc } from '@/lib/api';
+import { errorMessage, publicUrl, rpc, uploadPublic } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { PaidPayout, PaymentSettings, PaymentsToVerify, PayoutShop } from '@/lib/types';
 
 type Tab = 'verify' | 'due' | 'held' | 'paid' | 'settings';
 
 /**
- * Customers pay Gadget Galli's UPI and enter the UPI reference; you check your bank app and confirm, and the shop
- * then packs and sends. After delivery you pay each shop by UPI and record the reference (docs/DECISIONS.md #52).
+ * Customers pay Gadget Galli by UPI or bank transfer and enter the reference; you check your bank app and confirm,
+ * and the shop then packs and sends. After delivery you pay each shop by UPI and record the reference
+ * (docs/DECISIONS.md #52). Where customers pay (UPI ID, QR image, bank account) is set in the Settings tab.
  */
 export default function PaymentsPage() {
   const { isSuper } = useAuth();
+  const settings = useQuery({ queryKey: ['payments', 'settings'], queryFn: () => rpc<PaymentSettings>('platform_payment_info'), enabled: isSuper });
   const [tab, setTab] = useState<Tab>(() => (new URLSearchParams(location.search).get('tab') as Tab) || 'verify');
-  const verify = useQuery({ queryKey: ['payments', 'verify'], queryFn: () => rpc<PaymentsToVerify>('admin_list_payments_to_verify'), refetchInterval: 30_000 });
+  const verify = useQuery({ queryKey: ['payments', 'verify'], queryFn: () => rpc<PaymentsToVerify>('admin_list_payments_to_verify'), refetchInterval: 15_000 });
+  // Nothing set up yet: open Settings first, because customers cannot pay until it is filled in
+  const notReady = isSuper && settings.data?.ready === false;
+  useEffect(() => {
+    if (notReady && !new URLSearchParams(location.search).get('tab')) setTab('settings');
+  }, [notReady]);
 
   return (
     <div className="space-y-6">
@@ -83,14 +90,14 @@ function VerifyTab({ q }: { q: ReturnType<typeof useQuery<PaymentsToVerify>> }) 
       actions={q.data?.awaiting ? <span className="text-xs text-ink-muted">{q.data.awaiting} more orders waiting for the customer to pay</span> : null}
     >
       {!items.length ? (
-        <Empty title="No payments to verify" body="When a customer pays and enters the UPI reference, it appears here." />
+        <Empty title="No payments to verify" body="When a customer pays and enters the UPI reference or bank UTR, it appears here with a sound alert." />
       ) : (
         <Table>
           <thead>
             <tr>
               <Th>Order</Th>
               <Th>Amount</Th>
-              <Th>UPI reference</Th>
+              <Th>Paid by · reference</Th>
               <Th>Customer</Th>
               <Th>Shop</Th>
               <Th className="text-right">Action</Th>
@@ -105,9 +112,10 @@ function VerifyTab({ q }: { q: ReturnType<typeof useQuery<PaymentsToVerify>> }) 
                 </Td>
                 <Td className="text-base font-bold">{formatINR(p.grand_total)}</Td>
                 <Td>
+                  <Badge tone={p.payment_method === 'bank_transfer' ? 'action' : 'primary'}>{p.payment_method === 'bank_transfer' ? 'Bank transfer' : 'UPI'}</Badge>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 font-mono text-sm"
+                    className="mt-1 flex items-center gap-1.5 font-mono text-sm"
                     onClick={() => {
                       navigator.clipboard?.writeText(p.payment_ref ?? '');
                       toast('Copied');
@@ -344,69 +352,207 @@ function PaidTab() {
 function SettingsTab() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['payments', 'settings'], queryFn: () => rpc<PaymentSettings>('platform_payment_info') });
-  const [upi, setUpi] = useState('');
-  const [name, setName] = useState('');
-  const [pct, setPct] = useState('0');
+  const [f, setF] = useState<SettingsForm>(EMPTY_SETTINGS);
+  const [accountAgain, setAccountAgain] = useState('');
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (!q.data) return;
-    setUpi(q.data.upi_id ?? '');
-    setName(q.data.upi_name ?? 'Gadget Galli');
-    setPct(String(q.data.commission_pct ?? 0));
+    const d = q.data;
+    setF({
+      upi_id: d.upi_id ?? '',
+      upi_name: d.upi_name ?? 'Gadget Galli',
+      qr_path: d.qr_path ?? '',
+      bank_account_name: d.bank?.account_name ?? '',
+      bank_account_number: d.bank?.account_number ?? '',
+      bank_ifsc: d.bank?.ifsc ?? '',
+      bank_name: d.bank?.bank_name ?? '',
+      commission_pct: String(d.commission_pct ?? 0),
+    });
+    setAccountAgain(d.bank?.account_number ?? '');
   }, [q.data]);
 
   if (q.isLoading) return <Spinner />;
   if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
-  const upiOk = isValidUpiId(upi);
+
+  const set = (k: keyof SettingsForm) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const accountDigits = f.bank_account_number.replace(/\s/g, '');
+  const ifsc = f.bank_ifsc.trim().toUpperCase();
+  const bankStarted = !!(f.bank_account_name.trim() || accountDigits || ifsc || f.bank_name.trim());
+  const errs = {
+    upi: !f.upi_id || isValidUpiId(f.upi_id) ? null : 'This does not look like a UPI ID (name@bank).',
+    accName: bankStarted && !f.bank_account_name.trim() ? 'Enter the account holder name.' : null,
+    account: bankStarted && !/^\d{9,18}$/.test(accountDigits) ? 'Account numbers have 9 to 18 digits.' : null,
+    again: bankStarted && accountAgain.replace(/\s/g, '') !== accountDigits ? 'The two account numbers do not match.' : null,
+    ifsc: bankStarted && !IFSC.test(ifsc) ? 'An IFSC has 11 characters, like HDFC0001234 (the 5th is a zero).' : null,
+  };
+  const valid = !Object.values(errs).some(Boolean);
+  const ready = valid && (!!f.upi_id || bankStarted);
+  const qrUrl = publicUrl('banners', f.qr_path);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await rpc('admin_save_payment_settings', {
+        p_settings: { ...f, bank_account_number: accountDigits, bank_ifsc: ifsc, commission_pct: Number(f.commission_pct || 0) },
+      });
+      toast('Payment details saved. Customers see them on every accepted order.');
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['overview'] });
+    } catch (e) {
+      toast(errorMessage(e), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const uploadQr = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      setF({ ...f, qr_path: await uploadPublic('banners', 'payments', file) });
+      toast('QR uploaded. Click Save to show it to customers.');
+    } catch (e) {
+      toast(errorMessage(e), 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-      <Card title="Where customers pay">
-        <div className="space-y-4">
-          {!q.data?.upi_id ? (
-            <div className="rounded-xl bg-warning-soft p-3 text-sm text-warning-ink">
-              Not set yet: customers see "payment details are being set up" and cannot pay. Add your business UPI ID below.
-            </div>
-          ) : null}
-          <Field label="Gadget Galli UPI ID" hint="Use a business / merchant UPI ID if you have one. Every customer payment goes here." error={upi && !upiOk ? 'This does not look like a UPI ID (name@bank).' : null}>
-            <Input value={upi} onChange={(e) => setUpi(e.target.value.trim())} placeholder="gadgetgalli@ybl" data-testid="settings-upi" />
-          </Field>
-          <Field label="Name customers see">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Gadget Galli" />
-          </Field>
-          <Field label="Commission kept from each payout (%)" hint="0 means shops get the full order amount. You can change this later.">
-            <Input type="number" min={0} max={50} step={0.5} value={pct} onChange={(e) => setPct(e.target.value)} className="max-w-32" />
-          </Field>
-          <Button
-            loading={busy}
-            disabled={!upiOk}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await rpc('admin_save_payment_settings', { p_upi_id: upi, p_upi_name: name, p_commission_pct: Number(pct || 0) });
-                toast('Payment settings saved.');
-                qc.invalidateQueries({ queryKey: ['payments'] });
-              } catch (e) {
-                toast(errorMessage(e), 'error');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Save
-          </Button>
+    <div className="space-y-6">
+      {!q.data?.ready ? (
+        <div className="rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="payments-not-ready">
+          <strong>Customers cannot pay yet.</strong> Add your UPI ID or bank account below and save. Until then, accepted orders show
+          "payment details are being set up".
         </div>
-      </Card>
-      <Card title="What customers scan">
-        {upiOk ? (
-          <div className="flex flex-col items-center gap-2 text-center">
-            <UpiQr upiId={upi} payeeName={name || 'Gadget Galli'} amount={1} note="test" />
-            <p className="text-xs text-ink-muted">Test it: scan with your phone and check that your name shows up (a ₹1 test).</p>
+      ) : null}
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
+          <Card title="UPI (fastest for customers)">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Gadget Galli UPI ID" hint="A business / merchant UPI ID is best." error={errs.upi}>
+                <Input value={f.upi_id} onChange={(e) => setF({ ...f, upi_id: e.target.value.trim() })} placeholder="gadgetgalli@ybl" data-testid="settings-upi" />
+              </Field>
+              <Field label="Name customers see">
+                <Input value={f.upi_name} onChange={set('upi_name')} placeholder="Gadget Galli" />
+              </Field>
+            </div>
+            <div className="mt-5 space-y-2">
+              <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Your QR image (optional)</div>
+              <p className="text-xs text-ink-muted">
+                Upload the QR from your bank or PhonePe / Paytm Business. Customers see it as a second option, under the QR the app makes with
+                the exact order amount.
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                {qrUrl ? (
+                  <img src={qrUrl} alt="Your UPI QR" className="size-28 rounded-lg border border-slate-200 bg-white object-contain p-1" data-testid="settings-qr-preview" />
+                ) : null}
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                  <Upload className="size-4" /> {uploading ? 'Uploading…' : qrUrl ? 'Replace QR' : 'Upload QR'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    data-testid="settings-qr-file"
+                    onChange={(e) => {
+                      void uploadQr(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {qrUrl ? (
+                  <Button variant="ghost" size="sm" onClick={() => setF({ ...f, qr_path: '' })}>
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Bank account (NEFT / IMPS)">
+            <p className="mb-4 text-xs text-ink-muted">For big orders above a customer's UPI limit. Customers see these details with copy buttons.</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Account holder name" error={errs.accName}>
+                <Input value={f.bank_account_name} onChange={set('bank_account_name')} placeholder="Gadget Galli Technologies" data-testid="settings-bank-holder" />
+              </Field>
+              <Field label="Bank and branch">
+                <Input value={f.bank_name} onChange={set('bank_name')} placeholder="HDFC Bank, Kukatpally" data-testid="settings-bank-bank" />
+              </Field>
+              <Field label="Account number" error={errs.account}>
+                <Input value={f.bank_account_number} onChange={set('bank_account_number')} inputMode="numeric" autoComplete="off" data-testid="settings-bank-account" />
+              </Field>
+              <Field label="Account number again" error={errs.again}>
+                <Input value={accountAgain} onChange={(e) => setAccountAgain(e.target.value)} inputMode="numeric" autoComplete="off" data-testid="settings-bank-account-again" />
+              </Field>
+              <Field label="IFSC" error={errs.ifsc}>
+                <Input value={f.bank_ifsc} onChange={(e) => setF({ ...f, bank_ifsc: e.target.value.toUpperCase() })} placeholder="HDFC0001234" maxLength={11} data-testid="settings-bank-ifsc" />
+              </Field>
+            </div>
+          </Card>
+
+          <Card title="Shop payouts">
+            <Field label="Commission kept from each payout (%)" hint="0 means shops get the full order amount. You can change this later.">
+              <Input type="number" min={0} max={50} step={0.5} value={f.commission_pct} onChange={set('commission_pct')} className="max-w-32" />
+            </Field>
+          </Card>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button loading={busy} disabled={!valid} onClick={save} data-testid="settings-save">
+              Save payment details
+            </Button>
+            {!ready ? <span className="text-sm text-ink-muted">Add a UPI ID or a bank account so customers can pay.</span> : null}
           </div>
-        ) : (
-          <p className="text-sm text-ink-muted">Enter a UPI ID to see the QR.</p>
-        )}
-      </Card>
+        </div>
+
+        <Card title="What customers see">
+          <div className="flex flex-col items-center gap-3 text-center">
+            {f.upi_id && !errs.upi ? (
+              <>
+                <UpiQr upiId={f.upi_id} payeeName={f.upi_name || 'Gadget Galli'} amount={1} note="test" />
+                <p className="text-xs text-ink-muted">Test it: scan with your phone and check that your name shows up (a ₹1 test).</p>
+              </>
+            ) : (
+              <p className="text-sm text-ink-muted">Enter a UPI ID to see the QR with the order amount.</p>
+            )}
+            {qrUrl ? <img src={qrUrl} alt="" className="size-32 rounded-lg border border-slate-200 bg-white object-contain p-1" /> : null}
+            {bankStarted && valid ? (
+              <div className="w-full rounded-xl bg-slate-50 p-3 text-left text-xs dark:bg-slate-800">
+                <div className="font-semibold">Bank transfer</div>
+                <div>{f.bank_account_name}</div>
+                <div className="font-mono">
+                  A/c {accountDigits} · {ifsc}
+                </div>
+                {f.bank_name ? <div className="text-ink-muted">{f.bank_name}</div> : null}
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
+
+interface SettingsForm {
+  upi_id: string;
+  upi_name: string;
+  qr_path: string;
+  bank_account_name: string;
+  bank_account_number: string;
+  bank_ifsc: string;
+  bank_name: string;
+  commission_pct: string;
+}
+
+const EMPTY_SETTINGS: SettingsForm = {
+  upi_id: '',
+  upi_name: 'Gadget Galli',
+  qr_path: '',
+  bank_account_name: '',
+  bank_account_number: '',
+  bank_ifsc: '',
+  bank_name: '',
+  commission_pct: '0',
+};
+
+const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;

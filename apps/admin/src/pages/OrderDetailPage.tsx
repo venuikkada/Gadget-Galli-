@@ -97,7 +97,8 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
     <div className="mt-3 space-y-3 rounded-xl bg-warning-soft p-3">
       {order.payment_claimed_at ? (
         <div className="text-sm">
-          Customer says they paid <b>{formatINR(order.grand_total)}</b> · UPI ref <span className="font-mono font-semibold">{order.payment_ref}</span>
+          Customer says they paid <b>{formatINR(order.grand_total)}</b> by {order.payment_method === 'bank_transfer' ? 'bank transfer · UTR' : 'UPI · ref'}{' '}
+          <span className="font-mono font-semibold">{order.payment_ref}</span>
           <div className="text-xs text-ink-muted">{formatDateTimeIST(order.payment_claimed_at)}</div>
         </div>
       ) : (
@@ -105,7 +106,7 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
       )}
       {order.payment_rejected_reason ? <div className="text-xs text-error-ink">Last check: {order.payment_rejected_reason}</div> : null}
       {!order.payment_claimed_at ? (
-        <Field label="UPI reference (if the customer paid but did not enter it)">
+        <Field label="UPI reference or bank UTR (if the customer paid but did not enter it)">
           <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="412345678901" />
         </Field>
       ) : null}
@@ -139,7 +140,7 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
         open={rejecting}
         onClose={() => setRejecting(false)}
         title="Payment not received"
-        description="The customer sees this message and can enter the correct UPI reference."
+        description="The customer sees this message and can enter the correct UPI reference or bank UTR."
         placeholder="No payment with this reference in the bank statement."
         confirmLabel="Tell the customer"
         danger

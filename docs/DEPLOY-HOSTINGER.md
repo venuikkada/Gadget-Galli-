@@ -89,7 +89,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 
 ## Good to know
 
-- **Set Gadget Galli's real UPI ID before taking orders:** Admin → **Payments → Settings** (super admin). Until then customers see "payment details coming soon" instead of a QR. Check each payment in your bank app before tapping **Payment received**, and pay shops from **Payouts due** after delivery.
+- **Set where customers pay before taking orders:** Admin → **Payments → Settings** (super admin): your UPI ID, your own QR image (optional) and your bank account for NEFT / IMPS. Until one of them is saved, customers see "payment details are being set up" and cannot pay. Keep the admin panel open: each new payment rings. Check each payment in your bank app before tapping **Payment received**, and pay shops from **Payouts due** after delivery.
 - **Anyone with the links can use the demo logins.** Keep this project for demos only, with the fictional demo data.
 - **Supabase's free projects pause after a week with no activity.** Open the Supabase dashboard to wake the project up.
 - **The web Shop Partner app rings for new orders only while it is open in the browser.** For the loud alarm with the phone locked, shops need the Android app (see [SETUP.md](SETUP.md), section 4).

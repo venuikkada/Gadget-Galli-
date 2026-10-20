@@ -180,7 +180,7 @@ await step('shop opens and accepts the order', async () => {
 await step('customer pays Gadget Galli by UPI', async () => {
   await visit(customer, `/order/${orderId}`);
   await customer.getByTestId('pay-upi').waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-09-pay', 'Pay Gadget Galli by UPI', 'Ravi pays Gadget Galli, not the shop: one tap opens any UPI app, or he scans the QR code. His money is safe until the phone reaches him.', 'Customer');
+  await shot(customer, 'order', 'o-09-pay', 'Pay Gadget Galli: UPI or bank', 'Ravi pays Gadget Galli, not the shop: one tap opens any UPI app, he scans the QR, or he sends a bank transfer with the details shown. His money is safe until the phone reaches him.', 'Customer');
   await customer.getByTestId('payment-ref').fill('412345678901');
   await customer.getByTestId('payment-done').click();
   await customer.getByTestId('payment-verifying').waitFor({ timeout: 15000 });
@@ -394,6 +394,8 @@ await step('admin tour', async () => {
   await shot(admin, 'admin', 'a-orders', 'Orders', 'Every order with filters. Orders that are stuck are flagged automatically.');
   await go('/payments?tab=due', 'Mark ');
   await shot(admin, 'admin', 'a-payments', 'Payments and payouts', 'Check each customer’s UPI payment against the bank, then pay shops after delivery: scan the shop’s QR for the exact total and record the reference.');
+  await go('/payments?tab=settings', 'Bank account');
+  await shot(admin, 'admin', 'a-payment-settings', 'Where customers pay', 'Set Gadget Galli’s UPI ID, upload your own QR image and add the bank account for NEFT / IMPS. Customers see them as soon as a shop accepts their order.');
   await go(`/orders/${orderId}`, 'Timeline');
   await shot(admin, 'admin', 'a-order', 'Order timeline', 'Each step with time and who did it, including payment and packing photos. Admins can step in with a note.');
   await go('/problems', 'GG-');

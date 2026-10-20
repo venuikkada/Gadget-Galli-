@@ -538,8 +538,10 @@ export interface Order {
   payment_claimed_at: string | null;
   /** Why Gadget Galli could not find the payment (the customer can try again). */
   payment_rejected_reason: string | null;
-  /** Where the customer pays: Gadget Galli's UPI (null for shops). `upi_id` is null until it is set in the admin panel. */
-  pay_to: { upi_id: string | null; upi_name: string } | null;
+  /** How the customer says they paid (UPI or bank transfer). */
+  payment_method?: PaymentMethod | null;
+  /** Where the customer pays Gadget Galli (null for shops): set in Admin -> Payments -> Settings. */
+  pay_to: PayTo | null;
   /** The shop's payout for this order (shop and admin only). */
   payout_status?: PayoutStatus | null;
   payout_amount?: number | null;
@@ -549,6 +551,16 @@ export interface Order {
 }
 
 /** not_due until delivery; due once delivered; held while a problem is open; paid once Gadget Galli pays the shop. */
+/** Gadget Galli's payment details shown to customers. `ready` is false until a UPI ID or a bank account is saved. */
+export interface PayTo {
+  upi_id: string | null;
+  upi_name: string;
+  /** Optional uploaded QR image, in the public `banners` bucket. */
+  qr_path: string | null;
+  bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null;
+  ready: boolean;
+}
+
 export type PayoutStatus = 'not_due' | 'due' | 'held' | 'paid';
 
 export interface OrderCard {

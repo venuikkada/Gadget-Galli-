@@ -1855,11 +1855,13 @@ insert into public.payments_log (order_id, method, amount, upi_txn_id, recorded_
   ('55555555-0000-4000-8000-000000000058', 'upi', 6997, '451656135616', '11111111-0000-4000-8000-000000000001', now() - interval '16198 minutes'),
   ('55555555-0000-4000-8000-00000000005a', 'upi', 40699, '410196864710', '11111111-0000-4000-8000-000000000001', now() - interval '26369 minutes');
 
-insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0')
+insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0'),
+  ('platform_bank_account_name', 'Gadget Galli Technologies'), ('platform_bank_account_number', '000123456789'),
+  ('platform_bank_ifsc', 'HDFC0001234'), ('platform_bank_name', 'HDFC Bank, Kukatpally')
   on conflict (key) do update set value = excluded.value;
-update public.orders o set payment_ref = p.upi_txn_id, payment_claimed_at = o.paid_at - interval '4 minutes'
+update public.orders o set payment_ref = p.upi_txn_id, payment_method = p.method, payment_claimed_at = o.paid_at - interval '4 minutes'
   from public.payments_log p where p.order_id = o.id;
-update public.orders set payment_ref = '415628930417', payment_claimed_at = confirmed_at + interval '6 minutes'
+update public.orders set payment_ref = '415628930417', payment_method = 'upi', payment_claimed_at = confirmed_at + interval '6 minutes'
  where id = (select id from public.orders where status = 'CONFIRMED' order by confirmed_at desc limit 1);
 update public.orders set payout_amount = grand_total, commission_amount = 0,
        payout_status = case when status = 'ISSUE_REPORTED' then 'held'

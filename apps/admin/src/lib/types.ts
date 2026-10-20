@@ -24,6 +24,7 @@ export interface PaymentToVerify {
   order_no: string;
   grand_total: number;
   payment_ref: string | null;
+  payment_method: 'upi' | 'bank_transfer' | 'cash' | null;
   payment_claimed_at: string;
   confirmed_at: string | null;
   customer_name: string | null;
@@ -65,6 +66,9 @@ export interface PaidPayout {
 export interface PaymentSettings {
   upi_id: string | null;
   upi_name: string;
+  qr_path: string | null;
+  bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null;
+  ready: boolean;
   commission_pct: number | null;
 }
 
