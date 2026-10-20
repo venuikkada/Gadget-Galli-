@@ -22,3 +22,4 @@ playwright-report/
 
 # Website packages built by pnpm deploy:hostinger
 /deploy/
+supabase/functions/deno.lock
