@@ -62,7 +62,7 @@ begin
           and day = (now() at time zone 'Asia/Kolkata')::date) >= 1, 'call tap not counted';
 end $$;
 
--- Shop: confirm with a price change agreed on the call, then paid, packed, dispatched (Porter)
+-- Shop: confirm with a price change agreed on the call; the customer then pays Gadget Galli
 select pg_temp.act_as('kphb_owner');
 set role authenticated;
 do $$
@@ -76,14 +76,55 @@ begin
   assert o->>'status' = 'CONFIRMED' and (o->>'updated_by_shop')::boolean, 'confirm with edits failed';
   assert (o->>'item_total')::numeric = 57000, format('item total after edit: %s', o->>'item_total');
   perform pg_temp.expect_error(format('select public.shop_mark_packed(%L)', oid), 'INVALID_TRANSITION%');
-  o := public.shop_mark_paid(oid, 'upi', null, '412345678901');
-  assert o->>'status' = 'PAID' and jsonb_array_length(o->'payments') = 1, 'mark paid failed';
+  perform pg_temp.expect_error(format('select public.shop_mark_paid(%L)', oid), 'PAID_TO_GADGET_GALLI%');
+  assert o->'pay_to' is null or o->'pay_to' = 'null'::jsonb, 'the shop does not need the Gadget Galli UPI';
+end $$;
+reset role;
+
+-- Customer pays the Gadget Galli UPI and enters the UPI reference; an admin checks the bank and confirms
+select pg_temp.act_as('ravi');
+set role authenticated;
+do $$
+declare
+  oid uuid := (select v::uuid from t_ctx where k = 'order');
+  o jsonb := public.get_order(oid);
+begin
+  assert o->'pay_to'->>'upi_id' = 'gadgetgalli@ybl', format('customer should pay Gadget Galli, got %s', o->'pay_to');
+  assert o->'shop'->>'upi_id' is null, 'customer should not see the shop UPI';
+  perform pg_temp.expect_error(format('select public.customer_submit_payment(%L, %L)', oid, '12'), 'PAYMENT_REF_INVALID%');
+  o := public.customer_submit_payment(oid, '4123 4567 8901');
+  assert o->>'payment_ref' = '412345678901' and o->>'payment_claimed_at' is not null, 'payment claim not saved';
+  assert o->>'status' = 'CONFIRMED', 'claiming a payment must not mark it paid';
+end $$;
+reset role;
+select pg_temp.act_as('admin');
+set role authenticated;
+do $$
+declare
+  oid uuid := (select v::uuid from t_ctx where k = 'order');
+  o jsonb;
+begin
+  assert exists (select 1 from jsonb_array_elements(public.admin_list_payments_to_verify()->'items') e where (e->>'id')::uuid = oid), 'not in the to-verify list';
+  o := public.admin_confirm_payment(oid);
+  assert o->>'status' = 'PAID' and jsonb_array_length(o->'payments') = 1 and o->'payments'->0->>'upi_txn_id' = '412345678901', 'confirm payment failed';
+end $$;
+reset role;
+
+-- Shop: packs and dispatches (Porter) once Gadget Galli has the money
+select pg_temp.act_as('kphb_owner');
+set role authenticated;
+do $$
+declare
+  oid uuid := (select v::uuid from t_ctx where k = 'order');
+  o jsonb;
+begin
+  assert exists (select 1 from public.notifications where user_id = auth.uid() and kind = 'order_paid' and (data->>'order_id')::uuid = oid), 'shop was not told the order is paid';
   o := public.shop_mark_packed(oid, null, null);
   assert o->>'status' = 'PACKED', 'mark packed failed';
   o := public.shop_dispatch_order(oid, '{"service":"porter","rider_name":"Ramu","rider_phone":"98490 12345","vehicle_no":"ts09ex4521","tracking_url":"https://porter.in/track/x","delivery_otp":"4821"}');
   assert o->>'status' = 'DISPATCHED', 'dispatch failed';
   assert o->'dispatch'->>'rider_phone' = '+919849012345' and o->'dispatch'->>'vehicle_no' = 'TS09EX4521', 'dispatch details not normalised';
-  perform pg_temp.expect_error(format('select public.shop_mark_paid(%L)', oid), 'INVALID_TRANSITION%');
+  perform pg_temp.expect_error(format('select public.shop_mark_paid(%L)', oid), 'PAID_TO_GADGET_GALLI%');
 end $$;
 reset role;
 
@@ -96,8 +137,6 @@ declare
   o jsonb := public.get_order(oid);
   r jsonb;
 begin
-  assert o->'shop'->>'upi_id' = 'kphbcomputerworld@okicici', 'customer should see the verified UPI after confirmation';
-  assert (o->'shop'->>'upi_verified')::boolean, 'UPI should be verified';
   assert o->'dispatch'->>'delivery_otp' = '4821', 'customer should see delivery OTP';
   assert (select array_agg(e->>'to' order by (e->>'id')::bigint) from jsonb_array_elements(o->'events') e)
          = array['REQUESTED', 'CONFIRMED', 'PAID', 'PACKED', 'DISPATCHED'], 'timeline wrong';

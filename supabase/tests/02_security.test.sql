@@ -40,7 +40,9 @@ select pg_temp.expect_error(format('select public.shop_confirm_order(%L)', curre
 reset role;
 select pg_temp.act_as('ravi');
 set role authenticated;
-select pg_temp.expect_error(format('select public.shop_mark_paid(%L)', current_setting('test.some_confirmed')), 'NOT_YOUR_SHOP%');
+-- Nobody marks an order paid from the apps: customers pay Gadget Galli and an admin confirms it
+select pg_temp.expect_error(format('select public.shop_mark_paid(%L)', current_setting('test.some_confirmed')), 'PAID_TO_GADGET_GALLI%');
+select pg_temp.expect_error(format('select public.admin_confirm_payment(%L)', current_setting('test.some_confirmed')), '%ADMIN%');
 -- Customers cannot touch other customers' orders
 select pg_temp.expect_error(format('select public.customer_cancel_order(%L)', current_setting('test.other_requested')), 'ORDER_NOT_FOUND%');
 do $$

@@ -497,15 +497,18 @@ function addOrder(spec) {
   ev(null, 'REQUESTED', custId, 'customer', spec.method === 'whatsapp' ? 'Customer sent the order on WhatsApp' : 'Customer is calling the shop', at.REQUESTED, { contact_method: spec.method ?? 'call' });
   const service = pickup ? 'store_pickup' : spec.service ?? pick(['porter', 'rapido', 'porter', 'own', 'uber']);
   const rider = pick(RIDERS);
-  const payMethod = pickup && rnd() < 0.5 ? 'cash' : 'upi';
+  // Payments are UPI to Gadget Galli only. The old cash-or-UPI draw is kept so the rest of the demo data stays the same.
+  const wasCash = pickup && rnd() < 0.5;
+  const payMethod = 'upi';
   for (let i = 1; i <= reach; i++) {
     const s = flow[i];
     const prev = flow[i - 1];
     if (s === 'CONFIRMED') ev(prev, s, ownerId, 'shop', spec.updated ? 'Shop updated the order after the call' : 'Confirmed on call', at[s], { updated: !!spec.updated });
     if (s === 'PAID') {
-      const txn = payMethod === 'upi' ? `4${between(10000000, 99999999)}${between(100, 999)}` : null;
-      ev(prev, s, ownerId, 'shop', `Payment received by ${payMethod === 'upi' ? 'UPI' : payMethod.replace('_', ' ')}${txn ? ` · Txn ${txn}` : ''}`, at[s], { method: payMethod, txn_id: txn });
-      paymentRows.push(`  (${q(id)}, ${q(payMethod)}, ${grand}, ${q(txn)}, ${q(ownerId)}, ${ago(at[s])})`);
+      const txn = wasCash ? `4${String(10000000000 + onum * 7919).slice(-11)}` : `4${between(10000000, 99999999)}${between(100, 999)}`;
+      // Customers pay Gadget Galli; an admin confirms the payment (supabase/migrations/20261020000014_platform_payments.sql)
+      ev(prev, s, users.admin.id, 'admin', `Payment received by Gadget Galli · UPI ref ${txn}`, at[s], { method: payMethod, txn_id: txn, paid_to: 'gadget_galli' });
+      paymentRows.push(`  (${q(id)}, ${q(payMethod)}, ${grand}, ${q(txn)}, ${q(users.admin.id)}, ${ago(at[s])})`);
     }
     if (s === 'PACKED') ev(prev, s, ownerId, 'shop', 'Packed', at[s]);
     if (s === 'DISPATCHED') {
@@ -583,6 +586,22 @@ emit(`select setval('public.order_no_seq', ${1000 + onum + 1});`);
 emit(`insert into public.order_events (order_id, from_status, to_status, actor_id, actor_role, note, meta, created_at) values\n${eventRows.join(',\n')};`);
 emit(`insert into public.dispatch_details (order_id, service, rider_name, rider_phone, vehicle_no, tracking_url, delivery_otp, eta, created_at) values\n${dispatchRows.join(',\n')};`);
 emit(`insert into public.payments_log (order_id, method, amount, upi_txn_id, recorded_by, created_at) values\n${paymentRows.join(',\n')};`);
+// Payments to Gadget Galli and payouts to shops: the UPI reference on paid orders, one payment waiting to be
+// verified, and payouts paid (delivered over 3 days ago), due (recent) or held (problem reported after delivery).
+emit(`insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0')
+  on conflict (key) do update set value = excluded.value;
+update public.orders o set payment_ref = p.upi_txn_id, payment_claimed_at = o.paid_at - interval '4 minutes'
+  from public.payments_log p where p.order_id = o.id;
+update public.orders set payment_ref = '415628930417', payment_claimed_at = confirmed_at + interval '6 minutes'
+ where id = (select id from public.orders where status = 'CONFIRMED' order by confirmed_at desc limit 1);
+update public.orders set payout_amount = grand_total, commission_amount = 0,
+       payout_status = case when status = 'ISSUE_REPORTED' then 'held'
+                            when delivered_at < now() - interval '3 days' then 'paid' else 'due' end,
+       payout_ref = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
+                         then 'GGP' || to_char(delivered_at + interval '1 day', 'YYMMDD') || upper(left(md5(shop_id::text), 4)) end,
+       payout_at = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
+                        then date_trunc('day', delivered_at + interval '1 day') + interval '11 hours' end
+ where delivered_at is not null;`);
 emit(`insert into public.reviews (id, order_id, shop_id, customer_id, customer_name, rating, body, shop_reply, shop_replied_at, created_at) values\n${reviewRows.join(',\n')};`);
 emit(`insert into public.issues (id, order_id, customer_id, shop_id, type, description, status, created_at) values\n${issueRows.join(',\n')};`);
 
