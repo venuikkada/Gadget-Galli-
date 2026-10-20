@@ -46,7 +46,7 @@ begin
   r := public.shops_near(k, null, null, 20, 0, false, 'cctv_security');
   assert jsonb_array_length(r) > 0, 'shops_near by type';
   r := public.products_by_ids(array[current_setting('test.zotac4060')::uuid], k);
-  assert (r->0->>'shop_count')::int = 2, 'products_by_ids';
+  assert (r->0->>'shop_count')::int = 4, 'products_by_ids';
   perform public.track_product_view(current_setting('test.zotac4060')::uuid);
   perform public.track_shop_event(shop, 'view');
   perform public.track_shop_event(shop, 'share');

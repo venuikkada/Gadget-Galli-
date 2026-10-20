@@ -99,9 +99,7 @@ export default function ShopItemScreen() {
               </Row>
               <Row gap={8}>
                 <Rating value={item.shop.rating_avg} count={item.shop.rating_count} />
-                <AppText variant="caption" color={item.shop.delivers_to_me ? 'textMuted' : 'warning'}>
-                  {item.shop.delivers_to_me ? tDeliversIn(deliveryEtaMins(item.shop.delivery_mins, item.shop.distance_km)) : t('product.doesNotDeliver')}
-                </AppText>
+                <AppText variant="caption" color="textMuted">{tDeliversIn(deliveryEtaMins(item.shop.delivery_mins, item.shop.distance_km))}</AppText>
               </Row>
             </View>
             <AppText variant="label" color="primary">{t('product.viewShop')}</AppText>

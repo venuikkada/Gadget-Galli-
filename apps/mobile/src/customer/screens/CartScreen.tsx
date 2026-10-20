@@ -41,7 +41,7 @@ import {
 import { cartClear, cartUpdate, placeOrder, useCart } from '../api';
 import { useCartQty } from '../components/cartBits';
 
-const BLOCKING: CartProblem[] = ['SHOP_CLOSED', 'AREA_NOT_SERVED', 'MIN_ORDER_NOT_MET', 'ITEM_UNAVAILABLE', 'ADDRESS_REQUIRED', 'PICKUP_NOT_AVAILABLE', 'SHOP_UNAVAILABLE'];
+const BLOCKING: CartProblem[] = ['SHOP_CLOSED', 'MIN_ORDER_NOT_MET', 'ITEM_UNAVAILABLE', 'ADDRESS_REQUIRED', 'PICKUP_NOT_AVAILABLE', 'SHOP_UNAVAILABLE'];
 
 export default function CartScreen() {
   const { t } = useTranslation();

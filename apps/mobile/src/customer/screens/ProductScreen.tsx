@@ -12,7 +12,7 @@ import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { productShareUrl, shareText } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Card, Chip, EmptyState, ErrorState, Header, IconButton, InfoBanner, Row, Screen, SkeletonCard, Tag, TrustStrip } from '@/shared/ui';
+import { AppText, Card, Chip, EmptyState, ErrorState, Header, IconButton, Row, Screen, SkeletonCard, Tag, TrustStrip } from '@/shared/ui';
 
 import { track, useProductPage } from '../api';
 import { OfferRow } from '../components/cards';
@@ -56,11 +56,9 @@ export default function ProductScreen() {
 
   const p = page.data?.product;
   const offers = page.data?.offers ?? [];
-  const near = offers.filter((o) => o.delivers);
-  const elsewhere = offers.filter((o) => !o.delivers);
-  const lowest = near.filter((o) => o.in_stock).reduce<number | null>((m, o) => (m == null || o.price < m ? o.price : m), null);
+  const lowest = offers.filter((o) => o.in_stock).reduce<number | null>((m, o) => (m == null || o.price < m ? o.price : m), null);
   const off = lowest != null && p?.mrp ? percentOff(lowest, p.mrp) : 0;
-  const badges = offerBadges(near);
+  const badges = offerBadges(offers);
 
   const share = () => {
     if (!p) return;
@@ -158,14 +156,7 @@ export default function ProductScreen() {
             {/* Extra room above each row for the "Best price" / "Fastest delivery" tab that sits on its top edge. */}
             <View style={{ paddingHorizontal: 16, gap: 18, paddingTop: badges.size ? 6 : 0, marginTop: -4 }}>
               {!offers.length ? <EmptyState icon="storefront-outline" title={t('product.noOffers')} compact /> : null}
-              {offers.length && !near.length ? <InfoBanner tone="warning" text={t('search.notNearTitle')} /> : null}
-              {near.map(offerRow)}
-              {elsewhere.length ? (
-                <>
-                  <AppText variant="label" color="textMuted" style={{ marginBottom: -6 }}>{t('product.otherShops')}</AppText>
-                  {elsewhere.map(offerRow)}
-                </>
-              ) : null}
+              {offers.map(offerRow)}
             </View>
 
             {Object.keys(p!.specs).length ? (

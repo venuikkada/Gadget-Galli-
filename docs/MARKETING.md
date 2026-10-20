@@ -6,7 +6,7 @@ This is a practical guide for the founder and the first team. It covers how to s
 
 ## The 12 things that matter most
 
-1. **Shops before customers, and density before reach.** Ten great shops in *one* cluster beat fifty scattered across the city. Customers come back only when search finds the item **and** a shop that delivers to them.
+1. **Shops before customers, and density before reach.** Ten great shops in *one* cluster beat fifty scattered across the city. Customers come back only when search finds the item **and** gets it to them fast; every shop delivers city-wide, but nearby shops deliver fastest and cheapest.
 2. **Start where people already buy electronics:** Kukatpally/KPHB, Chenoy Trade Centre (CTC), Ameerpet, Koti/Abids, Dilsukhnagar, Madhapur/Hitech City.
 3. **Make "fast, local, real" the promise:** *"Hyderabad's electronics shops, delivered in hours. Compare prices, talk to the shop, pay safely: the shop is paid only after you get your order."*
 4. **Never charge shops at the start.** Use a **Founding Partner** offer: 0% fees for 6 months, a free QR poster, and listing done for them.
@@ -108,7 +108,7 @@ Owners remember the sound.
 | "I already sell on WhatsApp / Instagram." | "Great, keep doing that. We bring **new** customers who don't know you yet. Your link and QR also make your WhatsApp selling easier." |
 | "I don't have time to list products." | "We'll do it now, in 15 minutes, from our catalog. You just tell us your price. Later you can update prices with one tap or upload an Excel sheet." |
 | "Online prices are lower." | "Customers here want it **today**, with local warranty and someone to call. You can see in the app what nearby shops charge. Price smartly; you don't need to be cheapest." |
-| "Delivery is a problem." | "Use Porter, Rapido or Uber. The app has shortcuts to open them, or offer store pickup. You set your own delivery areas and charges." |
+| "Delivery is a problem." | "Use Porter, Rapido or Uber. The app has shortcuts to open them, or offer store pickup. You deliver all over Hyderabad and set your own delivery charge (flat or per km), so far orders pay for the rider." |
 | "What about fake orders?" | "Every customer logs in with their phone OTP. You talk to them before confirming, and they pay before you dispatch." |
 | "Is my data / document safe?" | "Documents are visible only to the Gadget Galli team for verification. Customers never see them." |
 | "Big shops will get all the orders." | "Search shows price, distance, delivery time and rating, so fast, friendly shops win. Reviews matter more than size." |
@@ -123,7 +123,7 @@ Owners remember the sound.
 
 ### 3.5 In-shop onboarding checklist (do it together, on their phone)
 1. Install the app and log in with the owner's phone. Choose **"I own a shop"**.
-2. Complete the 8-step wizard: hours, contacts, map pin, **delivery areas** (start small: 5–8 km), shop-front photo, **UPI ID + QR photo**, documents. Then **Submit**.
+2. Complete the 8-step wizard: hours, contacts, map pin, **delivery charge** (every shop delivers all over Hyderabad; a per-km charge covers far orders), shop-front photo, **UPI ID + QR photo**, documents. Then **Submit**.
 3. Add 20–50 top products with real prices and stock.
 4. Turn on notifications and **disable battery saver** (the dashboard shows a tip). Place a test order from your phone so the owner hears the alert.
 5. Print the poster, stick it at the billing counter, and send the shop link to the owner's top WhatsApp contacts and broadcast lists.

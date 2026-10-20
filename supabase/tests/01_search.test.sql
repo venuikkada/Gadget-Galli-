@@ -58,7 +58,7 @@ begin
     'iphone 14 returned another iPhone';
 end $$;
 
--- Grouped by product + "Delivers to my area" (ON by default)
+-- Grouped by product; every shop delivers all over Hyderabad (DECISIONS #54)
 do $$
 declare
   k int := current_setting('test.kukatpally')::int;
@@ -70,16 +70,15 @@ begin
   near := (select i from jsonb_array_elements(public.search_products('rtx 4060', k)->'items') i where (i->>'product_id')::uuid = zotac);
   anywhere := (select i from jsonb_array_elements(public.search_products('rtx 4060', k, null, null, '{"deliver_only": false}')->'items') i
                where (i->>'product_id')::uuid = zotac);
-  assert (near->>'shop_count')::int = 2, format('Kukatpally should see 2 shops for ZOTAC RTX 4060, got %s', near->>'shop_count');
+  assert (near->>'shop_count')::int = 4, format('Kukatpally should see all 4 shops for ZOTAC RTX 4060, got %s', near->>'shop_count');
   assert (anywhere->>'shop_count')::int = 4, format('All Hyderabad should have 4 shops, got %s', anywhere->>'shop_count');
+  assert coalesce((public.search_products('rtx 4060', k)->>'elsewhere_count')::int, 0) = 0, 'no shop should be "elsewhere"';
   assert (near->>'min_price')::numeric > 0, 'missing lowest price';
 
-  -- Product page: one row per shop, only KPHB and Cyber Zone deliver to Kukatpally
+  -- Product page: one row per shop, and all of them deliver to Kukatpally, including Deccan (Secunderabad)
   page := public.get_product_page(zotac, k);
   assert jsonb_array_length(page->'offers') = 4, 'expected 4 offers';
-  assert (select array_agg(o->>'shop_name' order by o->>'shop_name') from jsonb_array_elements(page->'offers') o where (o->>'delivers')::boolean)
-         = array['Cyber Zone Systems', 'KPHB Computer World'], 'wrong delivering shops';
-  assert (page->'offers'->0->>'delivers')::boolean, 'delivering shops must be listed first';
+  assert not exists (select 1 from jsonb_array_elements(page->'offers') o where not (o->>'delivers')::boolean), 'every shop should deliver';
 end $$;
 
 -- Filters and sorts
@@ -133,6 +132,9 @@ begin
   assert jsonb_array_length(h->'shops_near') >= 3, 'shops near Kukatpally missing';
   assert jsonb_array_length(h->'popular') > 0, 'popular products missing';
   assert not exists (select 1 from jsonb_array_elements(h->'shops_near') s where not (s->>'delivers')::boolean), 'non-delivering shop in shops_near';
+  -- Every approved shop shows, from any area (here the far side of the city)
+  assert jsonb_array_length(public.shops_near((select id from public.areas where name = 'LB Nagar'), null, null, 100, 0, true, null))
+         = (select count(*) from public.shops where status = 'approved'), 'shops_near should list every approved shop';
 end $$;
 
 rollback;

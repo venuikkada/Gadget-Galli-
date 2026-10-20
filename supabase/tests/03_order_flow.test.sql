@@ -198,7 +198,7 @@ begin
 end $$;
 reset role;
 
--- A shop that does not deliver to Kukatpally cannot take a delivery order; store pickup still works
+-- A shop on the other side of the city (Deccan, Secunderabad) delivers to Kukatpally too; store pickup still works
 select pg_temp.act_as('ravi');
 set role authenticated;
 do $$
@@ -211,8 +211,14 @@ declare
 begin
   perform public.cart_add(listing, 1, true);
   c := public.get_cart();
-  assert c->'problems' ? 'AREA_NOT_SERVED', 'cart should flag area not served';
-  perform pg_temp.expect_error('select public.place_order(''whatsapp'')', 'AREA_NOT_SERVED%');
+  assert not (c->'problems' ? 'AREA_NOT_SERVED'), 'no shop should be out of area';
+  assert (c->'shop'->>'delivers_to_address')::boolean and (c->'totals'->>'delivery_charge')::numeric >= 0, format('delivery quote missing: %s', c->'totals');
+  if not (c->'problems' ? 'SHOP_CLOSED') and not (c->'problems' ? 'MIN_ORDER_NOT_MET') then
+    o := public.place_order('whatsapp');
+    assert o->>'fulfilment' = 'delivery', 'far delivery order failed';
+    perform public.customer_cancel_order((o->>'id')::uuid, 'test');
+    perform public.cart_add(listing, 1, true);
+  end if;
   c := public.cart_update('{"fulfilment": "pickup"}');
   if not (c->'problems' ? 'SHOP_CLOSED') then
     o := public.place_order('whatsapp');

@@ -262,7 +262,7 @@ export default function AreasPage() {
   const tab = (params.get('tab') as 'areas' | 'waitlist' | null) ?? 'areas';
   return (
     <div className="space-y-5">
-      <PageHeader title="Areas" subtitle="Zones, areas and pincodes that shops can deliver to. Customers outside these areas see the waitlist screen." />
+      <PageHeader title="Areas" subtitle="Zones, areas and pincodes for customer addresses and search. Every shop delivers to all of them; customers outside Hyderabad see the waitlist screen." />
       <Tabs
         value={tab}
         onChange={(v) => setParams({ tab: v })}

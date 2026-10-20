@@ -7,12 +7,10 @@ import {
   DEFAULT_HOURS,
   isValidUpiId,
   normalizeIndianPhone,
-  RADIUS_OPTIONS_KM,
   SHOP_TYPES,
   USUAL_DELIVERY_OPTIONS,
   type Area,
   type DeliveryChargeType,
-  type DeliveryMode,
   type DocType,
   type ShopHours,
   type ShopType,
@@ -28,8 +26,8 @@ import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Chip, Header, InfoBanner, Input, Loading, Row, Screen, Segmented, SwitchRow, Tag, toast } from '@/shared/ui';
 
-import { addShopDocument, addShopPhoto, removeShopPhoto, setDeliveryAreas, shopUpsert, submitShop, useMyShop } from '../api';
-import { DocUpload, HoursEditor, WizardProgress, ZonePicker } from '../components/registration';
+import { addShopDocument, addShopPhoto, removeShopPhoto, shopUpsert, submitShop, useMyShop } from '../api';
+import { DocUpload, HoursEditor, WizardProgress } from '../components/registration';
 
 const TYPE_ICON: Record<ShopType, React.ComponentProps<typeof Ionicons>['name']> = {
   mobiles: 'phone-portrait-outline',
@@ -78,11 +76,7 @@ export default function RegisterScreen() {
   const [lng, setLng] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
   const [areaQuery, setAreaQuery] = useState('');
-  // Step 4
-  const [mode, setMode] = useState<DeliveryMode>('areas');
-  const [zoneIds, setZoneIds] = useState<number[]>([]);
-  const [areaIds, setAreaIds] = useState<number[]>([]);
-  const [radius, setRadius] = useState('10');
+  // Step 4: every shop delivers all over Hyderabad (DECISIONS #54); the shop sets its charge and timing
   const [chargeType, setChargeType] = useState<DeliveryChargeType>('flat');
   const [charge, setCharge] = useState('49');
   const [freeAbove, setFreeAbove] = useState('');
@@ -121,10 +115,6 @@ export default function RegisterScreen() {
     setLandmark(shop.landmark ?? '');
     setLat(shop.lat);
     setLng(shop.lng);
-    setMode(shop.delivery_mode);
-    setZoneIds(shop.delivery_zone_ids ?? []);
-    setAreaIds(shop.delivery_area_ids ?? []);
-    setRadius(String(shop.delivery_radius_km ?? 10));
     setChargeType(shop.delivery_charge_type);
     setCharge(String(shop.delivery_charge ?? 0));
     setFreeAbove(shop.free_delivery_above ? String(shop.free_delivery_above) : '');
@@ -167,10 +157,6 @@ export default function RegisterScreen() {
       if (!address.trim()) e.address = t('common.required');
       if (!area) e.area = t('address.areaRequired');
     }
-    if (step === 4) {
-      if (mode === 'areas' && !zoneIds.length && !areaIds.length) e.areas = t('common.required');
-      if (mode === 'radius' && !(Number(radius) > 0)) e.radius = t('common.required');
-    }
     if (step === 5 && !front.length) e.front = t('common.required');
     if (step === 6 && !isValidUpiId(upi)) e.upi = t('error.INVALID_UPI_ID');
     return e;
@@ -188,10 +174,8 @@ export default function RegisterScreen() {
       if (step === 3)
         await shopUpsert({ ...base, address_line: address, area_id: area?.id, pincode: pincode || area?.pincode, landmark, lat: lat ?? area?.lat, lng: lng ?? area?.lng });
       if (step === 4) {
-        const s = await shopUpsert({
+        await shopUpsert({
           ...base,
-          delivery_mode: mode,
-          delivery_radius_km: mode === 'radius' ? Number(radius) : null,
           delivery_charge_type: chargeType,
           delivery_charge: chargeType === 'free' ? 0 : Number(charge || 0),
           free_delivery_above: freeAbove ? Number(freeAbove) : null,
@@ -199,7 +183,6 @@ export default function RegisterScreen() {
           usual_delivery_mins: usual,
           store_pickup: pickup,
         });
-        if (mode === 'areas') await setDeliveryAreas(s.id, zoneIds, areaIds);
       }
       if (step === 5 || step === 7) await shopUpsert({ ...base, ...(step === 7 ? { gst_number: gst } : {}) });
       if (step === 6) await shopUpsert({ ...base, upi_id: upi, upi_name: upiName || name, upi_qr_path: upiQr[0] ?? null });
@@ -247,7 +230,6 @@ export default function RegisterScreen() {
     if (!shop.shop_types?.length) m.push('shop_types');
     if (!shop.contact_phone) m.push('contact_phone');
     if (!shop.address_line || !shop.area_id) m.push('address');
-    if (shop.delivery_mode === 'areas' && !shop.delivery_zone_ids.length && !shop.delivery_area_ids.length) m.push('delivery_areas');
     if (!front.length) m.push('front_photo');
     if (!shop.upi_id) m.push('upi_id');
     if (!idDoc) m.push('owner_id_proof');
@@ -357,21 +339,7 @@ export default function RegisterScreen() {
 
       {step === 4 ? (
         <>
-          <AppText variant="h3">{t('p.reg.deliveryHow')}</AppText>
-          <Segmented value={mode} onChange={setMode} options={[{ value: 'areas', label: t('p.reg.byAreas') }, { value: 'radius', label: t('p.reg.byRadius') }]} />
-          {mode === 'areas' ? (
-            <ZonePicker zoneIds={zoneIds} areaIds={areaIds} onChange={(z, a) => { setZoneIds(z); setAreaIds(a); }} />
-          ) : (
-            <View style={{ gap: 8 }}>
-              <Row wrap gap={8}>
-                {RADIUS_OPTIONS_KM.map((km) => (
-                  <Chip key={km} label={`${km} km`} selected={radius === String(km)} onPress={() => setRadius(String(km))} />
-                ))}
-              </Row>
-              <Input label={t('p.reg.custom')} keyboardType="decimal-pad" value={radius} onChangeText={setRadius} right={<AppText color="textMuted">km</AppText>} />
-            </View>
-          )}
-          {errors.areas || errors.radius ? <AppText variant="caption" color="error">{errors.areas ?? errors.radius}</AppText> : null}
+          <InfoBanner icon="bicycle-outline" testID="reg-delivers-all" text={t('p.reg.deliversAll')} />
           <Card style={{ gap: 10 }}>
             <AppText variant="title">{t('p.reg.chargeType')}</AppText>
             <Segmented
@@ -480,7 +448,7 @@ export default function RegisterScreen() {
           <AppText variant="h2">{t('p.reg.reviewTitle')}</AppText>
           <AppText variant="bodySmall" color="textMuted">{t('p.reg.reviewBody')}</AppText>
           <Card style={{ gap: 10 }}>
-            {['name', 'shop_types', 'contact_phone', 'address', 'delivery_areas', 'front_photo', 'upi_id', 'owner_id_proof', 'shop_licence'].map((f) => {
+            {['name', 'shop_types', 'contact_phone', 'address', 'front_photo', 'upi_id', 'owner_id_proof', 'shop_licence'].map((f) => {
               const ok = !missing.includes(f);
               return (
                 <Row key={f} gap={10}>

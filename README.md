@@ -2,7 +2,7 @@
 
 **Hyderabad electronics shops, delivered in hours.**
 
-Customers search for the exact item they want (an iPhone 15 128 GB, an RTX 4060, a Hikvision 2 MP camera kit). They see which nearby shops have it, at what price and how fast each can deliver, add it to a one-shop cart, and order by **calling or WhatsApp-ing the shop**. Once the shop accepts, they pay **Gadget Galli** by **UPI** (QR or any UPI app). Gadget Galli checks the payment, the shop sends the item with Porter, Rapido, Uber or its own rider, and the customer taps **"I received my order"**, and then Gadget Galli pays the shop.
+Customers search for the exact item they want (an iPhone 15 128 GB, an RTX 4060, a Hikvision 2 MP camera kit). They see which shops across Hyderabad have it (every shop delivers all over the city), at what price and how fast each can deliver, add it to a one-shop cart, and order by **calling or WhatsApp-ing the shop**. Once the shop accepts, they pay **Gadget Galli** by **UPI** (QR or any UPI app). Gadget Galli checks the payment, the shop sends the item with Porter, Rapido, Uber or its own rider, and the customer taps **"I received my order"**, and then Gadget Galli pays the shop.
 
 Three parts share one Supabase backend:
 
@@ -24,7 +24,7 @@ Three parts share one Supabase backend:
 **Customer app**
 - Phone number login with OTP; English, Telugu and Hindi; light and dark mode.
 - Delivery location from GPS, the area list or saved addresses (Home / Office / Other with a map pin). Anywhere outside Hyderabad shows "We serve Hyderabad only for now" with a Notify me button.
-- Typo-tolerant search. `iphon 15`, `rtx4060`, `4060`, `gpu` (synonym for graphics card) and `cc camera` all find the right products. By default it shows only shops that deliver to you. Filters: category, brand, price, condition, delivery time and rating. Sorts: relevance, price, nearest, fastest and top rated.
+- Typo-tolerant search. `iphon 15`, `rtx4060`, `4060`, `gpu` (synonym for graphics card) and `cc camera` all find the right products. Every shop delivers all over Hyderabad, so results include every shop, nearest first. Filters: category, brand, price, condition, delivery time and rating. Sorts: relevance, price, nearest, fastest and top rated.
 - Product page that compares every shop's price, delivery time and charge, distance, rating and stock.
 - Shop page: photos, a Verified badge, opening hours, Google Maps, search inside the shop and reviews with the shop's replies.
 - One-shop cart with an optional installation service, delivery or store pickup and a note. Ordering is by **Call** or **WhatsApp** (with the order details pre-filled).
@@ -112,7 +112,7 @@ All people, shops, phone numbers and UPI IDs in the demo data are fictional. On 
 | Shop owners (15 live shops + 1 under review) | `+91 90000 10001` … `10016` (e.g. `10002` KPHB Computer World, `10004` Cyber Zone Systems) |
 | New user with no shop yet (to try registration) | `+91 90000 19999` |
 
-Try this: log in as Ravi and search **`rtx 4060`**. Only KPHB Computer World and Cyber Zone Systems show up as delivering to Kukatpally. Deccan PC Components and Begumpet PC Builders stock it but don't deliver there; turn off "Delivers to my area" to see them.
+Try this: log in as Ravi and search **`rtx 4060`**. Four shops stock it, from Kukatpally to Secunderabad, and all of them deliver to him; compare their prices, delivery charges and times.
 
 ---
 
@@ -120,7 +120,7 @@ Try this: log in as Ravi and search **`rtx 4060`**. Only KPHB Computer World and
 
 | Command | What it checks |
 |---|---|
-| `pnpm db:test` | Creates a throwaway Postgres, applies every migration and the seed, then runs SQL test suites: search (typos, synonyms, delivery filtering), security (RLS, shops can't see each other's orders, documents admin-only, phone visible only on active orders), the full order state machine, scheduled jobs (expiry, reminders, auto-delivery), partner/admin flows and an API smoke test. |
+| `pnpm db:test` | Creates a throwaway Postgres, applies every migration and the seed, then runs SQL test suites: search (typos, synonyms, city-wide delivery), security (RLS, shops can't see each other's orders, documents admin-only, phone visible only on active orders), the full order state machine, scheduled jobs (expiry, reminders, auto-delivery), partner/admin flows and an API smoke test. |
 | `pnpm test` | Unit tests for `@gg/shared` (₹1,25,000 formatting, IST times, opening hours, the status machine, WhatsApp/UPI links, search helpers). |
 | `pnpm typecheck` | TypeScript for every package. |
 | `pnpm i18n:check` | Telugu and Hindi match English key-for-key (placeholders, brand names) and every `t()` key used in code exists. |
@@ -141,7 +141,7 @@ packages/
 brand/
   mark.svg           The logo; pnpm brand:assets renders every icon from it
 supabase/
-  migrations/        Schema, search, order workflow, RLS, storage, realtime/push/jobs, brand palette, delivery estimates (12 files)
+  migrations/        Schema, search, order workflow, RLS, storage, realtime/push/jobs, brand palette, delivery estimates, security, platform payments, city-wide delivery (15 files)
   seed/              Demo data generator (zones, 57 areas, categories, 172 products, 16 shops, 90 orders…)
   seed.sql           Generated demo data (pnpm db:seed:generate)
   functions/         Edge functions: send-push, order-jobs, delete-account

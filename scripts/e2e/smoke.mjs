@@ -99,7 +99,7 @@ try {
     await shot(customer, '01-customer-home');
   });
 
-  await step('typo-tolerant search finds RTX 4060 cards that deliver to Kukatpally', async () => {
+  await step('typo-tolerant search finds RTX 4060 cards from shops all over Hyderabad', async () => {
     await customer.goto(`${MOBILE}/search`);
     await customer.getByTestId('search-input').fill('rtx4060');
     await customer.keyboard.press('Enter');
@@ -113,6 +113,8 @@ try {
     await customer.getByText('ASUS Dual GeForce RTX 4060 OC Edition 8GB').first().click();
     await customer.getByTestId('product-title').waitFor();
     await customer.getByText('Available at these shops').waitFor();
+    // Every shop delivers all over Hyderabad: no "doesn't deliver" offers and no "other areas" section (DECISIONS #54)
+    if (await customer.getByText(/doesn.t deliver|shops in other areas/i).count()) throw new Error('a shop is shown as not delivering');
     await shot(customer, '03-product');
     await customer.getByText('Add', { exact: true }).first().click();
     // A cart from another shop asks before replacing it
@@ -124,6 +126,7 @@ try {
   await step('cart shows totals and orders on WhatsApp', async () => {
     await customer.goto(`${MOBILE}/cart`);
     await customer.getByTestId('grand-total').waitFor({ timeout: 15000 });
+    if (await customer.getByText(/does not deliver/i).count()) throw new Error('cart says the shop does not deliver');
     await shot(customer, '04-cart');
     await customer.getByTestId('whatsapp-order').click();
     await customer.waitForURL(/\/order\/[0-9a-f-]{36}/, { timeout: 20000 });
@@ -257,8 +260,8 @@ try {
     await owner.getByTestId('wizard-next').click();
   });
 
-  await step('new owner sets delivery zones, photos, UPI and private documents, then submits', async () => {
-    await owner.getByTestId('zone-1').click(); // West Hyderabad, whole zone
+  await step('new owner sees city-wide delivery, adds photos, UPI and private documents, then submits', async () => {
+    await owner.getByTestId('reg-delivers-all').waitFor(); // every shop delivers all over Hyderabad; no areas to pick
     await owner.getByTestId('wizard-next').click();
     await addPhoto(owner, 0); // shop front (required)
     await owner.getByTestId('wizard-next').click();

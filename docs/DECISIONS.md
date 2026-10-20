@@ -19,8 +19,8 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 8. **Hyderabad only.** A location counts as in service if the nearest known area centre is within 8 km and it is within 35 km of the city centre. Anyone outside sees "We serve Hyderabad only for now" and can join a waitlist, which shows in Admin → Areas. **(changeable)**
 9. **57 areas in 5 zones, with real pincodes:** West Hyderabad, Central Hyderabad, Secunderabad & North, East Hyderabad and South Hyderabad. Admins can add areas and pincodes.
-10. **Shops choose their own delivery coverage.** A shop can tick whole zones, single areas, or deliver within a radius (5, 10, 15 or 20 km). It also sets its delivery charge (free, flat or per km), a free-delivery threshold, a minimum order, its usual delivery time and whether it offers store pickup.
-11. **"Delivers to my area" is on by default in search.** Customers see only what they can actually get, and a hint says how many more products exist elsewhere in the city.
+10. ~~**Shops choose their own delivery coverage.**~~ Replaced by #54: every shop delivers all over Hyderabad. (Before: a shop could tick whole zones, single areas, or deliver within a radius (5, 10, 15 or 20 km). It also sets its delivery charge (free, flat or per km), a free-delivery threshold, a minimum order, its usual delivery time and whether it offers store pickup.) The charge, threshold, minimum, usual time and pickup settings stay.
+11. ~~**"Delivers to my area" is on by default in search.**~~ Removed by #54: every shop delivers everywhere in Hyderabad, so search shows every shop, nearest first.
 12. **Maps run on OpenStreetMap, with no account or key.**
     - One map engine everywhere: Leaflet with OpenStreetMap tiles, shown in a WebView on Android and iOS and in an iframe on the websites and in the admin panel (`packages/shared/src/map`). Leaflet is bundled (`pnpm map:assets`), so no CDN is needed.
     - Saving an address needs an exact pin: from GPS ("Use my current location"), dragging the map, or a place search. The old silent fallback to the area's centre is gone, so shops and riders get the customer's real door.
@@ -161,3 +161,11 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - **Errors reach the user in their language:** the function's message starts with a code (`SMS_NOT_SET_UP`, `SMS_SEND_FAILED`…), which `apps/mobile/src/auth/smsError.ts` translates.
     - **Demo logins stay** (#48) until the real launch.
     - Setup: [SETUP.md](SETUP.md) §2. Code: `supabase/functions/send-sms`.
+
+## Delivery coverage
+
+54. **Every shop delivers all over Hyderabad.** The founder's choice: customers should never see "this shop does not deliver to your address".
+    - `gg_delivering_shop_ids` and `shop_delivers_to` (migration 0015) now treat every approved shop as delivering to every address in the service area. Everything else (search, home, shop and product pages, cart, `place_order`) goes through them.
+    - Removed: the "Delivers to my area" filter, the "shops in other areas" section and every "doesn't deliver" message, the area/radius step in shop registration, and the "area not served" reject reason.
+    - **Still in place:** addresses outside Hyderabad are refused (#8, the waitlist). Each shop keeps its own delivery charge (free, flat or per km), so far orders can cost more and the customer sees the charge before ordering. ETAs still grow with distance (#12a). Store pickup stays.
+    - The old coverage columns and `delivery_areas` table are kept, unused, so this can be undone.

@@ -7,7 +7,7 @@ import { CONDITIONS, SEARCH_SORTS, type Condition, type SearchFilters, type Sear
 import { useBrands, useCategories } from '@/shared/hooks/reference';
 import { localName, useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Chip, Input, Row, Sheet, SwitchRow } from '@/shared/ui';
+import { AppText, Button, Chip, Input, Row, Sheet } from '@/shared/ui';
 
 export function countFilters(f: SearchFilters) {
   let n = 0;
@@ -17,7 +17,6 @@ export function countFilters(f: SearchFilters) {
   if (f.conditions?.length) n++;
   if (f.max_delivery_mins) n++;
   if (f.min_rating) n++;
-  if (f.deliver_only === false) n++;
   return n;
 }
 
@@ -69,7 +68,7 @@ export function FilterSheet({ visible, onClose, value, onApply, lockedCategory }
             title={t('common.reset')}
             variant="outline"
             onPress={() => {
-              const reset: SearchFilters = { deliver_only: true, category_id: lockedCategory ? value.category_id : null };
+              const reset: SearchFilters = { category_id: lockedCategory ? value.category_id : null };
               setF(reset);
               setMin('');
               setMax('');
@@ -89,8 +88,6 @@ export function FilterSheet({ visible, onClose, value, onApply, lockedCategory }
         </Row>
       }
     >
-      <SwitchRow label={t('filter.deliversToMe')} value={f.deliver_only !== false} onValueChange={(v) => setF({ ...f, deliver_only: v })} />
-
       {!lockedCategory ? (
         <View style={{ gap: 8 }}>
           <AppText variant="label">{t('filter.category')}</AppText>

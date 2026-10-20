@@ -31,13 +31,10 @@ import {
 // ---------------------------------------------------------------------------
 // Product cards
 // ---------------------------------------------------------------------------
-export function ProductRow({ p, nearOnly = true }: { p: ProductCardT; nearOnly?: boolean }) {
+export function ProductRow({ p }: { p: ProductCardT }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const shops =
-    p.shop_count === 1
-      ? t(nearOnly ? 'search.availableNearOne' : 'search.availableAllOne')
-      : t(nearOnly ? 'search.availableNear' : 'search.availableAll', { count: p.shop_count });
+  const shops = p.shop_count === 1 ? t('search.availableAllOne') : t('search.availableAll', { count: p.shop_count });
   return (
     <Card onPress={() => router.push(`/product/${p.product_id}`)} testID={`product-${p.product_id}`}>
       <Row align="flex-start" gap={12}>
@@ -175,16 +172,9 @@ export function OfferRow({ o, qty, onAdd, onQty, productId, badge }: { o: Offer;
             {o.condition !== 'new' ? <Tag label={t(`condition.${o.condition}`)} tone="warning" /> : null}
             {!o.is_open_now ? <Tag label={t('common.closed')} tone="error" /> : null}
           </Row>
-          {o.delivers ? (
-            <AppText variant="caption" color="textMuted">
-              {tDeliversIn(deliveryEtaMins(o.delivery_mins, o.distance_km))} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
-            </AppText>
-          ) : (
-            <Row gap={4}>
-              <Ionicons name="alert-circle-outline" size={13} color={colors.warning} />
-              <AppText variant="caption" color="warning">{o.store_pickup ? `${t('product.doesNotDeliver')} · ${t('product.pickupOnly')}` : t('product.doesNotDeliver')}</AppText>
-            </Row>
-          )}
+          <AppText variant="caption" color="textMuted">
+            {tDeliversIn(deliveryEtaMins(o.delivery_mins, o.distance_km))} · {o.delivery_charge > 0 ? t('product.deliveryCharge', { amount: formatINR(o.delivery_charge) }) : t('product.freeDelivery')}
+          </AppText>
           <AppText variant="caption" color={o.in_stock ? 'success' : 'error'} weight="semibold">
             {!o.in_stock ? t('product.outOfStock') : o.stock_qty != null && o.stock_qty <= 3 ? t('product.onlyLeft', { count: o.stock_qty }) : t('product.inStock')}
           </AppText>

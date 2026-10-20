@@ -58,7 +58,6 @@ export default function SearchScreen() {
   const [query, setQuery] = useState(params.q ?? '');
   const [focused, setFocused] = useState(!params.q && !params.category);
   const [filters, setFilters] = useState<SearchFilters>({
-    deliver_only: true,
     category_id: params.category ? Number(params.category) : null,
     brand_ids: params.brand ? [Number(params.brand)] : [],
   });
@@ -147,13 +146,6 @@ export default function SearchScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
             <Chip tone="onBrand" testID="open-filters" icon="options-outline" label={t('search.filters')} selected={nFilters > 0} count={nFilters || undefined} onPress={() => setFilterOpen(true)} />
             <Chip tone="onBrand" testID="open-sort" icon="swap-vertical" label={t(`sort.${sort}`)} selected={sort !== 'relevance'} onPress={() => setSortOpen(true)} />
-            <Chip
-              tone="onBrand"
-              label={t('filter.deliversToMe')}
-              icon={filters.deliver_only !== false ? 'checkmark-circle' : 'location-outline'}
-              selected={filters.deliver_only !== false}
-              onPress={() => setFilters({ ...filters, deliver_only: filters.deliver_only === false })}
-            />
           </ScrollView>
         ) : null}
       </BrandGradient>
@@ -284,7 +276,7 @@ export default function SearchScreen() {
         <FlatList
           data={items}
           keyExtractor={(p) => p.product_id}
-          renderItem={({ item }) => <ProductRow p={item} nearOnly={filters.deliver_only !== false} />}
+          renderItem={({ item }) => <ProductRow p={item} />}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 140, gap: 12 }}
           onEndReached={() => results.hasNextPage && !results.isFetchingNextPage && results.fetchNextPage()}
           onEndReachedThreshold={0.4}
@@ -298,17 +290,7 @@ export default function SearchScreen() {
           }
           ListFooterComponent={results.isFetchingNextPage ? <Loading /> : null}
           ListEmptyComponent={
-            first.elsewhere_count ? (
-              <EmptyState
-                icon="storefront-outline"
-                title={t('search.notNearTitle')}
-                body={t('search.notNearBody', { count: first.elsewhere_count })}
-                action={t('search.showAll')}
-                onAction={() => setFilters({ ...filters, deliver_only: false })}
-              />
-            ) : (
-              <EmptyState icon="search" title={t('search.noResultsTitle', { q: query || localName(categoryName ?? { name: '' }) })} body={t('search.noResultsBody')} />
-            )
+            <EmptyState icon="search" title={t('search.noResultsTitle', { q: query || localName(categoryName ?? { name: '' }) })} body={t('search.noResultsBody')} />
           }
         />
       )}

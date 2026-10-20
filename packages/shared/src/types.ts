@@ -406,7 +406,6 @@ export type CartProblem =
   | 'ITEM_UNAVAILABLE'
   | 'PICKUP_NOT_AVAILABLE'
   | 'ADDRESS_REQUIRED'
-  | 'AREA_NOT_SERVED'
   | 'MIN_ORDER_NOT_MET';
 
 export interface Cart {

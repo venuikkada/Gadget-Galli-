@@ -27,7 +27,6 @@ import {
   Chip,
   EmptyState,
   ErrorState,
-  InfoBanner,
   Input,
   Loading,
   PriceText,
@@ -225,7 +224,6 @@ export default function ShopScreen() {
             <Button title="" icon="navigate" variant="outline" size="sm" onPress={() => openMaps(s.lat, s.lng, `${s.name} ${s.area?.name ?? ''}`)} />
           </Row>
         </Card>
-        {!d.delivers_to_me ? <InfoBanner tone="warning" text={t('shop.notDeliverHere')} /> : null}
         {inside.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {inside.map((ph) => (
@@ -324,16 +322,11 @@ export default function ShopScreen() {
                 ))}
               </Card>
               <Card style={{ gap: 6 }}>
-                <AppText variant="title">{t('shop.deliveryAreas')}</AppText>
-                {d.mode === 'radius' ? (
-                  <AppText variant="bodySmall" color="textMuted">{t('shop.within', { km: d.radius_km })}</AppText>
-                ) : (
-                  <Row wrap gap={6}>
-                    {[...d.zones, ...d.areas].map((z) => (
-                      <Tag key={z} label={z} tone="primary" />
-                    ))}
-                  </Row>
-                )}
+                <AppText variant="title">{t('shop.delivery')}</AppText>
+                <Row gap={6}>
+                  <Ionicons name="bicycle-outline" size={16} color={colors.primary} />
+                  <AppText variant="bodySmall" testID="shop-delivers-all">{t('shop.deliversAllHyderabad')}</AppText>
+                </Row>
                 <AppText variant="bodySmall" color="textMuted">{d.store_pickup ? t('shop.pickupYes') : t('shop.pickupNo')}</AppText>
               </Card>
               <Card style={{ gap: 10 }}>

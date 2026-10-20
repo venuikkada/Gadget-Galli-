@@ -121,7 +121,7 @@ await step('customer login', async () => {
   if (customer.url().includes('/location')) await customer.getByText('Flat 302, Sai Residency').click();
   await customer.waitForURL('**/home', { timeout: 20000 });
   await customer.getByText('Shops near you').waitFor();
-  await shot(customer, 'order', 'o-01-home', 'Home', 'Ravi opens the app at home in Kukatpally. He sees offers, categories and the shops that deliver to him.', 'Customer');
+  await shot(customer, 'order', 'o-01-home', 'Home', 'Ravi opens the app at home in Kukatpally. He sees offers, categories and shops from all over Hyderabad, nearest first.', 'Customer');
 });
 
 await step('search with a typo', async () => {
@@ -129,7 +129,7 @@ await step('search with a typo', async () => {
   await customer.getByTestId('search-input').fill('iphon 15');
   await customer.keyboard.press('Enter');
   await customer.getByText(PRODUCT).first().waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-02-search', 'Search that forgives typos', 'He types “iphon 15”. The app still finds the iPhone 15 and shows only shops that deliver to his area.', 'Customer');
+  await shot(customer, 'order', 'o-02-search', 'Search that forgives typos', 'He types “iphon 15”. The app still finds the iPhone 15 and shows the shops that have it, all of which deliver to him.', 'Customer');
 });
 
 await step('compare shops', async () => {
@@ -138,7 +138,7 @@ await step('compare shops', async () => {
   productId = customer.url().match(/product\/([0-9a-f-]{36})/)?.[1] ?? '';
   await customer.locator('[data-testid^="offer-"]').filter({ hasText: SHOP }).waitFor();
   await scrollToTop(customer.getByText('Available at these shops').first());
-  await shot(customer, 'order', 'o-03-compare', 'Compare nearby shops', `Three nearby shops have it in stock. He compares price, distance, delivery time and rating, and adds it from ${SHOP}, 3.8 km away.`, 'Customer');
+  await shot(customer, 'order', 'o-03-compare', 'Compare shops', `Shops across Hyderabad have it in stock. He compares price, distance, delivery time and rating, and adds it from ${SHOP}, 3.8 km away.`, 'Customer');
   await customer.locator('[data-testid^="offer-"]').filter({ hasText: SHOP }).getByText('Add', { exact: true }).click();
   const replace = customer.getByText('Start new cart', { exact: true });
   if (await replace.waitFor({ timeout: 1500 }).then(() => true, () => false)) await replace.click();
@@ -240,7 +240,7 @@ await step('customer receives and reviews', async () => {
 // ---------------------------------------------------------------------------
 await step('customer tour', async () => {
   await visit(customer, '/shops', 'KPHB Computer World');
-  await shot(customer, 'customer', 'c-shops', 'Shops near you', 'Every shop that delivers to the customer, with distance, rating and usual delivery time.');
+  await shot(customer, 'customer', 'c-shops', 'Shops near you', 'Every shop delivers all over Hyderabad; the nearest come first, with distance, rating and usual delivery time.');
   await customer.getByText('KPHB Computer World').first().click();
   await customer.getByTestId('shop-name').waitFor({ timeout: 15000 });
   await shot(customer, 'customer', 'c-shop', 'Shop page', 'Verified badge, photos, opening hours, directions, search inside the shop and real reviews.');
@@ -345,8 +345,8 @@ await step('new shop registration', async () => {
   await owner.getByTestId('shop-area').click();
   await owner.getByTestId('area-Nizampet').last().click();
   await owner.getByTestId('wizard-next').click();
-  await owner.getByTestId('zone-1').click(); // West Hyderabad, whole zone
-  await shot(owner, 'partner', 'p-delivery', 'Where the shop delivers', 'Whole zones, single areas or a radius, plus the delivery charge, free-delivery limit and store pickup.');
+  await owner.getByTestId('reg-delivers-all').waitFor();
+  await shot(owner, 'partner', 'p-delivery', 'Delivery all over Hyderabad', 'Every shop delivers across Hyderabad. The owner sets the delivery charge (free, flat or per km), the free-delivery limit, usual time and store pickup.');
   await owner.getByTestId('wizard-next').click();
   await addPhoto(owner, 0);
   await owner.getByTestId('wizard-next').click();

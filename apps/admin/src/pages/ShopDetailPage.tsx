@@ -22,8 +22,6 @@ import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 type AdminShop = MyShop & {
   owner: { id: string; name: string | null; phone: string | null; email: string | null; is_blocked: boolean; created_at: string } | null;
   admin_notes: string | null;
-  delivery_zone_names: string[];
-  delivery_area_names: string[];
   stats: { orders: number; delivered: number; rejected: number; expired: number; issues: number; value: number };
   audit: { action: string; details: Record<string, unknown>; created_at: string; admin: string | null }[];
 };
@@ -208,7 +206,7 @@ export default function ShopDetailPage() {
                 </div>
               </Row>
               <Row label="Delivery">
-                {s.delivery_mode === 'radius' ? `Within ${s.delivery_radius_km} km` : [...s.delivery_zone_names.map((z) => `${z} (whole zone)`), ...s.delivery_area_names].join(', ') || 'No areas yet'}
+                All over Hyderabad
                 <div className="mt-1 text-xs text-ink-muted">
                   {s.delivery_charge_type === 'free' ? 'Free delivery' : s.delivery_charge_type === 'flat' ? `${formatINR(s.delivery_charge)} per order` : `${formatINR(s.delivery_charge)} per km`}
                   {s.free_delivery_above ? ` · free above ${formatINR(s.free_delivery_above)}` : ''}

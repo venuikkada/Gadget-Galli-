@@ -101,11 +101,10 @@ export const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
   other: 'Other',
 };
 
-export const REJECT_REASONS = ['out_of_stock', 'area_not_served', 'customer_not_reachable', 'other'] as const;
+export const REJECT_REASONS = ['out_of_stock', 'customer_not_reachable', 'other'] as const;
 export type RejectReason = (typeof REJECT_REASONS)[number];
 export const REJECT_REASON_LABEL: Record<RejectReason, string> = {
   out_of_stock: 'Out of stock',
-  area_not_served: 'Area not served',
   customer_not_reachable: 'Customer not reachable',
   other: 'Other',
 };
@@ -116,8 +115,6 @@ export const USUAL_DELIVERY_OPTIONS = [
   { mins: 240, label: '4 hrs' },
   { mins: 480, label: 'Same day' },
 ] as const;
-
-export const RADIUS_OPTIONS_KM = [5, 10, 15, 20] as const;
 
 export const SEARCH_SORTS = ['relevance', 'price_asc', 'price_desc', 'nearest', 'fastest', 'rating'] as const;
 export type SearchSort = (typeof SEARCH_SORTS)[number];

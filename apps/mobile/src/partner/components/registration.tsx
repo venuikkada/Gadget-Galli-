@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { formatHHMM, WEEKDAYS, type DocType, type ShopHours, type Weekday } from '@gg/shared';
 
 import { uploadDocument } from '@/shared/api/storage';
-import { useAreas, useZones } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { tWeekday } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -123,61 +122,6 @@ export function HoursEditor({ hours, holiday, onChange }: { hours: ShopHours; ho
           />
         ))}
       </Row>
-    </View>
-  );
-}
-
-/** Tick whole zones (e.g. "West Hyderabad") or single areas, with search. */
-export function ZonePicker({ zoneIds, areaIds, onChange }: { zoneIds: number[]; areaIds: number[]; onChange: (zones: number[], areas: number[]) => void }) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  const { data: zones = [] } = useZones();
-  const { data: areas = [] } = useAreas();
-  const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState<number | null>(null);
-  const q = query.trim().toLowerCase();
-  const filteredAreas = useMemo(() => areas.filter((a) => !q || a.name.toLowerCase().includes(q) || a.pincode.startsWith(q)), [areas, q]);
-
-  const toggleZone = (id: number) => {
-    const on = zoneIds.includes(id);
-    onChange(on ? zoneIds.filter((z) => z !== id) : [...zoneIds, id], on ? areaIds : areaIds.filter((a) => areas.find((x) => x.id === a)?.zone_id !== id));
-  };
-  const toggleArea = (id: number) => onChange(zoneIds, areaIds.includes(id) ? areaIds.filter((a) => a !== id) : [...areaIds, id]);
-
-  return (
-    <View style={{ gap: 10 }}>
-      <Input icon="search" placeholder={t('p.reg.searchAreas')} value={query} onChangeText={setQuery} />
-      <Row gap={6}>
-        <Tag label={t('p.reg.zonesSelected', { count: zoneIds.length })} tone="primary" />
-        <Tag label={t('p.reg.areasSelected', { count: areaIds.length })} tone="primary" />
-      </Row>
-      {zones.map((z) => {
-        const zoneAreas = filteredAreas.filter((a) => a.zone_id === z.id);
-        if (q && !zoneAreas.length) return null;
-        const whole = zoneIds.includes(z.id);
-        const open = expanded === z.id || !!q;
-        return (
-          <View key={z.id} style={{ borderWidth: 1, borderColor: whole ? colors.primary : colors.border, borderRadius: 14, overflow: 'hidden' }}>
-            <Pressable onPress={() => setExpanded(open && !q ? null : z.id)} style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10, backgroundColor: whole ? colors.primarySoft : colors.surface }}>
-              <Pressable onPress={() => toggleZone(z.id)} hitSlop={8} testID={`zone-${z.id}`}>
-                <Ionicons name={whole ? 'checkbox' : 'square-outline'} size={22} color={whole ? colors.primary : colors.textSubtle} />
-              </Pressable>
-              <View style={{ flex: 1 }}>
-                <AppText variant="title">{z.name}</AppText>
-                <AppText variant="caption" color="textMuted">{whole ? t('p.reg.wholeZone') : `${zoneAreas.filter((a) => areaIds.includes(a.id)).length}/${zoneAreas.length}`}</AppText>
-              </View>
-              <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSubtle} />
-            </Pressable>
-            {open ? (
-              <Row wrap gap={8} style={{ padding: 12, paddingTop: 6 }}>
-                {zoneAreas.map((a) => (
-                  <Chip key={a.id} label={a.name} selected={whole || areaIds.includes(a.id)} onPress={() => !whole && toggleArea(a.id)} />
-                ))}
-              </Row>
-            ) : null}
-          </View>
-        );
-      })}
     </View>
   );
 }
