@@ -103,7 +103,7 @@ export function Screen({
   );
 }
 
-export function InfoBanner({ text, tone = 'info', icon }: { text: string; tone?: 'info' | 'warning' | 'error' | 'success'; icon?: React.ComponentProps<typeof Ionicons>['name'] }) {
+export function InfoBanner({ text, tone = 'info', icon, testID }: { text: string; tone?: 'info' | 'warning' | 'error' | 'success'; icon?: React.ComponentProps<typeof Ionicons>['name']; testID?: string }) {
   const { colors } = useTheme();
   const map = {
     info: [colors.primarySoft, colors.primary, 'information-circle'],
@@ -113,7 +113,7 @@ export function InfoBanner({ text, tone = 'info', icon }: { text: string; tone?:
   } as const;
   const [bg, fg, defIcon] = map[tone];
   return (
-    <Row align="flex-start" gap={10} style={{ backgroundColor: bg, borderRadius: 12, padding: 12 }}>
+    <Row align="flex-start" gap={10} style={{ backgroundColor: bg, borderRadius: 12, padding: 12 }} testID={testID}>
       <Ionicons name={icon ?? defIcon} size={18} color={fg} style={{ marginTop: 1 }} />
       <AppText variant="bodySmall" style={{ flex: 1 }}>{text}</AppText>
     </Row>

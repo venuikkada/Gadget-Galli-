@@ -64,7 +64,7 @@ function posterHtml(shop: MyShop, link: string) {
   ${unique.map((l) => `<div class="line"><b>${esc(l.title)}</b><span>${esc(l.body)}</span></div>`).join('')}
   <div class="tag">${esc(i18n.getFixedT('en')('p.qr.posterLine'))}</div>
   <div class="link">${esc(link)}</div>
-  <div class="footer">Pay the shop directly by UPI · Delivered by Porter, Rapido, Uber or the shop's own rider</div>
+  <div class="footer">Pay safely by UPI · Delivered by Porter, Rapido, Uber or the shop's own rider</div>
 </div></body></html>`;
 }
 

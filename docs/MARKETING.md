@@ -8,7 +8,7 @@ This is a practical guide for the founder and the first team. It covers how to s
 
 1. **Shops before customers, and density before reach.** Ten great shops in *one* cluster beat fifty scattered across the city. Customers come back only when search finds the item **and** a shop that delivers to them.
 2. **Start where people already buy electronics:** Kukatpally/KPHB, Chenoy Trade Centre (CTC), Ameerpet, Koti/Abids, Dilsukhnagar, Madhapur/Hitech City.
-3. **Make "fast, local, real" the promise:** *"Hyderabad's electronics shops, delivered in hours. Compare prices, talk to the shop, pay the shop."*
+3. **Make "fast, local, real" the promise:** *"Hyderabad's electronics shops, delivered in hours. Compare prices, talk to the shop, pay safely: the shop is paid only after you get your order."*
 4. **Never charge shops at the start.** Use a **Founding Partner** offer: 0% fees for 6 months, a free QR poster, and listing done for them.
 5. **Every shop is a marketing channel.** The **printable QR poster** goes on the counter, the shop link goes in their WhatsApp Business profile, and a broadcast goes to their customer list. That alone brings your first few thousand users.
 6. **Shops must reply in minutes.** The **loud new-order alert** exists for this. Track confirm time weekly and coach slow shops. Slow replies kill the app faster than anything else.
@@ -160,7 +160,7 @@ Target: **20–50 customers per shop** in the first month, or 1,000–2,500 cust
 
 ### 4.2 WhatsApp groups and communities
 - **Apartment associations** (CCTV, routers, UPS): one message per community, through a resident or the association secretary:
-  > "🔒 CCTV for our community/homes: compare 4-camera kits from verified Hyderabad shops, **installed the same day**. Pay the shop only after they confirm. [link to CCTV kits]"
+  > "🔒 CCTV for our community/homes: compare 4-camera kits from verified Hyderabad shops, **installed the same day**. Your money stays safe with Gadget Galli until it's installed. [link to CCTV kits]"
 - **College, office and gamer groups:** share specific product links. The **share button** on every product creates a link that opens the app.
 - **Status updates:** have the team and ambassadors post a "deal of the day" product link on their WhatsApp Status every day.
 - **Rule:** never spam. One useful message per group per fortnight, ideally posted by a member.
@@ -395,10 +395,10 @@ Export any table as **CSV** from Reports for deeper analysis.
 > "I order gadgets from Hyderabad shops on Gadget Galli and get them in hours. Use my code [CODE] when you join: [link]"
 
 **Apartment CCTV message:**
-> "Dear residents, CCTV kits from verified local shops with **same-day installation**, compared on one app. Pay the shop only after they confirm. Example: 4-camera kit + 1 TB + install from ₹[price]. [link]"
+> "Dear residents, CCTV kits from verified local shops with **same-day installation**, compared on one app. Your money stays safe with Gadget Galli until it's installed. Example: 4-camera kit + 1 TB + install from ₹[price]. [link]"
 
 **Google Business description:**
-> "Gadget Galli connects you with Hyderabad's trusted electronics shops: phones, laptops, PC parts, CCTV and accessories. Compare prices from nearby shops, order on call or WhatsApp, pay the shop by UPI, and get it delivered in hours."
+> "Gadget Galli connects you with Hyderabad's trusted electronics shops: phones, laptops, PC parts, CCTV and accessories. Compare prices from nearby shops, order on call or WhatsApp, pay safely by UPI (the shop is paid only after delivery), and get it delivered in hours."
 
 **Reel script: "4 shops, 1 GPU" (30 seconds):**
 1. (0–2 s) On screen: "RTX 4060 price in Hyderabad TODAY?" Face to camera.

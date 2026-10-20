@@ -12,6 +12,60 @@ export interface Overview {
   customers: number;
   searches_today: number;
   active_orders: number;
+  /** Customers say they paid Gadget Galli; an admin should check the bank and confirm. */
+  payments_to_verify: number;
+  /** Owed to shops for delivered orders (₹), and how many shops. */
+  payouts_due: number;
+  payouts_due_count: number;
+}
+
+export interface PaymentToVerify {
+  id: string;
+  order_no: string;
+  grand_total: number;
+  payment_ref: string | null;
+  payment_claimed_at: string;
+  confirmed_at: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  shop_name: string;
+}
+
+export interface PaymentsToVerify {
+  awaiting: number;
+  items: PaymentToVerify[];
+}
+
+export interface PayoutShop {
+  shop_id: string;
+  shop_name: string;
+  upi_id: string | null;
+  upi_name: string;
+  upi_qr_path: string | null;
+  upi_verified: boolean;
+  owner_phone: string | null;
+  contact_phone: string | null;
+  area: string | null;
+  total: number;
+  order_count: number;
+  orders: { id: string; order_no: string; grand_total: number; commission_amount: number | null; payout_amount: number; delivered_at: string }[];
+}
+
+export interface PaidPayout {
+  payout_ref: string;
+  payout_at: string;
+  shop_id: string;
+  shop_name: string;
+  upi_id: string | null;
+  total: number;
+  order_count: number;
+  orders: { id: string; order_no: string; payout_amount: number }[];
+}
+
+export interface PaymentSettings {
+  upi_id: string | null;
+  upi_name: string;
+  commission_pct: number | null;
 }
 
 export interface AdminShopRow {

@@ -534,7 +534,23 @@ export interface Order {
   payments: { method: PaymentMethod; amount: number; upi_txn_id: string | null; proof_path: string | null; created_at: string }[];
   review: { id: Uuid; rating: number; body: string | null; photos: string[]; shop_reply: string | null; created_at: string } | null;
   issues: { id: Uuid; type: IssueType; description: string | null; photos: string[]; status: 'open' | 'in_progress' | 'resolved'; resolution: string | null; created_at: string; resolved_at: string | null }[];
+  /** The UPI reference the customer entered after paying Gadget Galli, and when. */
+  payment_ref: string | null;
+  payment_claimed_at: string | null;
+  /** Why Gadget Galli could not find the payment (the customer can try again). */
+  payment_rejected_reason: string | null;
+  /** Where the customer pays: Gadget Galli's UPI (null for shops). `upi_id` is null until it is set in the admin panel. */
+  pay_to: { upi_id: string | null; upi_name: string } | null;
+  /** The shop's payout for this order (shop and admin only). */
+  payout_status?: PayoutStatus | null;
+  payout_amount?: number | null;
+  commission_amount?: number | null;
+  payout_ref?: string | null;
+  payout_at?: string | null;
 }
+
+/** not_due until delivery; due once delivered; held while a problem is open; paid once Gadget Galli pays the shop. */
+export type PayoutStatus = 'not_due' | 'due' | 'held' | 'paid';
 
 export interface OrderCard {
   id: Uuid;

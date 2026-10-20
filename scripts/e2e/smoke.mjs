@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // End-to-end smoke test of the whole marketplace in a real browser (Chromium via Playwright):
-// customer orders an RTX 4060 near Kukatpally on WhatsApp → shop accepts, records UPI payment
+// customer orders an RTX 4060 near Kukatpally on WhatsApp → shop accepts → customer pays Gadget Galli → admin confirms
 // (with a proof photo), packs and sends it with Rapido → customer confirms delivery and rates →
 // admin sees the delivered order, approves the pending shop and the pending custom product.
 //
@@ -134,7 +134,7 @@ try {
   });
 
   // -------------------------------------------------------------------------
-  // Shop owner: accept → payment received (+proof) → packed → send with Rapido
+  // Shop owner: accept → (customer pays Gadget Galli, admin confirms) → packed → send with Rapido
   // -------------------------------------------------------------------------
   const shop = await newMobilePage('shop');
   await step('shop owner logs in and sees the new order', async () => {
@@ -158,20 +158,41 @@ try {
     await dismissAlerts(shop);
     await shop.getByTestId('step-accept').click();
     await shop.getByTestId('confirm-order').click();
-    await shop.getByTestId('step-paid').waitFor({ timeout: 15000 });
+    // The shop cannot mark it paid: it waits for the customer's payment to Gadget Galli
+    await shop.getByTestId('awaiting-payment').waitFor({ timeout: 15000 });
   });
 
-  await step('shop records UPI payment with a proof photo', async () => {
-    await dismissAlerts(shop);
-    await shop.getByTestId('step-paid').click();
-    await addPhoto(shop, 0);
-    await shot(shop, '08-shop-payment-sheet');
-    await shop.getByTestId('mark-paid').click();
-    await shop.getByTestId('step-packed').waitFor({ timeout: 15000 });
+  await step('customer pays Gadget Galli and enters the UPI reference', async () => {
+    await customer.goto(`${MOBILE}/order/${orderId}`);
+    await customer.getByTestId('pay-upi-id').getByText('gadgetgalli@ybl').waitFor({ timeout: 15000 });
+    await customer.getByTestId('payment-ref').fill('412345678901');
+    await shot(customer, '06b-customer-pays-gadget-galli');
+    await customer.getByTestId('payment-done').click();
+    await customer.getByTestId('payment-verifying').waitFor({ timeout: 15000 });
   });
 
+  const adminCtx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const admin = await adminCtx.newPage();
+  admin.on('pageerror', (e) => pageErrors.push(`admin: ${e.message}`));
+  await step('admin checks the bank and confirms the payment', async () => {
+    await admin.goto(`${ADMIN}/login`);
+    await admin.getByTestId('login-email').fill('admin@gadgetgalli.in');
+    await admin.getByTestId('login-password').fill('GadgetGalli@2026');
+    await admin.getByTestId('login-submit').click();
+    await admin.getByText('Orders today').waitFor({ timeout: 15000 });
+    await admin.goto(`${ADMIN}/payments`);
+    await admin.getByText('412345678901').waitFor({ timeout: 15000 });
+    await shot(admin, '08-admin-payments-to-verify');
+    await admin.getByTestId(`confirm-payment-${orderNo}`).click();
+    await admin.getByText('Payment confirmed.', { exact: false }).waitFor({ timeout: 10000 });
+  });
+
+  // Alarms for other open orders can pop up at any moment from here on; close them before each action.
+  await shop.addLocatorHandler(shop.getByText('Later', { exact: true }), (later) => later.click());
   await step('shop marks packed and sends with Rapido', async () => {
+    await shop.goto(`${MOBILE}/partner/order/${orderId}`);
     await dismissAlerts(shop);
+    await shop.getByTestId('paid-to-gg').waitFor({ timeout: 15000 });
     await shop.getByTestId('step-packed').click();
     await shop.getByTestId('mark-packed').click();
     await shop.getByTestId('step-send').waitFor({ timeout: 15000 });
@@ -259,20 +280,28 @@ try {
   // -------------------------------------------------------------------------
   // Admin: order is delivered, approve the pending shop and custom product
   // -------------------------------------------------------------------------
-  const adminCtx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
-  const admin = await adminCtx.newPage();
-  admin.on('pageerror', (e) => pageErrors.push(`admin: ${e.message}`));
-  await step('admin logs in and sees the delivered order with its timeline', async () => {
-    await admin.goto(`${ADMIN}/login`);
-    await admin.getByTestId('login-email').fill('admin@gadgetgalli.in');
-    await admin.getByTestId('login-password').fill('GadgetGalli@2026');
-    await admin.getByTestId('login-submit').click();
+  await step('admin sees the delivered order with its timeline', async () => {
+    await admin.goto(`${ADMIN}/`);
     await admin.getByText('Orders today').waitFor({ timeout: 15000 });
     await shot(admin, '14-admin-dashboard');
     await admin.goto(`${ADMIN}/orders/${orderId}`);
     await admin.getByText('Timeline').waitFor();
     await admin.getByText('Delivered').first().waitFor();
     await shot(admin, '15-admin-order');
+  });
+
+  await step('admin pays the shop for the delivered order; the shop sees it', async () => {
+    await admin.goto(`${ADMIN}/payments?tab=due`);
+    const card = admin.getByTestId('payout-shop-Cyber Zone Systems');
+    await card.getByText(orderNo).waitFor({ timeout: 15000 });
+    await card.getByRole('button', { name: /^Mark .* paid$/ }).click();
+    await admin.getByTestId('payout-ref').fill('PAYOUT412345');
+    await shot(admin, '15b-admin-payout');
+    await admin.getByTestId('payout-confirm').click();
+    await admin.getByText('recorded as paid', { exact: false }).waitFor({ timeout: 10000 });
+    await shop.goto(`${MOBILE}/partner/order/${orderId}`);
+    await shop.getByTestId('order-payout').getByText('PAYOUT412345', { exact: false }).waitFor({ timeout: 15000 });
+    await shot(shop, '15c-shop-payout-paid');
   });
 
   await step('admin reviews the new shop (documents, photos) and approves it', async () => {

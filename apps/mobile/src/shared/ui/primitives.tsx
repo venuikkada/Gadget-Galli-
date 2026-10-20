@@ -242,8 +242,8 @@ export function Card({ children, style, onPress, padded = true, level = 1, testI
   return <View testID={testID} style={[base, shadow(level, dark), style]}>{children}</View>;
 }
 
-export function Row({ children, gap = 8, align = 'center', justify, style, wrap }: { children: ReactNode; gap?: number; align?: ViewStyle['alignItems']; justify?: ViewStyle['justifyContent']; style?: StyleProp<ViewStyle>; wrap?: boolean }) {
-  return <View style={[{ flexDirection: 'row', alignItems: align, justifyContent: justify, gap, flexWrap: wrap ? 'wrap' : 'nowrap' }, style]}>{children}</View>;
+export function Row({ children, gap = 8, align = 'center', justify, style, wrap, testID }: { children: ReactNode; gap?: number; align?: ViewStyle['alignItems']; justify?: ViewStyle['justifyContent']; style?: StyleProp<ViewStyle>; wrap?: boolean; testID?: string }) {
+  return <View testID={testID} style={[{ flexDirection: 'row', alignItems: align, justifyContent: justify, gap, flexWrap: wrap ? 'wrap' : 'nowrap' }, style]}>{children}</View>;
 }
 
 export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {

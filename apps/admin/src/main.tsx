@@ -19,6 +19,7 @@ import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import OrdersPage from './pages/OrdersPage';
+import PaymentsPage from './pages/PaymentsPage';
 import ReportsPage from './pages/ReportsPage';
 import SecurityPage from './pages/SecurityPage';
 import SharePage from './pages/SharePage';
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
           { path: 'shops/:id', element: <ShopDetailPage /> },
           { path: 'orders', element: <OrdersPage /> },
           { path: 'orders/:id', element: <OrderDetailPage /> },
+          { path: 'payments', element: <PaymentsPage /> },
           { path: 'problems', element: <IssuesPage /> },
           { path: 'problems/:id', element: <IssueDetailPage /> },
           { path: 'catalog', element: <CatalogPage /> },

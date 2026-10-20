@@ -76,8 +76,8 @@ If a website still shows **http://** or a security warning, turn on SSL for it i
 | Website | Log in with | Try this |
 |---|---|---|
 | Customer app | `+91 90000 00001`, OTP `123456` (Ravi, Kukatpally) | Search `iphon 15`, compare shops, order on WhatsApp |
-| Shop Partner app | `+91 90000 10002`, OTP `123456` (KPHB Computer World) | Accept the order, mark it paid, packed and sent |
-| Admin panel | The email and password you set in step 2.3 | Watch the order, approve shops, see reports |
+| Shop Partner app | `+91 90000 10002`, OTP `123456` (KPHB Computer World) | Accept the order; after Gadget Galli confirms the payment, mark it packed and sent; see payouts |
+| Admin panel | The email and password you set in step 2.3 | Confirm the customer's payment in **Payments**, watch the order, pay the shop after delivery, approve shops |
 
 Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 90000 10001` to `10016`, and `+91 90000 19999` to register a new shop. They all use OTP `123456`.
 
@@ -89,6 +89,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 
 ## Good to know
 
+- **Set Gadget Galli's real UPI ID before taking orders:** Admin → **Payments → Settings** (super admin). Until then customers see "payment details coming soon" instead of a QR. Check each payment in your bank app before tapping **Payment received**, and pay shops from **Payouts due** after delivery.
 - **Anyone with the links can use the demo logins.** Keep this project for demos only, with the fictional demo data.
 - **Supabase's free projects pause after a week with no activity.** Open the Supabase dashboard to wake the project up.
 - **The web Shop Partner app rings for new orders only while it is open in the browser.** For the loud alarm with the phone locked, shops need the Android app (see [SETUP.md](SETUP.md), section 4).

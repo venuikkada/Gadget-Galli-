@@ -14,12 +14,12 @@ import { signedUrl } from '@/shared/api/storage';
 import { useOrder } from '@/shared/hooks/order';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
-import { tAgo } from '@/shared/i18n/format';
+import { tAgo, tDateTime } from '@/shared/i18n/format';
 import { callPhone, openMaps, openUrl, openWhatsApp, shareOnWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, ErrorState, Header, InfoBanner, Loading, ProductImage, Row, Screen, StatusChip, Tag } from '@/shared/ui';
 
-import { ConfirmSheet, DispatchSheet, PackSheet, PaySheet, RejectSheet } from '../components/orderSheets';
+import { ConfirmSheet, DispatchSheet, PackSheet, RejectSheet } from '../components/orderSheets';
 
 type SheetName = 'confirm' | 'reject' | 'pay' | 'pack' | 'dispatch' | 'update' | null;
 
@@ -75,8 +75,14 @@ export default function PartnerOrderScreen() {
             <Button title={t('p.step.reject')} icon="close-circle-outline" variant="danger" full onPress={() => setSheet('reject')} />
           </View>
         ) : step === 'payment' ? (
+          // Customers pay Gadget Galli; the order moves to PAID when Gadget Galli confirms the money arrived.
           <View style={{ gap: 10 }}>
-            <Button testID="step-paid" title={t('p.step.paymentReceived')} subtitle={formatINR(o.grand_total)} icon="wallet" variant="success" size="xl" full onPress={() => setSheet('pay')} />
+            <InfoBanner
+              testID="awaiting-payment"
+              tone={o.payment_claimed_at ? 'info' : 'warning'}
+              icon={o.payment_claimed_at ? 'hourglass-outline' : 'time-outline'}
+              text={o.payment_claimed_at ? t('p.order.paymentClaimed', { ref: o.payment_ref ?? '' }) : t('p.order.awaitingPayment', { amount: formatINR(o.grand_total) })}
+            />
             <Button title={t('p.step.reject')} variant="ghost" size="sm" onPress={() => setSheet('reject')} />
           </View>
         ) : step === 'pack' ? (
@@ -91,6 +97,7 @@ export default function PartnerOrderScreen() {
         ) : undefined
       }
     >
+      {status === 'PAID' ? <InfoBanner tone="success" icon="checkmark-circle" text={t('p.order.paidToGG')} testID="paid-to-gg" /> : null}
       {issue ? <InfoBanner tone="error" text={t('p.order.issue', { type: t(`issue.${issue.type}`) }) + (issue.description ? ` — ${issue.description}` : '')} /> : null}
 
       {/* Customer */}
@@ -178,6 +185,24 @@ export default function PartnerOrderScreen() {
         ))}
       </Card>
 
+      {/* What Gadget Galli pays the shop for this order, once it is delivered */}
+      {o.payout_status && o.payout_status !== 'not_due' ? (
+        <Card style={{ gap: 6, borderWidth: 1.5, borderColor: o.payout_status === 'paid' ? colors.success : o.payout_status === 'held' ? colors.error : colors.accent }} testID="order-payout">
+          <Row justify="space-between">
+            <AppText variant="h3">{t('p.payout.yourPayout')}</AppText>
+            <Tag label={t(`p.payout.status_${o.payout_status}`)} tone={o.payout_status === 'paid' ? 'success' : o.payout_status === 'held' ? 'error' : 'warning'} />
+          </Row>
+          <AppText variant="bodySmall">
+            {o.payout_status === 'paid'
+              ? t('p.payout.paid', { amount: formatINR(o.payout_amount ?? o.grand_total), date: o.payout_at ? tDateTime(o.payout_at) : '', ref: o.payout_ref ?? '' })
+              : o.payout_status === 'held'
+                ? t('p.payout.held')
+                : t('p.payout.due', { amount: formatINR(o.payout_amount ?? o.grand_total) })}
+          </AppText>
+          {o.commission_amount ? <AppText variant="caption" color="textMuted">{t('p.payout.commission', { amount: formatINR(o.commission_amount) })}</AppText> : null}
+        </Card>
+      ) : null}
+
       {media.length ? (
         <Card style={{ gap: 8 }}>
           {media.map((m) => (
@@ -204,7 +229,6 @@ export default function PartnerOrderScreen() {
 
       <ConfirmSheet order={o} visible={sheet === 'confirm'} onClose={() => setSheet(null)} />
       <RejectSheet order={o} visible={sheet === 'reject'} onClose={() => setSheet(null)} />
-      <PaySheet order={o} visible={sheet === 'pay'} onClose={() => setSheet(null)} />
       <PackSheet order={o} visible={sheet === 'pack'} onClose={() => setSheet(null)} />
       <DispatchSheet order={o} visible={sheet === 'dispatch'} onClose={() => setSheet(null)} />
       <DispatchSheet order={o} visible={sheet === 'update'} onClose={() => setSheet(null)} update />

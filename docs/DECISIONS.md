@@ -39,7 +39,7 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 ## Orders and money
 
-17. **The app never touches money.** After the shop confirms, the customer pays the shop directly through a UPI link (`upi://pay` with the shop's UPI ID, amount and order number) or by scanning the shop's QR code. The shop then taps "Payment received". This avoids a payment-gateway licence, settlement delays and fees for shops.
+17. ~~**The app never touches money.**~~ Replaced by #52: customers now pay Gadget Galli, and Gadget Galli pays the shop after delivery. Payments still go by plain UPI (`upi://pay` links and QR codes), so there is no payment gateway, licence or gateway fee.
 18. **The order is created the moment the customer taps Call or WhatsApp.** The shop sees it in the app with a loud alert, and both sides share the order number. The WhatsApp message is pre-filled with the order number, items, total and address.
 19. **One shop per cart.** Adding an item from another shop asks the customer whether to start a new cart. One order goes to one shop, with one delivery.
 20. **The shop can edit prices or quantities when confirming** (for example, after agreeing a price on the call). The customer sees that the shop updated the order.
@@ -106,7 +106,7 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 ## Business model (v1)
 
-44. **No commission or fees in v1.** The schema already has `featured` (paid placement) and shop stats, so monetisation can be switched on later without migrations. See MARKETING.md for the suggested plans.
+44. **No commission or fees in v1.** (A `commission_pct` setting exists since #52 and is 0.) The schema already has `featured` (paid placement) and shop stats, so monetisation can be switched on later without migrations. See MARKETING.md for the suggested plans.
 
 ## Websites (Hostinger)
 
@@ -141,3 +141,14 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 51. **Seed data is generated** by `supabase/seed/generate-seed.mjs`, which is deterministic:
     - `seed.sql` is the full demo: 16 shops, 624 listings, 90 orders in every status, reviews and search history.
     - `seed-reference.sql` is the production starter: areas, categories, brands, synonyms, 172 catalog products and banners only.
+
+## Payments
+
+52. **Customers pay Gadget Galli; shops are paid after delivery.** The founder's choice, so a shop only sends goods once the money is safe, and is only paid once the customer has the goods.
+    - **Flow:** the shop accepts (CONFIRMED) → the customer pays Gadget Galli's UPI ID or QR and enters the UPI reference (UTR) → an admin checks the bank app and taps **Payment received** (PAID; only admins can do this) → the shop packs and sends → DELIVERED makes the shop's **payout due** → an admin pays the shop's UPI ID and records the reference (**payout paid**).
+    - **Checks are manual for now**, so there is no payment gateway. A gateway (Razorpay, Cashfree) can later call `admin_confirm_payment` from a webhook without changing the apps.
+    - **Payment method:** UPI to Gadget Galli only; there is no cash on delivery. The shop's own UPI ID is used only for its payouts.
+    - **Payout amount:** the full order total while `commission_pct` is 0. A super admin can change the commission (0–50%) in Admin → Payments → Settings; each payout stores its commission and amount.
+    - **Protection:** a problem report (ISSUE_REPORTED) holds the payout until it is resolved. A confirmed order with no payment claim after 24 hours expires, so shops aren't kept waiting. A payment reference that isn't in the bank can be rejected with a reason, and the customer can try again.
+    - **Settings:** the Gadget Galli UPI ID and name live in `app_config` (`platform_upi_id`, `platform_upi_name`). Until they are set, customers see "payment details coming soon" instead of a QR.
+    - Code: `supabase/migrations/20261020000014_platform_payments.sql`, admin `PaymentsPage.tsx`, partner `PayoutsScreen.tsx`.

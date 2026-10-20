@@ -21,7 +21,7 @@ import {
 } from '@gg/shared';
 
 import { MiniMap } from '@/components/MiniMap';
-import { Badge, Button, Card, ErrorBox, Field, Modal, OrderStatusBadge, PageHeader, Select, Spinner, Textarea, toast } from '@/components/ui';
+import { Badge, Button, Card, ErrorBox, Field, Input, Modal, OrderStatusBadge, PageHeader, ReasonModal, Select, Spinner, Textarea, toast } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 
 const ACTOR: Record<string, string> = { customer: 'Customer', shop: 'Shop', admin: 'Admin', system: 'System' };
@@ -84,6 +84,75 @@ function ChangeStatus({ order, onDone }: { order: Order; onDone: (o: Order) => v
     </>
   );
 }
+
+/**
+ * Payment to Gadget Galli: confirm it once the money shows in the bank, or tell the customer it was not found. The
+ * reference is optional here, for a customer who paid but did not enter it in the app.
+ */
+function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order) => void }) {
+  const [ref, setRef] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  return (
+    <div className="mt-3 space-y-3 rounded-xl bg-warning-soft p-3">
+      {order.payment_claimed_at ? (
+        <div className="text-sm">
+          Customer says they paid <b>{formatINR(order.grand_total)}</b> · UPI ref <span className="font-mono font-semibold">{order.payment_ref}</span>
+          <div className="text-xs text-ink-muted">{formatDateTimeIST(order.payment_claimed_at)}</div>
+        </div>
+      ) : (
+        <div className="text-sm">Waiting for the customer to pay {formatINR(order.grand_total)} to Gadget Galli.</div>
+      )}
+      {order.payment_rejected_reason ? <div className="text-xs text-error-ink">Last check: {order.payment_rejected_reason}</div> : null}
+      {!order.payment_claimed_at ? (
+        <Field label="UPI reference (if the customer paid but did not enter it)">
+          <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="412345678901" />
+        </Field>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="success"
+          loading={busy}
+          disabled={!order.payment_claimed_at && ref.trim().length < 6}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              onChange(await rpc<Order>('admin_confirm_payment', { p_order_id: order.id, p_ref: ref.trim() || null }));
+              toast('Payment confirmed. The shop has been told to pack and send.');
+            } catch (e) {
+              toast(errorMessage(e), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Payment received
+        </Button>
+        {order.payment_claimed_at ? (
+          <Button size="sm" variant="outline" onClick={() => setRejecting(true)}>
+            Not received
+          </Button>
+        ) : null}
+      </div>
+      <ReasonModal
+        open={rejecting}
+        onClose={() => setRejecting(false)}
+        title="Payment not received"
+        description="The customer sees this message and can enter the correct UPI reference."
+        placeholder="No payment with this reference in the bank statement."
+        confirmLabel="Tell the customer"
+        danger
+        onConfirm={async (reason) => {
+          onChange(await rpc<Order>('admin_reject_payment', { p_order_id: order.id, p_reason: reason }));
+          toast('The customer has been told.');
+        }}
+      />
+    </div>
+  );
+}
+
+const PAYOUT_LABEL = { not_due: 'Not due yet', due: 'Due to the shop', held: 'On hold (problem open)', paid: 'Paid to the shop' } as const;
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -283,8 +352,22 @@ export default function OrderDetailPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-ink-muted">Not paid yet. Customers pay the shop directly by UPI.</p>
+              <p className="text-sm text-ink-muted">Not paid yet. Customers pay Gadget Galli by UPI.</p>
             )}
+            {o.status === 'CONFIRMED' ? <PaymentActions order={o} onChange={updated} /> : null}
+            {o.payout_status && o.payout_status !== 'not_due' ? (
+              <div className="mt-3 border-t border-line pt-3 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold">Shop payout</span>
+                  <Badge tone={o.payout_status === 'paid' ? 'success' : o.payout_status === 'held' ? 'error' : 'warning'}>{PAYOUT_LABEL[o.payout_status]}</Badge>
+                </div>
+                <div className="mt-1 text-ink-muted">
+                  {formatINR(o.payout_amount ?? o.grand_total)}
+                  {o.commission_amount ? ` (after ${formatINR(o.commission_amount)} commission)` : ''}
+                  {o.payout_status === 'paid' && o.payout_at ? ` · ${formatDateTimeIST(o.payout_at)} · Ref ${o.payout_ref}` : ''}
+                </div>
+              </div>
+            ) : null}
           </Card>
 
           {o.dispatch ? (

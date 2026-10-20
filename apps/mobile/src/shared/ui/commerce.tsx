@@ -345,7 +345,7 @@ export function BillDetails({ rows, totalTestID }: { rows: { label: string; valu
   );
 }
 
-/** Three reasons to trust the order: verified shops, pay the shop by UPI, delivered in hours. */
+/** Three reasons to trust the order: verified shops, safe UPI payment to Gadget Galli, delivered in hours. */
 export function TrustStrip({ style }: { style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme();
   const { t } = useTranslation();

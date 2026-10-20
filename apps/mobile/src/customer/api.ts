@@ -227,7 +227,12 @@ export function useOrderActions(orderId: string) {
     mutationFn: () => rpc<Order>('customer_mark_received', { p_order_id: orderId }),
     onSuccess: afterOrderChange,
   });
-  return { cancel, received };
+  // "I've paid": the UPI reference of the payment to Gadget Galli, which an admin then confirms.
+  const submitPayment = useMutation({
+    mutationFn: (ref: string) => rpc<Order>('customer_submit_payment', { p_order_id: orderId, p_ref: ref }),
+    onSuccess: afterOrderChange,
+  });
+  return { cancel, received, submitPayment };
 }
 
 export function submitReview(orderId: string, rating: number, body: string, photos: string[]) {

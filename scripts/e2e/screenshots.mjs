@@ -174,21 +174,39 @@ await step('shop opens and accepts the order', async () => {
   await shop.getByTestId('confirm-order').waitFor();
   await shot(shop, 'order', 'o-08-accept', 'Accept the order', 'He accepts it. If they agreed a different price on the call, he can change the price or quantity first.', 'Shop');
   await shop.getByTestId('confirm-order').click();
-  await shop.getByTestId('step-paid').waitFor({ timeout: 15000 });
+  await shop.getByTestId('awaiting-payment').waitFor({ timeout: 15000 });
 });
 
-await step('customer pays by UPI', async () => {
+await step('customer pays Gadget Galli by UPI', async () => {
   await visit(customer, `/order/${orderId}`);
   await customer.getByTestId('pay-upi').waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-09-pay', 'Pay the shop by UPI', 'Ravi pays the shop directly: one tap opens any UPI app, or he scans the shop’s QR code. Gadget Galli never holds the money.', 'Customer');
+  await shot(customer, 'order', 'o-09-pay', 'Pay Gadget Galli by UPI', 'Ravi pays Gadget Galli, not the shop: one tap opens any UPI app, or he scans the QR code. His money is safe until the phone reaches him.', 'Customer');
+  await customer.getByTestId('payment-ref').fill('412345678901');
+  await customer.getByTestId('payment-done').click();
+  await customer.getByTestId('payment-verifying').waitFor({ timeout: 15000 });
 });
 
-await step('shop records payment and sends the order', async () => {
+await step('Gadget Galli confirms the payment', async () => {
+  const actx = await browser.newContext({ ...india, viewport: { width: 1440, height: 900 } });
+  const admin = await actx.newPage();
+  await admin.goto(`${ADMIN}/login`);
+  await admin.getByTestId('login-email').fill('admin@gadgetgalli.in');
+  await admin.getByTestId('login-password').fill('GadgetGalli@2026');
+  await admin.getByTestId('login-submit').click();
+  await admin.getByText('Orders today').waitFor({ timeout: 15000 });
+  await admin.goto(`${ADMIN}/payments`);
+  await admin.getByTestId(`confirm-payment-${orderNo}`).click();
+  await admin.getByText('Payment confirmed.', { exact: false }).waitFor({ timeout: 10000 });
+  await actx.close();
+});
+
+// Alarms for other open orders can pop up at any moment from here on; close them before each action.
+await shop.addLocatorHandler(shop.getByText('Later', { exact: true }), (later) => later.click());
+await step('shop packs and sends the order', async () => {
+  await visit(shop, `/partner/order/${orderId}`, orderNo);
   await dismissAlerts(shop);
-  await shop.getByTestId('step-paid').click();
-  await addPhoto(shop, 0);
-  await shot(shop, 'order', 'o-10-paid', 'Payment received', 'The owner marks the payment as received (UPI, bank transfer or cash) and attaches the payment screenshot.', 'Shop');
-  await shop.getByTestId('mark-paid').click();
+  await shop.getByTestId('paid-to-gg').waitFor({ timeout: 15000 });
+  await shot(shop, 'order', 'o-10-paid', 'Paid to Gadget Galli', 'Gadget Galli checks the payment and tells the shop to pack and send. The shop is paid after the customer receives the order.', 'Shop');
   await shop.getByTestId('step-packed').waitFor({ timeout: 15000 });
   await dismissAlerts(shop);
   await shop.getByTestId('step-packed').click();
@@ -374,6 +392,8 @@ await step('admin tour', async () => {
   await shot(admin, 'admin', 'a-shops', 'Shops', 'All shops with status, Verified badge, rating and orders. Warn or suspend a shop when needed.');
   await go('/orders', orderNo);
   await shot(admin, 'admin', 'a-orders', 'Orders', 'Every order with filters. Orders that are stuck are flagged automatically.');
+  await go('/payments?tab=due', 'Mark ');
+  await shot(admin, 'admin', 'a-payments', 'Payments and payouts', 'Check each customer’s UPI payment against the bank, then pay shops after delivery: scan the shop’s QR for the exact total and record the reference.');
   await go(`/orders/${orderId}`, 'Timeline');
   await shot(admin, 'admin', 'a-order', 'Order timeline', 'Each step with time and who did it, including payment and packing photos. Admins can step in with a note.');
   await go('/problems', 'GG-');

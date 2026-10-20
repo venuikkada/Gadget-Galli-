@@ -84,7 +84,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-xl space-y-5 px-4 py-6">{children}</main>
-      <footer className="pb-8 text-center text-xs text-ink-muted">Pay the shop directly by UPI · Delivered by Porter, Rapido, Uber or the shop&apos;s rider</footer>
+      <footer className="pb-8 text-center text-xs text-ink-muted">Pay safely by UPI · Delivered by Porter, Rapido, Uber or the shop&apos;s rider</footer>
     </div>
   );
 }

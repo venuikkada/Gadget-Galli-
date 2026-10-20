@@ -11,11 +11,12 @@ import { chartColors, formatINR, formatINRCompact } from '@gg/shared';
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
+import { tDateTime } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { shadow } from '@/shared/theme/tokens';
 import { AppText, BrandGradient, Button, Card, ErrorState, IconButton, InfoBanner, Row, Screen, ShopAvatar, Skeleton, toast } from '@/shared/ui';
 
-import { setShopOpen, useDashboard, useMyShop } from '../api';
+import { setShopOpen, useDashboard, useMyShop, usePayouts } from '../api';
 import { PartnerOrderRow } from '../components/PartnerOrderRow';
 
 function Stat({ label, value, icon, tone, highlight }: { label: string; value: string | number; icon: React.ComponentProps<typeof Ionicons>['name']; tone: string; highlight?: boolean }) {
@@ -40,6 +41,7 @@ export default function DashboardScreen() {
   const { data: profile } = useProfile();
   const { data: shop } = useMyShop();
   const dash = useDashboard(shop?.id);
+  const payouts = usePayouts(shop?.status === 'approved' ? shop.id : undefined);
   const d = dash.data;
   // Android can silence apps in the background; remind owners once to allow loud order alerts.
   const [showAlertTip, setShowAlertTip] = useState(false);
@@ -159,6 +161,23 @@ export default function DashboardScreen() {
       )}
 
       {/* Needs attention */}
+      {/* Payouts: customers pay Gadget Galli, which pays the shop after delivery */}
+      {payouts.data ? (
+        <Pressable onPress={() => router.push('/partner/payouts')} testID="dash-payouts">
+          <Card style={{ gap: 4, borderLeftWidth: 4, borderLeftColor: payouts.data.due_total ? colors.accent : colors.success }}>
+            <Row justify="space-between">
+              <Row gap={8}>
+                <Ionicons name="wallet" size={18} color={colors.primary} />
+                <AppText variant="title">{t('p.payout.title')}</AppText>
+              </Row>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Row>
+            <AppText variant="h3">{payouts.data.due_total ? t('p.payout.dashDue', { amount: formatINR(payouts.data.due_total) }) : t('p.payout.dashNone')}</AppText>
+            {payouts.data.last_paid_at ? <AppText variant="caption" color="textMuted">{t('p.payout.lastPaid', { date: tDateTime(payouts.data.last_paid_at) })}</AppText> : null}
+          </Card>
+        </Pressable>
+      ) : null}
+
       <AppText variant="h3">{t('p.dash.needsAttention')}</AppText>
       {d && !d.attention.length ? (
         <Card style={{ alignItems: 'center', gap: 6 }}>

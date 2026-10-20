@@ -2,7 +2,7 @@
 
 **Hyderabad electronics shops, delivered in hours.**
 
-Customers search for the exact item they want (an iPhone 15 128 GB, an RTX 4060, a Hikvision 2 MP camera kit). They see which nearby shops have it, at what price and how fast each can deliver, add it to a one-shop cart, and order by **calling or WhatsApp-ing the shop**. They pay the shop directly by **UPI**, so the app never holds money. The shop sends the item with Porter, Rapido, Uber or its own rider, and the customer taps **"I received my order"**.
+Customers search for the exact item they want (an iPhone 15 128 GB, an RTX 4060, a Hikvision 2 MP camera kit). They see which nearby shops have it, at what price and how fast each can deliver, add it to a one-shop cart, and order by **calling or WhatsApp-ing the shop**. Once the shop accepts, they pay **Gadget Galli** by **UPI** (QR or any UPI app). Gadget Galli checks the payment, the shop sends the item with Porter, Rapido, Uber or its own rider, and the customer taps **"I received my order"**, and then Gadget Galli pays the shop.
 
 Three parts share one Supabase backend:
 

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { formatINR, REJECT_REASONS, type DeliveryService, type Order, type PaymentMethod } from '@gg/shared';
+import { formatINR, REJECT_REASONS, type DeliveryService, type Order } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoPicker } from '@/shared/components/PhotoPicker';
@@ -198,58 +198,6 @@ export function RejectSheet({ order, visible, onClose }: { order: Order; visible
         ))}
       </Row>
       <Input label={t('p.rejectSheet.note')} value={note} onChangeText={setNote} multiline />
-    </Sheet>
-  );
-}
-
-export function PaySheet({ order, visible, onClose }: { order: Order; visible: boolean; onClose: () => void }) {
-  const { t } = useTranslation();
-  const [method, setMethod] = useState<PaymentMethod>('upi');
-  const [amount, setAmount] = useState(String(order.grand_total));
-  const [txn, setTxn] = useState('');
-  const [proof, setProof] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (visible) setAmount(String(order.grand_total));
-  }, [visible, order.grand_total]);
-  const methods: PaymentMethod[] = order.fulfilment === 'pickup' ? ['upi', 'bank_transfer', 'cash'] : ['upi', 'bank_transfer'];
-  return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      title={t('p.pay.title')}
-      footer={
-        <Button
-          testID="mark-paid"
-          title={t('p.step.paymentReceived')}
-          variant="success"
-          size="lg"
-          full
-          loading={busy}
-          onPress={async () => {
-            setBusy(true);
-            try {
-              await orderActions.paid(order.id, method, Number(amount || order.grand_total), txn || null, proof[0] ?? null);
-              onClose();
-            } catch (e) {
-              toast(errorText(e, t), 'error');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
-      }
-    >
-      <InfoBanner tone="warning" text={t('p.pay.checkHint')} />
-      <AppText variant="label" color="textMuted">{t('p.pay.method')}</AppText>
-      <Row wrap gap={8}>
-        {methods.map((m) => (
-          <Chip key={m} label={t(`payment.${m}`)} selected={method === m} onPress={() => setMethod(m)} />
-        ))}
-      </Row>
-      <Input label={t('p.pay.amount')} prefix="₹" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
-      {method !== 'cash' ? <Input label={t('p.pay.txn')} value={txn} onChangeText={setTxn} keyboardType="number-pad" /> : null}
-      <PhotoPicker bucket="order-media" folder={order.id} label={t('p.pay.proof')} value={proof} onChange={setProof} max={1} />
     </Sheet>
   );
 }

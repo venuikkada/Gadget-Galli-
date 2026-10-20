@@ -8,7 +8,7 @@ import type {
   MyShop,
   Order,
   Paged,
-  PaymentMethod,
+  PayoutStatus,
   PhotoKind,
   ReviewsResult,
   ShopDashboard,
@@ -100,8 +100,6 @@ export const orderActions = {
     rpc<Order>('shop_confirm_order', { p_order_id: orderId, p_items: items, p_delivery_charge: deliveryCharge, p_note: note }).then((o) => (orderChanged(o), o)),
   reject: (orderId: string, reason: string, note: string | null) =>
     rpc<Order>('shop_reject_order', { p_order_id: orderId, p_reason: reason, p_note: note }).then((o) => (orderChanged(o), o)),
-  paid: (orderId: string, method: PaymentMethod, amount: number | null, txnId: string | null, proofPath: string | null) =>
-    rpc<Order>('shop_mark_paid', { p_order_id: orderId, p_method: method, p_amount: amount, p_txn_id: txnId, p_proof_path: proofPath }).then((o) => (orderChanged(o), o)),
   packed: (orderId: string, packPhoto: string | null, billPhoto: string | null) =>
     rpc<Order>('shop_mark_packed', { p_order_id: orderId, p_pack_photo: packPhoto, p_bill_photo: billPhoto }).then((o) => (orderChanged(o), o)),
   dispatch: (orderId: string, details: Record<string, unknown>) =>
@@ -161,6 +159,32 @@ export const productActions = {
 // ---------------------------------------------------------------------------
 // Insights, reviews
 // ---------------------------------------------------------------------------
+/** What Gadget Galli owes and has paid this shop (customers pay Gadget Galli; shops are paid after delivery). */
+export interface ShopPayouts {
+  upi_id: string | null;
+  due_total: number;
+  due_count: number;
+  held_total: number;
+  paid_30d: number;
+  last_paid_at: string | null;
+  awaiting_payment: number;
+  items: {
+    id: string;
+    order_no: string;
+    grand_total: number;
+    commission_amount: number | null;
+    payout_amount: number | null;
+    payout_status: PayoutStatus;
+    payout_ref: string | null;
+    payout_at: string | null;
+    delivered_at: string | null;
+  }[];
+}
+
+export function usePayouts(shopId: string | undefined) {
+  return useQuery({ queryKey: ['partner', 'payouts', shopId], queryFn: () => rpc<ShopPayouts>('shop_payouts'), enabled: !!shopId });
+}
+
 export function useInsights(shopId: string | undefined, period: 'day' | 'week' | 'month') {
   return useQuery({ queryKey: ['partner', 'insights', shopId, period], queryFn: () => rpc<ShopInsights>('shop_insights', { p_shop_id: shopId, p_period: period }), enabled: !!shopId });
 }

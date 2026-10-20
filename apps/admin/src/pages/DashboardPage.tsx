@@ -33,7 +33,9 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat hero label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} icon={<ReceiptText className="size-5" />} />
-        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Paid to shops directly by UPI" icon={<Wallet className="size-5" />} />
+        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Received by Gadget Galli" icon={<Wallet className="size-5" />} />
+        <Stat label="Payments to verify" value={o?.payments_to_verify ?? '–'} tone="warning" hint="Check your bank app, then confirm" onClick={() => navigate('/payments')} icon={<Wallet className="size-5" />} />
+        <Stat label="Payouts due" value={o ? formatINRCompact(o.payouts_due) : '–'} tone="action" hint={`${o?.payouts_due_count ?? 0} shops to pay`} onClick={() => navigate('/payments?tab=due')} icon={<Wallet className="size-5" />} />
         <Stat label="Active orders" value={o?.active_orders ?? '–'} tone="action" onClick={() => navigate('/orders')} icon={<Bike className="size-5" />} />
         <Stat label="Searches today" value={o?.searches_today ?? '–'} tone="primary" onClick={() => navigate('/reports')} icon={<Search className="size-5" />} />
         <Stat label="Shops to review" value={o?.shops_pending ?? '–'} tone="warning" onClick={() => navigate('/shops?status=under_review')} icon={<Store className="size-5" />} />

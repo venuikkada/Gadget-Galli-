@@ -65,6 +65,7 @@ export default function MoreScreen() {
         <Divider />
         <ListItem icon="shield-checkmark-outline" title={t('p.more.status')} subtitle={shop ? t(`p.status.${shop.status}`) : undefined} onPress={() => router.push('/partner/status')} />
         <Divider />
+        <ListItem icon="wallet-outline" title={t('p.more.payouts')} onPress={() => router.push('/partner/payouts')} testID="more-payouts" />
         <ListItem icon="star-outline" title={t('p.more.reviews')} subtitle={shop?.rating_count ? `${Number(shop.rating_avg).toFixed(1)} ★ · ${shop.rating_count}` : undefined} onPress={() => router.push('/partner/reviews')} testID="more-reviews" />
         <Divider />
         <ListItem icon="qr-code-outline" title={t('p.more.qr')} onPress={() => router.push('/partner/qr')} testID="more-qr" />
