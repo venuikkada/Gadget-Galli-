@@ -95,7 +95,8 @@ async function dismissAlerts(page) {
   for (let i = 0; i < 20; i++) {
     const shown = await later.waitFor({ timeout: i === 0 ? 3000 : 800 }).then(() => true, () => false);
     if (!shown) return;
-    await later.click();
+    // The page's locator handler may close this alarm first; then there is nothing left to click.
+    await later.click({ timeout: 2000 }).catch(() => undefined);
     await page.waitForTimeout(300);
   }
 }
