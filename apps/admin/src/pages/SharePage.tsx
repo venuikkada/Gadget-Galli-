@@ -5,6 +5,7 @@ import { useParams } from 'react-router';
 
 import { formatDuration, formatINR, openingHint, percentOff, type ProductPage, type ShopPage } from '@gg/shared';
 
+import { ProductThumb } from '@/components/ProductThumb';
 import { Spinner } from '@/components/ui';
 import { publicUrl, rpc } from '@/lib/api';
 import { config } from '@/lib/config';
@@ -103,7 +104,7 @@ function ProductShare({ id }: { id: string }) {
   return (
     <>
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-        {p.photos[0] ? <img src={imageUrl(p.photos[0]) ?? ''} alt={p.name} className="aspect-square w-full object-contain p-6" /> : <div className="aspect-[2/1] bg-primary-soft" />}
+        <ProductThumb photo={p.photos[0]} categoryId={p.category?.id} name={p.name} brand={p.brand} className="aspect-square w-full rounded-none p-8" />
         <div className="space-y-2 p-5">
           <div className="text-xs font-semibold text-ink-muted uppercase">{p.brand}</div>
           <h1 className="text-xl leading-snug font-bold">{p.name}</h1>

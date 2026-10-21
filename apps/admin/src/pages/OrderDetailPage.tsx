@@ -21,6 +21,7 @@ import {
 } from '@gg/shared';
 
 import { MiniMap } from '@/components/MiniMap';
+import { ProductThumb } from '@/components/ProductThumb';
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, OrderStatusBadge, PageHeader, ReasonModal, Select, Spinner, Textarea, toast } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 
@@ -207,7 +208,7 @@ export default function OrderDetailPage() {
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {o.items.map((i, idx) => (
                 <li key={`${i.shop_product_id}-${idx}`} className="flex items-start gap-3 py-3">
-                  {i.photo ? <img src={publicUrl('product-photos', i.photo) ?? ''} alt="" className="size-14 rounded-lg bg-slate-100 object-cover" /> : <div className="size-14 rounded-lg bg-slate-100 dark:bg-slate-800" />}
+                  <ProductThumb photo={i.photo} name={i.name} brand={i.brand} className="size-14" />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{i.name}</div>
                     <div className="text-xs text-ink-muted">

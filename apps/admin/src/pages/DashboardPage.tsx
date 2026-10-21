@@ -37,7 +37,7 @@ export default function DashboardPage() {
         </Link>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
         <Stat hero label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} icon={<ReceiptText className="size-5" />} />
         <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Received by Gadget Galli" icon={<Wallet className="size-5" />} />
         <Stat label="Payments to verify" value={o?.payments_to_verify ?? '–'} tone="warning" hint="Check your bank app, then confirm" onClick={() => navigate('/payments')} icon={<Wallet className="size-5" />} />

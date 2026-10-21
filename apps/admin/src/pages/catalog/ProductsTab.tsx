@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { formatINR, timeAgo, variantText } from '@gg/shared';
 
 import { fromKV, KeyValueEditor, toKV, type KV } from '@/components/KeyValueEditor';
+import { ProductThumb } from '@/components/ProductThumb';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, Pagination, ReasonModal, Select, Spinner, Table, Tabs, Td, Textarea, Th, toast, Tr } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, uploadPublic } from '@/lib/api';
 import { categoryLabel, useCategories } from '@/lib/reference';
@@ -398,7 +399,7 @@ export function ProductsTab() {
                   <Tr key={p.id}>
                     <Td>
                       <div className="flex items-center gap-3">
-                        {p.photos[0] ? <img src={publicUrl('product-photos', p.photos[0]) ?? ''} alt="" className="size-10 rounded-lg bg-slate-100 object-cover" /> : <div className="size-10 rounded-lg bg-slate-100 dark:bg-slate-800" />}
+                        <ProductThumb photo={p.photos[0]} categoryId={p.category_id} name={p.name} brand={p.brand} className="size-10" />
                         <div className="min-w-0">
                           <div className="max-w-80 truncate font-semibold">{p.name}</div>
                           <div className="text-xs text-ink-muted">{[p.brand, p.model_number, variantText(p.variant)].filter(Boolean).join(' · ')}</div>
