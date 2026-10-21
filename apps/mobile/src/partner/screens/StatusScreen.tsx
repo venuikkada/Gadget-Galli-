@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
 import { SUPPORT } from '@gg/shared';
@@ -7,7 +7,8 @@ import { SUPPORT } from '@gg/shared';
 import { useTranslation } from '@/shared/i18n';
 import { openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, Header, Loading, Screen } from '@/shared/ui';
+import { errorText } from '@/shared/api/rpc';
+import { AppText, Button, Card, ErrorState, Header, Loading, Screen } from '@/shared/ui';
 
 import { useMyShop } from '../api';
 
@@ -15,12 +16,10 @@ import { useMyShop } from '../api';
 export default function StatusScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { data: shop, isLoading, refetch, isRefetching } = useMyShop();
-  if (isLoading) return <Screen><Loading /></Screen>;
-  if (!shop) {
-    router.replace('/partner/register');
-    return null;
-  }
+  const { data: shop, isPending, isError, error, refetch, isRefetching } = useMyShop();
+  if (isError) return <Screen><ErrorState message={errorText(error, t)} onRetry={() => refetch()} /></Screen>;
+  if (isPending) return <Screen><Loading /></Screen>;
+  if (!shop) return <Redirect href="/partner/register" />;
   const s = shop.status;
   const tone = s === 'approved' ? colors.success : s === 'under_review' ? colors.primary : s === 'draft' ? colors.warning : colors.error;
   const icon = s === 'approved' ? 'checkmark-circle' : s === 'under_review' ? 'hourglass' : s === 'draft' ? 'create' : 'alert-circle';

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { formatINR } from '@gg/shared';
 
@@ -48,7 +48,12 @@ export default function PayoutsScreen() {
       ) : (
         <Card padded={false} style={{ overflow: 'hidden' }}>
           {p.items.map((i, idx) => (
-            <View key={i.id} style={{ padding: 14, gap: 4, borderTopWidth: idx ? 1 : 0, borderTopColor: colors.border }} onTouchEnd={() => router.push(`/partner/order/${i.id}`)}>
+            <Pressable
+              key={i.id}
+              onPress={() => router.push(`/partner/order/${i.id}`)}
+              accessibilityRole="button"
+              style={({ pressed }) => ({ padding: 14, gap: 4, borderTopWidth: idx ? 1 : 0, borderTopColor: colors.border, backgroundColor: pressed ? colors.surfaceAlt : undefined })}
+            >
               <Row justify="space-between">
                 <Row gap={8}>
                   <Ionicons name="receipt-outline" size={16} color={colors.textMuted} />
@@ -62,7 +67,7 @@ export default function PayoutsScreen() {
                 </AppText>
                 <Tag label={t(`p.payout.status_${i.payout_status}`)} tone={i.payout_status === 'paid' ? 'success' : i.payout_status === 'held' ? 'error' : 'warning'} />
               </Row>
-            </View>
+            </Pressable>
           ))}
         </Card>
       )}

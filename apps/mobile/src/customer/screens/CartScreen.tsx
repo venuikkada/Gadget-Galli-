@@ -10,7 +10,7 @@ import { useProfile } from '@/shared/hooks/profile';
 import { useCategories } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { tDeliversIn } from '@/shared/i18n/format';
-import { callPhone, openMaps, openWhatsApp } from '@/shared/lib/linking';
+import { callPhone, openMaps, openWhatsApp, reserveTab } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import {
   AppText,
@@ -20,6 +20,7 @@ import {
   confirmDialog,
   Divider,
   EmptyState,
+  ErrorState,
   Header,
   InfoBanner,
   Input,
@@ -46,7 +47,7 @@ const BLOCKING: CartProblem[] = ['SHOP_CLOSED', 'MIN_ORDER_NOT_MET', 'ITEM_UNAVA
 export default function CartScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { data: cart, isLoading, refetch, isRefetching } = useCart();
+  const { data: cart, isLoading, isError, error, refetch, isRefetching } = useCart();
   const { data: profile } = useProfile();
   const { setQty } = useCartQty();
   const [note, setNote] = useState('');
@@ -59,6 +60,7 @@ export default function CartScreen() {
   }, [cart?.cart.note]);
 
   if (isLoading) return <Screen header={<Header title={t('cart.title')} back={false} />}><Loading /></Screen>;
+  if (isError && !cart) return <Screen header={<Header title={t('cart.title')} back={false} />}><ErrorState message={errorText(error, t)} onRetry={() => refetch()} /></Screen>;
 
   if (!cart || !cart.items.length || !cart.shop) {
     return (
@@ -74,7 +76,16 @@ export default function CartScreen() {
   // What the customer saves against the printed MRP; shown under the bill when there is a saving.
   const savings = cart.items.reduce((sum, i) => sum + (i.mrp && i.mrp > i.price ? (i.mrp - i.price) * i.qty : 0), 0);
 
+  // Cart changes fail quietly on flaky data otherwise; say so and show the cart as the server has it.
+  const save = (p: Promise<unknown>) =>
+    p.catch((e) => {
+      toast(errorText(e, t), 'error');
+      refetch();
+    });
+
   const order = async (method: ContactMethod) => {
+    // On the web the WhatsApp tab must open during the tap, or the browser blocks it as a popup after the await.
+    const tab = method === 'whatsapp' ? reserveTab() : null;
     if (note !== (cart.cart.note ?? '')) await cartUpdate({ note }).catch(() => undefined);
     setPlacing(method);
     try {
@@ -95,9 +106,10 @@ export default function CartScreen() {
           address: o.address,
           note: o.note,
         });
-        openWhatsApp(shop.whatsapp_phone ?? shop.contact_phone, message);
+        openWhatsApp(shop.whatsapp_phone ?? shop.contact_phone, message, tab);
       }
     } catch (e) {
+      tab?.close();
       toast(errorText(e, t), 'error');
       refetch();
     } finally {
@@ -117,7 +129,7 @@ export default function CartScreen() {
               variant="ghost"
               size="sm"
               onPress={async () => {
-                if (await confirmDialog({ title: t('common.clearAll'), destructive: true, confirmText: t('common.remove'), cancelText: t('common.cancel') })) cartClear();
+                if (await confirmDialog({ title: t('common.clearAll'), destructive: true, confirmText: t('common.remove'), cancelText: t('common.cancel') })) save(cartClear());
               }}
             />
           }
@@ -194,7 +206,7 @@ export default function CartScreen() {
               <SwitchRow
                 label={`${t('cart.withInstallation')} (+${formatINR((i.installation_charge ?? 0) * i.qty)})`}
                 value={i.with_installation}
-                onValueChange={(v) => cartUpdate({ installation: { [i.shop_product_id]: v } })}
+                onValueChange={(v) => save(cartUpdate({ installation: { [i.shop_product_id]: v } }))}
               />
             ) : null}
           </View>
@@ -205,7 +217,7 @@ export default function CartScreen() {
       <Card style={{ gap: 12 }}>
         <Segmented
           value={cart.cart.fulfilment}
-          onChange={(v) => cartUpdate({ fulfilment: v })}
+          onChange={(v) => save(cartUpdate({ fulfilment: v }))}
           options={[
             { value: 'delivery', label: t('cart.homeDelivery') },
             ...(shop.store_pickup ? [{ value: 'pickup' as const, label: t('cart.pickup') }] : []),
@@ -241,7 +253,7 @@ export default function CartScreen() {
         <InfoBanner key={p} tone={p === 'SHOP_CLOSED' ? 'warning' : 'error'} text={t(`cart.problem.${p}`, { amount: formatINR(cart.totals.min_order_gap) })} />
       ))}
 
-      <Input label={t('cart.noteLabel')} placeholder={t('cart.notePlaceholder')} value={note} onChangeText={setNote} onBlur={() => note !== (cart.cart.note ?? '') && cartUpdate({ note })} multiline />
+      <Input label={t('cart.noteLabel')} placeholder={t('cart.notePlaceholder')} value={note} onChangeText={setNote} onBlur={() => note !== (cart.cart.note ?? '') && save(cartUpdate({ note }))} multiline />
 
       {/* Bill */}
       <Card style={{ gap: 12 }}>
@@ -276,7 +288,7 @@ export default function CartScreen() {
             key={a.id}
             onPress={async () => {
               setAddrOpen(false);
-              await cartUpdate({ address_id: a.id });
+              await save(cartUpdate({ address_id: a.id }));
             }}
             style={a.id === cart.cart.address_id ? { borderWidth: 2, borderColor: colors.primary } : undefined}
           >

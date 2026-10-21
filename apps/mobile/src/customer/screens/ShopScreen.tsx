@@ -39,6 +39,7 @@ import {
   ShopCover,
   Skeleton,
   Tag,
+  toast,
   VerifiedBadge,
 } from '@/shared/ui';
 
@@ -173,7 +174,7 @@ export default function ShopScreen() {
         <Row justify="space-between" style={{ position: 'absolute', left: 12, right: 12, top: insets.top + 8 }}>
           <RoundButton icon="arrow-back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} label={t('common.back')} />
           <Row gap={10}>
-            <RoundButton icon={s.is_favourite ? 'heart' : 'heart-outline'} color={s.is_favourite ? colors.error : undefined} onPress={() => toggleFavourite(s.id)} label={t('shop.favourite')} testID="favourite-shop" />
+            <RoundButton icon={s.is_favourite ? 'heart' : 'heart-outline'} color={s.is_favourite ? colors.error : undefined} onPress={() => toggleFavourite(s.id).catch((e) => toast(errorText(e, t), 'error'))} label={t('shop.favourite')} testID="favourite-shop" />
             <RoundButton icon="share-social-outline" onPress={share} label={t('common.share')} />
           </Row>
         </Row>
@@ -273,7 +274,7 @@ export default function ShopScreen() {
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
           tab === 'products' ? (
-            catalog.isLoading ? <Loading /> : <EmptyState icon="cube-outline" title={t('shop.noProducts')} compact />
+            catalog.isLoading ? <Loading /> : catalog.isError ? <ErrorState message={errorText(catalog.error, t)} onRetry={() => catalog.refetch()} /> : <EmptyState icon="cube-outline" title={t('shop.noProducts')} compact />
           ) : tab === 'reviews' ? (
             <View style={{ padding: 16, gap: 8 }}>
               {reviews.isLoading ? <Loading /> : null}

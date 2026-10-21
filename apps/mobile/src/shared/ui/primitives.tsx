@@ -251,14 +251,39 @@ export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
   return <View style={[{ height: 1, backgroundColor: colors.divider }, style]} />;
 }
 
-export function SectionHeader({ title, subtitle, action, onAction, style }: { title: string; subtitle?: string; action?: string; onAction?: () => void; style?: StyleProp<ViewStyle> }) {
+export function SectionHeader({
+  title,
+  subtitle,
+  action,
+  onAction,
+  icon,
+  tone = 'primary',
+  style,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: string;
+  onAction?: () => void;
+  /** Small coloured badge before the title */
+  icon?: IoniconName;
+  tone?: 'primary' | 'accent' | 'offer';
+  style?: StyleProp<ViewStyle>;
+}) {
   const { colors } = useTheme();
+  const badge = { primary: [colors.primary, colors.onPrimary], accent: [colors.accent, colors.onAccent], offer: [colors.offer, colors.onSuccess] }[tone];
   return (
     <Row justify="space-between" align="flex-end" style={[{ marginBottom: 10 }, style]}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="h3">{title}</AppText>
-        {subtitle ? <AppText variant="caption" color="textMuted">{subtitle}</AppText> : null}
-      </View>
+      <Row gap={10} style={{ flex: 1 }}>
+        {icon ? (
+          <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: badge[0], alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={icon} size={16} color={badge[1]} />
+          </View>
+        ) : null}
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="h3">{title}</AppText>
+          {subtitle ? <AppText variant="caption" color="textMuted">{subtitle}</AppText> : null}
+        </View>
+      </Row>
       {action ? (
         <Pressable onPress={onAction} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingBottom: 2 }}>
           <AppText variant="label" color="primary">{action}</AppText>

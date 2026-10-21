@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import type { Address, Area } from '@gg/shared';
 
+import { errorText } from '@/shared/api/rpc';
 import { AreaList } from '@/shared/components/AreaList';
 import { PlaceResults } from '@/shared/components/PlaceResults';
 import { useLocationStore } from '@/shared/hooks/location';
@@ -50,10 +51,17 @@ export default function LocationScreen() {
         toast(t('location.permissionDenied'), 'error');
         return;
       }
-      const pos = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.Balanced });
+      let pos: ExpoLocation.LocationObject;
+      try {
+        pos = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.Balanced });
+      } catch {
+        toast(t('location.gpsFailed'), 'error');
+        return;
+      }
       if (await fromCoords(pos.coords.latitude, pos.coords.longitude)) done();
-    } catch {
-      toast(t('location.permissionDenied'), 'error');
+    } catch (e) {
+      // Finding the area needs the internet; the permission was fine
+      toast(errorText(e, t), 'error');
     } finally {
       setDetecting(false);
     }
@@ -113,7 +121,17 @@ export default function LocationScreen() {
         onSubmitEditing={() => places.run(query)}
         returnKeyType="search"
       />
-      <PlaceResults query={query} search={places} onPick={async (p) => { if (await fromCoords(p.lat, p.lng, p.main)) done(); }} />
+      <PlaceResults
+        query={query}
+        search={places}
+        onPick={async (p) => {
+          try {
+            if (await fromCoords(p.lat, p.lng, p.main)) done();
+          } catch (e) {
+            toast(errorText(e, t), 'error');
+          }
+        }}
+      />
       <AppText variant="label" color="textMuted">{t('location.pickArea')}</AppText>
       <AreaList query={query} onPick={pickArea} selectedId={current?.areaId} />
     </Screen>

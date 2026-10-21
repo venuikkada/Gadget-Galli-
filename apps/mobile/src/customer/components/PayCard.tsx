@@ -8,7 +8,7 @@ import { formatINR, upiPaymentUrl, type Order } from '@gg/shared';
 
 import { publicUrl } from '@/shared/api/storage';
 import { useTranslation } from '@/shared/i18n';
-import { copyText, openUpi } from '@/shared/lib/linking';
+import { copyText, isDesktopWeb, openUpi } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, InfoBanner, Input, Row, Segmented, toast, VerifiedBadge } from '@/shared/ui';
 
@@ -31,6 +31,9 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
   );
   const qrImage = publicUrl('banners', payTo.qr_path);
   const amount = formatINR(order.grand_total);
+  // A computer has no UPI app: lead with the QR code to scan from a phone.
+  const desktop = isDesktopWeb();
+  const body = methods.length > 1 ? t('order.payBody', { amount }) : methods[0] === 'bank_transfer' ? t('order.payBodyBank', { amount }) : t('order.payBodyUpi', { amount });
 
   const copy = (value: string) => {
     copyText(value);
@@ -51,7 +54,7 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
         </View>
         <AppText variant="h3" style={{ flex: 1 }}>{t('order.payTitle')}</AppText>
       </Row>
-      <AppText variant="bodySmall" color="textMuted">{t('order.payBody', { amount })}</AppText>
+      <AppText variant="bodySmall" color="textMuted">{body}</AppText>
       {order.payment_rejected_reason ? <InfoBanner tone="error" text={t('order.paymentRejected', { reason: order.payment_rejected_reason })} /> : null}
 
       {methods.length > 1 ? (
@@ -83,9 +86,9 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
               <Ionicons name="copy-outline" size={18} color={colors.primary} />
             </Row>
           </Pressable>
-          <Button testID="pay-upi" title={t('order.pay', { amount })} icon="flash" variant="action" size="xl" full onPress={pay} />
+          {!desktop ? <Button testID="pay-upi" title={t('order.pay', { amount })} icon="flash" variant="action" size="xl" full onPress={pay} /> : null}
           <View style={{ alignItems: 'center', gap: 8, paddingTop: 4 }}>
-            <AppText variant="caption" color="textMuted">{t('order.scanQr')}</AppText>
+            <AppText variant={desktop ? 'label' : 'caption'} color={desktop ? 'text' : 'textMuted'} align="center">{desktop ? t('order.scanOnPhone', { amount }) : t('order.scanQr')}</AppText>
             <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 12 }} testID="pay-qr">
               <QRCode value={upiLink} size={160} />
             </View>

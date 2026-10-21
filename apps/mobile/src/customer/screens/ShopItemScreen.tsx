@@ -9,7 +9,7 @@ import { PhotoGallery } from '@/shared/components/PhotoViewer';
 import { useTranslation } from '@/shared/i18n';
 import { tDeliversIn } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, Divider, ErrorState, Header, Loading, QtyStepper, Rating, Row, Screen, ShopAvatar, SwitchRow, Tag, VerifiedBadge } from '@/shared/ui';
+import { AppText, Button, Card, Divider, EmptyState, ErrorState, Header, Loading, QtyStepper, Rating, Row, Screen, ShopAvatar, SwitchRow, Tag, toast, VerifiedBadge } from '@/shared/ui';
 
 import { cartUpdate, useShopProduct } from '../api';
 import { useAddToCart, useCartQty } from '../components/cartBits';
@@ -27,13 +27,20 @@ export default function ShopItemScreen() {
   const qty = item ? qtyOf(item.id) : 0;
   const inCartInstall = cart?.items.find((i) => i.shop_product_id === item?.id)?.with_installation ?? false;
 
-  if (q.isError) return <ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} />;
-  if (!item) return <Screen header={<Header />}>{q.isLoading ? <Loading /> : null}</Screen>;
+  if (q.isError) return <Screen header={<Header />}><ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} /></Screen>;
+  if (!item) {
+    return (
+      <Screen header={<Header />}>
+        {q.isLoading ? <Loading /> : <EmptyState icon="cube-outline" title={t('error.PRODUCT_NOT_FOUND')} action={t('tabs.home')} onAction={() => router.replace('/')} />}
+      </Screen>
+    );
+  }
 
   const off = percentOff(item.price, item.mrp);
+  const setInstall = (on: boolean) => cartUpdate({ installation: { [item.id]: on } }).catch((e) => toast(errorText(e, t), 'error'));
   const addNow = async () => {
     const ok = await add(item.id);
-    if (ok && withInstall && item.installation_available) await cartUpdate({ installation: { [item.id]: true } });
+    if (ok && withInstall && item.installation_available) await setInstall(true);
   };
 
   return (
@@ -85,7 +92,7 @@ export default function ShopItemScreen() {
             <SwitchRow
               label={t('product.addInstallation', { amount: formatINR(item.installation_charge) })}
               value={qty > 0 ? inCartInstall : withInstall}
-              onValueChange={(v) => (qty > 0 ? cartUpdate({ installation: { [item.id]: v } }) : setWithInstall(v))}
+              onValueChange={(v) => (qty > 0 ? setInstall(v) : setWithInstall(v))}
             />
           </Card>
         ) : null}

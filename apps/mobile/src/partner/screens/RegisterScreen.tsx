@@ -47,7 +47,8 @@ export default function RegisterScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ step?: string; edit?: string }>();
-  const { data: shop, isLoading } = useMyShop();
+  // isPending, not isLoading: until the saved sign-in is restored the query is disabled, which is not "no shop".
+  const { data: shop, isPending } = useMyShop();
   const { data: profile } = useProfile();
   const { data: areas = [] } = useAreas();
   const editing = params.edit === '1';
@@ -93,7 +94,7 @@ export default function RegisterScreen() {
   // Load saved values once
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    if (loaded || isLoading) return;
+    if (loaded || isPending) return;
     setLoaded(true);
     if (!shop) {
       setOwnerName(profile?.user.name ?? '');
@@ -127,7 +128,7 @@ export default function RegisterScreen() {
     setGst(shop.gst_number ?? '');
     const s = params.step ? Number(params.step) : editing ? 1 : Math.min(Math.max(shop.registration_step, 1), 8);
     setStep(s);
-  }, [shop, isLoading, loaded, profile, params.step, editing]);
+  }, [shop, isPending, loaded, profile, params.step, editing]);
 
   useEffect(() => {
     if (!area && shop?.area_id && areas.length) setArea(areas.find((a) => a.id === shop.area_id) ?? null);
@@ -237,7 +238,7 @@ export default function RegisterScreen() {
     return m;
   }, [shop, front.length, idDoc, licenceDoc]);
 
-  if (isLoading || !loaded) return <Screen><Loading /></Screen>;
+  if (isPending || !loaded) return <Screen><Loading /></Screen>;
   const needsShop = step >= 5 && !shop;
 
   return (

@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { formatINR, REJECT_REASONS, type DeliveryService, type Order } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
+import { signedUrl } from '@/shared/api/storage';
 import { PhotoPicker } from '@/shared/components/PhotoPicker';
 import { useTranslation } from '@/shared/i18n';
 import { openDeliveryApp } from '@/shared/lib/linking';
@@ -246,16 +247,42 @@ export function DispatchSheet({ order, visible, onClose, update }: { order: Orde
   const { t } = useTranslation();
   const { colors } = useTheme();
   const d = order.dispatch;
-  const [service, setService] = useState<DeliveryService>(d?.service && d.service !== 'store_pickup' ? d.service : 'porter');
-  const [rider, setRider] = useState(d?.rider_name ?? '');
-  const [phone, setPhone] = useState(d?.rider_phone?.replace(/^\+91/, '') ?? '');
-  const [vehicle, setVehicle] = useState(d?.vehicle_no ?? '');
-  const [tracking, setTracking] = useState(d?.tracking_url ?? '');
-  const [otp, setOtp] = useState(d?.delivery_otp ?? '');
-  const [eta, setEta] = useState<number | null>(60);
-  const [photo, setPhoto] = useState<string[]>(order.pack_photo_path ? [order.pack_photo_path] : []);
+  const [service, setService] = useState<DeliveryService>('porter');
+  const [rider, setRider] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vehicle, setVehicle] = useState('');
+  const [tracking, setTracking] = useState('');
+  const [otp, setOtp] = useState('');
+  // When updating, the ETA changes only if the owner picks a new one (the server keeps the old one otherwise).
+  const [eta, setEta] = useState<number | null>(update ? null : 60);
+  const [photo, setPhoto] = useState<string[]>([]);
+  const [signed, setSigned] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const pickup = order.fulfilment === 'pickup';
+
+  // Fill the form from the order each time the sheet opens (the rider may have been sent since the screen opened),
+  // but not again while it is open: a live refresh of the order must not wipe what the owner is typing.
+  const wasVisible = useRef(false);
+  useEffect(() => {
+    const opened = visible && !wasVisible.current;
+    wasVisible.current = visible;
+    if (!opened) return;
+    setService(d?.service && d.service !== 'store_pickup' ? d.service : 'porter');
+    setRider(d?.rider_name ?? '');
+    setPhone(d?.rider_phone?.replace(/^\+91/, '') ?? '');
+    setVehicle(d?.vehicle_no ?? '');
+    setTracking(d?.tracking_url ?? '');
+    setOtp(d?.delivery_otp ?? '');
+    setEta(update ? null : 60);
+    setPhoto(order.pack_photo_path ? [order.pack_photo_path] : []);
+  }, [visible, d, update, order.pack_photo_path]);
+
+  // The pack photo is in the private order-media bucket, so it needs a signed link to show.
+  useEffect(() => {
+    const path = order.pack_photo_path;
+    if (!visible || !path || signed[path]) return;
+    signedUrl('order-media', path).then((url) => url && setSigned((m) => ({ ...m, [path]: url })));
+  }, [visible, order.pack_photo_path, signed]);
 
   const send = async () => {
     setBusy(true);
@@ -297,12 +324,16 @@ export function DispatchSheet({ order, visible, onClose, update }: { order: Orde
               <Button key={k} title={t('p.send.openApp', { app: t(`service.${k}`) })} icon="open-outline" variant="outline" size="sm" onPress={() => openDeliveryApp(k)} />
             ))}
           </Row>
-          <AppText variant="label" color="textMuted">{t('p.send.service')}</AppText>
-          <Row wrap gap={8}>
-            {SERVICES.map((s) => (
-              <Chip key={s} testID={`service-${s}`} label={t(`service.${s}`)} selected={service === s} onPress={() => setService(s)} />
-            ))}
-          </Row>
+          {!update ? (
+            <>
+              <AppText variant="label" color="textMuted">{t('p.send.service')}</AppText>
+              <Row wrap gap={8}>
+                {SERVICES.map((s) => (
+                  <Chip key={s} testID={`service-${s}`} label={t(`service.${s}`)} selected={service === s} onPress={() => setService(s)} />
+                ))}
+              </Row>
+            </>
+          ) : null}
           <Input testID="rider-name" label={t('p.send.riderName')} value={rider} onChangeText={setRider} />
           <Input label={t('p.send.riderPhone')} prefix="+91" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
           <Row gap={10}>
@@ -320,7 +351,7 @@ export function DispatchSheet({ order, visible, onClose, update }: { order: Orde
               <Chip key={String(m)} label={String(label)} selected={eta === m} onPress={() => setEta(m as number)} />
             ))}
           </Row>
-          {!update ? <PhotoPicker bucket="order-media" folder={order.id} label={t('p.send.photo')} value={photo} onChange={setPhoto} max={1} /> : null}
+          {!update ? <PhotoPicker bucket="order-media" folder={order.id} label={t('p.send.photo')} value={photo} onChange={setPhoto} max={1} signed={signed} /> : null}
           <Row gap={6}>
             <Ionicons name="information-circle-outline" size={14} color={colors.textSubtle} />
             <AppText variant="caption" color="textSubtle">{t('order.otpHint')}</AppText>

@@ -40,7 +40,8 @@ Deno.serve(async (req) => {
 
   const messages: { notificationId: number; message: Record<string, unknown> }[] = [];
   for (const n of notes as NotificationRow[]) {
-    const isNewOrder = n.kind === 'new_order';
+    // The loud alarm: new orders, and anything the database marks with sound "new_order" (a paid order to send)
+    const isNewOrder = n.kind === 'new_order' || n.data?.sound === 'new_order';
     for (const t of (tokens ?? []).filter((t) => t.user_id === n.user_id)) {
       messages.push({
         notificationId: n.id,

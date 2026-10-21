@@ -81,9 +81,18 @@ export default function PartnerOrderScreen() {
               testID="awaiting-payment"
               tone={o.payment_claimed_at ? 'info' : 'warning'}
               icon={o.payment_claimed_at ? 'hourglass-outline' : 'time-outline'}
-              text={o.payment_claimed_at ? t('p.order.paymentClaimed', { ref: o.payment_ref ?? '' }) : t('p.order.awaitingPayment', { amount: formatINR(o.grand_total) })}
+              text={
+                o.payment_claimed_at
+                  ? t(o.payment_method === 'bank_transfer' ? 'p.order.paymentClaimedBank' : 'p.order.paymentClaimed', { ref: o.payment_ref ?? '' })
+                  : t('p.order.awaitingPayment', { amount: formatINR(o.grand_total) })
+              }
             />
-            <Button title={t('p.step.reject')} variant="ghost" size="sm" onPress={() => setSheet('reject')} />
+            {/* Once the customer says they paid, only Gadget Galli support can cancel (and refund) the order */}
+            {o.payment_claimed_at ? (
+              <AppText variant="caption" color="textMuted" align="center">{t('p.order.paidNoReject')}</AppText>
+            ) : (
+              <Button title={t('p.step.reject')} variant="ghost" size="sm" onPress={() => setSheet('reject')} />
+            )}
           </View>
         ) : step === 'pack' ? (
           <Button testID="step-packed" title={t('p.step.packed')} icon="cube" variant="primary" size="xl" full onPress={() => setSheet('pack')} />

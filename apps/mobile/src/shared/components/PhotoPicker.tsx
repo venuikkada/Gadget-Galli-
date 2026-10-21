@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
+import { errorText } from '../api/rpc';
 import { publicUrl, uploadImage, type Bucket } from '../api/storage';
 import { useTranslation } from '../i18n';
 import { pickImage } from '../lib/images';
@@ -24,7 +25,8 @@ export function PhotoPicker({
   bucket: Bucket;
   folder: string;
   value: string[];
-  onChange: (paths: string[]) => void;
+  /** May save right away (a shop photo); a failure is shown as an error. */
+  onChange: (paths: string[]) => void | Promise<void>;
   max?: number;
   size?: number;
   label?: string;
@@ -45,9 +47,20 @@ export function PhotoPicker({
     try {
       const path = await uploadImage(bucket, folder, uri);
       setLocal((m) => ({ ...m, [path]: uri }));
-      onChange([...value, path].slice(0, max));
+      await onChange([...value, path].slice(0, max));
     } catch (e) {
-      toast((e as Error).message ?? t('error.generic'), 'error');
+      toast(errorText(e, t), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (path: string) => {
+    setBusy(true);
+    try {
+      await onChange(value.filter((x) => x !== path));
+    } catch (e) {
+      toast(errorText(e, t), 'error');
     } finally {
       setBusy(false);
     }
@@ -61,7 +74,10 @@ export function PhotoPicker({
           <View key={p}>
             <Image source={{ uri: local[p] ?? signed?.[p] ?? publicUrl(bucket, p) ?? undefined }} style={{ width: size, height: size, borderRadius: 12, backgroundColor: colors.surfaceAlt }} contentFit="cover" />
             <Pressable
-              onPress={() => onChange(value.filter((x) => x !== p))}
+              onPress={() => remove(p)}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.remove')}
               hitSlop={6}
               style={{ position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.error, alignItems: 'center', justifyContent: 'center' }}
             >

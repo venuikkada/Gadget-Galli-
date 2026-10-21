@@ -264,7 +264,12 @@ export async function toggleFavourite(shopId: string) {
 }
 
 export function useFavouriteShops() {
-  return useQuery({ queryKey: ['favourites'], queryFn: () => rpc<ShopCard[]>('my_favourite_shops') });
+  const { p_lat, p_lng } = useLocArgs();
+  // The location gives each card its distance; servers before 0017 take no arguments.
+  return useQuery({
+    queryKey: ['favourites', p_lat, p_lng],
+    queryFn: () => rpc<ShopCard[]>('my_favourite_shops', p_lat != null && p_lng != null ? { p_lat, p_lng } : {}),
+  });
 }
 
 export function useMyReviews() {

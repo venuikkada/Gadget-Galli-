@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, variantText } from '@gg/shared';
+import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, SUPPORT, variantText } from '@gg/shared';
 import { directionsUrl } from '@gg/shared/map';
 
 import { errorText } from '@/shared/api/rpc';
@@ -23,6 +23,7 @@ import {
   Celebration,
   confirmDialog,
   Divider,
+  EmptyState,
   ErrorState,
   Header,
   InfoBanner,
@@ -68,6 +69,14 @@ export default function OrderScreen() {
   }, [o?.dispatch?.package_photo_path, o?.pack_photo_path]);
 
   if (q.isError) return <Screen header={<Header />}><ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} /></Screen>;
+  // get_order is null for an order that is not this customer's (a forwarded link, another account's push)
+  if (!o && q.isSuccess) {
+    return (
+      <Screen header={<Header />}>
+        <EmptyState icon="receipt-outline" title={t('error.ORDER_NOT_FOUND')} action={t('tabs.orders')} onAction={() => router.replace('/orders')} />
+      </Screen>
+    );
+  }
   if (!o) return <Screen header={<Header />}><Loading /></Screen>;
 
   const status = effectiveStatus(o.status, o.status_before_issue);
@@ -99,7 +108,7 @@ export default function OrderScreen() {
         : o.status === 'REJECTED'
           ? [`${t('order.rejected')}${o.reject_reason ? ` · ${t(`reject.${o.reject_reason}`)}` : ''}`, null]
           : o.status === 'EXPIRED'
-            ? [t('order.expired'), null]
+            ? [o.confirmed_at ? t('order.expiredUnpaid') : t('order.expired'), null]
             : o.status === 'CANCELLED'
               ? [t('order.cancelled'), null]
               : status === 'PAID'
@@ -117,6 +126,9 @@ export default function OrderScreen() {
           : null
       : null;
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
+  // "I have paid" sent and not yet checked: the order stays as it is until support confirms it (docs/DECISIONS.md #54).
+  const payChecking = o.status === 'CONFIRMED' && !!o.payment_claimed_at;
+  const supportWhatsApp = () => openWhatsApp(process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp, `Hi, about my order ${o.order_no}`);
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
   const sendPaymentRef = async (ref: string, method: 'upi' | 'bank_transfer') => {
@@ -188,8 +200,8 @@ export default function OrderScreen() {
         {o.updated_by_shop && status === 'CONFIRMED' ? <InfoBanner tone="warning" text={t('order.shopUpdated')} /> : null}
 
         {/* Pay Gadget Galli by UPI or bank transfer, then enter the reference */}
-        {status === 'CONFIRMED' && !payReady ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
-        {status === 'CONFIRMED' && payReady && o.payment_claimed_at ? (
+        {o.status === 'CONFIRMED' && !payReady ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
+        {payChecking && payReady ? (
           <Card style={{ gap: 8, backgroundColor: colors.primarySoft, borderWidth: 1.5, borderColor: colors.primary }} level={2} testID="payment-verifying">
             <Row gap={10}>
               <Ionicons name="hourglass-outline" size={22} color={colors.primary} />
@@ -199,9 +211,12 @@ export default function OrderScreen() {
             <AppText variant="caption" color="textMuted">
               {o.payment_method === 'bank_transfer' ? t('order.bankUtrShown', { ref: o.payment_ref ?? '' }) : t('order.utrShown', { ref: o.payment_ref ?? '' })}
             </AppText>
+            <Divider />
+            <AppText variant="caption" color="textMuted">{t('order.payCheckHelp')}</AppText>
+            <Button title={t('help.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="sm" onPress={supportWhatsApp} style={{ alignSelf: 'flex-start' }} testID="payment-support" />
           </Card>
         ) : null}
-        {status === 'CONFIRMED' && payReady && !o.payment_claimed_at ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
+        {o.status === 'CONFIRMED' && payReady && !o.payment_claimed_at ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
 
         {/* Where the shop and the delivery address are, how far and how long the ride is */}
         {!ended ? (
@@ -345,8 +360,8 @@ export default function OrderScreen() {
         </Card>
 
         <Row gap={10}>
-          {customerCanCancel(o.status) ? <Button title={t('order.cancel')} variant="danger" icon="close-circle-outline" onPress={cancelOrder} loading={cancel.isPending} style={{ flex: 1 }} /> : null}
-          {canReportIssue(status, o.delivered_at) && !openIssue ? (
+          {customerCanCancel(o.status, o.payment_claimed_at) ? <Button title={t('order.cancel')} variant="danger" icon="close-circle-outline" onPress={cancelOrder} loading={cancel.isPending} style={{ flex: 1 }} /> : null}
+          {canReportIssue(status, o.delivered_at) && !openIssue && !payChecking ? (
             <Button title={t('order.report')} variant="outline" icon="alert-circle-outline" onPress={() => router.push(`/report/${o.id}`)} style={{ flex: 1 }} testID="report-problem" />
           ) : null}
         </Row>

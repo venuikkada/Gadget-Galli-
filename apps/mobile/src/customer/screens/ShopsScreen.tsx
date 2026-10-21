@@ -1,5 +1,6 @@
+import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
-import { EmptyState, Header, Loading, Screen } from '@/shared/ui';
+import { EmptyState, ErrorState, Header, Loading, Screen } from '@/shared/ui';
 
 import { useShopsNear } from '../api';
 import { ShopListRow } from '../components/cards';
@@ -11,6 +12,7 @@ export default function ShopsScreen() {
   return (
     <Screen header={<Header title={t('home.shopsNear')} />} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
       {q.isLoading ? <Loading /> : null}
+      {q.isError && !q.data ? <ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} /> : null}
       {q.data && !q.data.length ? <EmptyState icon="storefront-outline" title={t('home.noShopsTitle')} body={t('home.noShopsBody')} /> : null}
       {q.data?.map((s) => <ShopListRow key={s.id} s={s} />)}
     </Screen>

@@ -36,12 +36,19 @@ export default function HomeScreen() {
 
   const firstName = profile?.user.name?.split(' ')[0];
   const data = feed.data;
+  // Shops featured in Admin → Content lead the row, then the nearest ones.
+  const featuredIds = useMemo(() => new Set((data?.featured_shops ?? []).map((s) => s.id)), [data?.featured_shops]);
+  const shops = useMemo(
+    () => (data ? [...(data.featured_shops ?? []), ...data.shops_near.filter((s) => !featuredIds.has(s.id))] : []),
+    [data, featuredIds],
+  );
+  const handpicked = useMemo(() => (data?.featured_products ?? []).filter((p) => p.min_price != null), [data?.featured_products]);
   // The open shop that should reach this customer first gets a "Fastest delivery" tag.
   const fastestId = useMemo(() => {
     const eta = (s: { delivery_mins: number; distance_km: number | null }) => deliveryEtaMins(s.delivery_mins, s.distance_km) ?? Infinity;
-    const open = (data?.shops_near ?? []).filter((s) => s.is_open_now && s.delivery_mins > 0);
+    const open = shops.filter((s) => s.is_open_now && s.delivery_mins > 0);
     return open.length > 1 ? open.reduce((a, b) => (eta(b) < eta(a) ? b : a)).id : null;
-  }, [data?.shops_near]);
+  }, [shops]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -85,29 +92,57 @@ export default function HomeScreen() {
               <BannerCarousel banners={data.banners} />
 
               <View style={{ paddingHorizontal: 16 }}>
-                <SectionHeader title={t('home.categories')} />
+                <SectionHeader title={t('home.categories')} icon="grid" />
                 <CategoryTiles categories={data.categories} />
               </View>
 
               <View>
-                <SectionHeader title={t('home.shopsNear')} action={data.shops_near.length ? t('common.seeAll') : undefined} onAction={() => router.push('/shops')} style={{ paddingHorizontal: 16 }} />
-                {data.shops_near.length ? (
+                <SectionHeader title={t('home.shopsNear')} icon="storefront" action={shops.length ? t('common.seeAll') : undefined} onAction={() => router.push('/shops')} style={{ paddingHorizontal: 16 }} />
+                {shops.length ? (
                   <FlatList
                     horizontal
-                    data={data.shops_near}
+                    data={shops}
                     keyExtractor={(s) => s.id}
-                    renderItem={({ item }) => <ShopTile s={item} fastest={item.id === fastestId} />}
+                    renderItem={({ item }) => <ShopTile s={item} fastest={item.id === fastestId} featured={featuredIds.has(item.id)} />}
                     contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 8, paddingTop: 2 }}
                     showsHorizontalScrollIndicator={false}
                   />
                 ) : (
-                  <EmptyState icon="storefront-outline" title={t('home.noShopsTitle')} body={t('home.noShopsBody')} compact action={t('location.chooseAnother')} onAction={() => router.push('/location')} />
+                  <EmptyState icon="storefront-outline" title={t('home.noShopsTitle')} body={t('home.noShopsBody')} compact />
                 )}
               </View>
 
+              {data.deals?.length ? (
+                <View style={{ backgroundColor: colors.successSoft, paddingVertical: 16 }} testID="home-deals">
+                  <SectionHeader title={t('home.deals')} subtitle={t('home.dealsSub')} icon="pricetags" tone="offer" style={{ paddingHorizontal: 16 }} />
+                  <FlatList
+                    horizontal
+                    data={data.deals}
+                    keyExtractor={(p) => p.product_id}
+                    renderItem={({ item }) => <ProductTile p={item} deal />}
+                    contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 6 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              ) : null}
+
+              {handpicked.length ? (
+                <View testID="home-handpicked">
+                  <SectionHeader title={t('home.handpicked')} subtitle={t('home.handpickedSub')} icon="sparkles" tone="accent" style={{ paddingHorizontal: 16 }} />
+                  <FlatList
+                    horizontal
+                    data={handpicked}
+                    keyExtractor={(p) => p.product_id}
+                    renderItem={({ item }) => <ProductTile p={item} />}
+                    contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 6 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              ) : null}
+
               {data.popular.length ? (
                 <View style={{ backgroundColor: colors.accentSoft, paddingVertical: 16 }}>
-                  <SectionHeader title={t('home.popular')} style={{ paddingHorizontal: 16 }} />
+                  <SectionHeader title={t('home.popular')} icon="flame" tone="accent" style={{ paddingHorizontal: 16 }} />
                   <FlatList
                     horizontal
                     data={data.popular}
@@ -121,7 +156,7 @@ export default function HomeScreen() {
 
               {recent.data?.length ? (
                 <View>
-                  <SectionHeader title={t('home.recent')} style={{ paddingHorizontal: 16 }} />
+                  <SectionHeader title={t('home.recent')} icon="time" style={{ paddingHorizontal: 16 }} />
                   <FlatList
                     horizontal
                     data={recent.data}

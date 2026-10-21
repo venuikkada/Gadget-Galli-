@@ -40,7 +40,8 @@ export interface AddressSnapshot {
  */
 export const TRANSITIONS: Record<OrderStatus, Partial<Record<OrderStatus, Actor[]>>> = {
   REQUESTED: { CONFIRMED: ['shop'], REJECTED: ['shop'], CANCELLED: ['customer'], EXPIRED: ['system'] },
-  CONFIRMED: { PAID: ['shop'], REJECTED: ['shop'], CANCELLED: ['customer'], ISSUE_REPORTED: ['customer'] },
+  // PAID only by an admin (Confirm payment), which canTransition allows for every move
+  CONFIRMED: { REJECTED: ['shop'], CANCELLED: ['customer'], ISSUE_REPORTED: ['customer'], EXPIRED: ['system'] },
   PAID: { PACKED: ['shop'], ISSUE_REPORTED: ['customer'] },
   PACKED: { DISPATCHED: ['shop'], ISSUE_REPORTED: ['customer'] },
   DISPATCHED: { DELIVERED: ['customer', 'system'], ISSUE_REPORTED: ['customer'] },
@@ -90,8 +91,9 @@ export function nextShopStep(status: OrderStatus): 'confirm' | 'payment' | 'pack
   }
 }
 
-export function customerCanCancel(status: OrderStatus): boolean {
-  return status === 'REQUESTED' || status === 'CONFIRMED';
+/** Until the customer says they paid; then support handles a cancellation and refund (docs/DECISIONS.md #54). */
+export function customerCanCancel(status: OrderStatus, paymentClaimedAt?: string | null): boolean {
+  return status === 'REQUESTED' || (status === 'CONFIRMED' && !paymentClaimedAt);
 }
 
 export function canReportIssue(status: OrderStatus, deliveredAt: string | null | undefined, now: Date = new Date()): boolean {
@@ -162,7 +164,7 @@ export function buildWhatsAppOrderMessage(o: WhatsAppOrderInput): string {
   }
   if (o.note) lines.push(`Note: ${o.note}`);
   lines.push('');
-  lines.push('Please confirm availability. I will pay by UPI after you confirm.');
+  lines.push('Please confirm availability. I will pay Gadget Galli in the app after you confirm.');
   return lines.join('\n');
 }
 

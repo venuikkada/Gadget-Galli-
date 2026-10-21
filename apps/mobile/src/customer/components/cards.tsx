@@ -68,7 +68,8 @@ export function ProductRow({ p }: { p: ProductCardT }) {
   );
 }
 
-export function ProductTile({ p, width = 160 }: { p: ProductCardT; width?: number }) {
+/** `deal` adds the rupees saved off MRP (home "Top deals"). */
+export function ProductTile({ p, width = 160, deal }: { p: ProductCardT; width?: number; deal?: boolean }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   return (
@@ -80,6 +81,12 @@ export function ProductTile({ p, width = 160 }: { p: ProductCardT; width?: numbe
       <View style={{ padding: 10, gap: 4 }}>
         <AppText variant="bodySmall" weight="semibold" numberOfLines={2} style={{ minHeight: 38 }}>{p.name}</AppText>
         <PriceText price={p.min_price} mrp={p.mrp} size="sm" stacked showOff={false} />
+        {deal && p.mrp && p.min_price != null && p.mrp > p.min_price ? (
+          <Row gap={4} style={{ alignSelf: 'flex-start', backgroundColor: colors.successSoft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Ionicons name="pricetag" size={11} color={colors.offer} />
+            <AppText variant="caption" color="offer" weight="bold">{t('home.save', { amount: formatINR(p.mrp - p.min_price) })}</AppText>
+          </Row>
+        ) : null}
         {p.shop_count > 0 ? (
           <Row gap={4}>
             <Ionicons name="storefront-outline" size={12} color={colors.primary} />
@@ -96,7 +103,7 @@ export function ProductTile({ p, width = 160 }: { p: ProductCardT; width?: numbe
 // ---------------------------------------------------------------------------
 // Shop cards
 // ---------------------------------------------------------------------------
-export function ShopTile({ s, width = 248, coverHeight = 118, fastest }: { s: ShopCardT; width?: DimensionValue; coverHeight?: number; fastest?: boolean }) {
+export function ShopTile({ s, width = 248, coverHeight = 118, fastest, featured }: { s: ShopCardT; width?: DimensionValue; coverHeight?: number; fastest?: boolean; featured?: boolean }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   return (
@@ -105,6 +112,12 @@ export function ShopTile({ s, width = 248, coverHeight = 118, fastest }: { s: Sh
         <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.42)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 60 }} />
         <View style={{ position: 'absolute', left: 10, top: 10, flexDirection: 'row', gap: 6 }}>
           {!s.is_open_now ? <Tag label={t('common.closed')} tone="error" icon="moon" /> : null}
+          {featured ? (
+            <Row gap={3} style={{ backgroundColor: colors.surface, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+              <Ionicons name="star" size={11} color={colors.star} />
+              <AppText variant="caption" weight="bold" style={{ fontSize: 11, lineHeight: 14 }}>{t('home.featured')}</AppText>
+            </Row>
+          ) : null}
           {fastest && s.is_open_now ? (
             <Row gap={3} style={{ backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
               <Ionicons name="flash" size={11} color={colors.onAccent} />

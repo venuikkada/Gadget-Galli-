@@ -7,17 +7,43 @@ import { DELIVERY_APPS, mapsUrl, telUrl, whatsappUrl } from '@gg/shared';
 
 import { config } from '../config';
 
-export async function openUrl(url: string) {
+/** A phone or tablet browser (UPI links and app schemes only work there). */
+export function isMobileWeb(): boolean {
+  if (Platform.OS !== 'web' || typeof navigator === 'undefined') return false;
+  // iPadOS says it is a Mac; its touch screen gives it away
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+}
+
+/** Web on a computer: no UPI app, so customers scan the QR code with their phone. */
+export function isDesktopWeb(): boolean {
+  return Platform.OS === 'web' && !isMobileWeb();
+}
+
+/**
+ * On the web, opens an empty tab during the tap, so a link can be loaded into it after an await (placing an order)
+ * without the popup blocker stepping in. Pass it to openUrl / openWhatsApp; close it if the action fails.
+ */
+export function reserveTab(): Window | null {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+  return tab;
+}
+
+export async function openUrl(url: string, tab?: Window | null) {
   // On the web, Linking.openURL replaces the current page. Open web links (wa.me, maps,
   // tracking) in a new tab so the app stays open; tel:/upi: hand off to the phone as usual.
   if (Platform.OS === 'web' && /^https?:/i.test(url) && typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener');
+    if (tab && !tab.closed) tab.location.href = url;
+    else window.open(url, '_blank', 'noopener');
     return;
   }
+  tab?.close();
   try {
     await Linking.openURL(url);
   } catch {
-    Alert.alert('Could not open', url);
+    if (Platform.OS === 'web') window.alert(url);
+    else Alert.alert('Could not open', url);
   }
 }
 
@@ -26,9 +52,12 @@ export function callPhone(phone: string | null | undefined) {
   openUrl(telUrl(phone));
 }
 
-export function openWhatsApp(phone: string | null | undefined, text?: string) {
-  if (!phone) return;
-  openUrl(whatsappUrl(phone, text));
+export function openWhatsApp(phone: string | null | undefined, text?: string, tab?: Window | null) {
+  if (!phone) {
+    tab?.close();
+    return;
+  }
+  openUrl(whatsappUrl(phone, text), tab);
 }
 
 /** "Share on WhatsApp" without a fixed recipient. */
@@ -66,6 +95,12 @@ export async function copyText(text: string) {
  * Returns false when no UPI app could be opened.
  */
 export async function openUpi(upiLink: string): Promise<boolean> {
+  // Browsers: a phone hands upi:// links to its UPI apps; a computer has none.
+  if (Platform.OS === 'web') {
+    if (!isMobileWeb() || typeof window === 'undefined') return false;
+    window.location.href = upiLink;
+    return true;
+  }
   const query = upiLink.split('?')[1] ?? '';
   const candidates =
     Platform.OS === 'ios'
@@ -86,6 +121,8 @@ export async function openUpi(upiLink: string): Promise<boolean> {
 
 export async function openDeliveryApp(key: keyof typeof DELIVERY_APPS) {
   const app = DELIVERY_APPS[key];
+  // Browsers report every scheme as openable, so go straight to the website there.
+  if (Platform.OS === 'web') return openUrl(app.web);
   try {
     if (await Linking.canOpenURL(app.scheme)) {
       await Linking.openURL(app.scheme);

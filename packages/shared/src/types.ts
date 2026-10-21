@@ -236,6 +236,11 @@ export interface HomeFeed {
   categories: Category[];
   shops_near: ShopCard[];
   popular: ProductCard[];
+  /** Biggest discounts off MRP among the popular products (0017); missing from older servers */
+  deals?: ProductCard[];
+  /** Admin → Content → Featured, as cards (0017) */
+  featured_shops?: ShopCard[];
+  featured_products?: ProductCard[];
   featured_shop_ids: Uuid[];
   featured_product_ids: Uuid[];
 }

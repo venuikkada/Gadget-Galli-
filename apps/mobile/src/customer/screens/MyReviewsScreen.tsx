@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 
+import { errorText } from '@/shared/api/rpc';
 import { useTranslation } from '@/shared/i18n';
-import { AppText, Card, EmptyState, Header, Loading, Screen } from '@/shared/ui';
+import { AppText, Card, EmptyState, ErrorState, Header, Loading, Screen } from '@/shared/ui';
 
 import { useMyReviews } from '../api';
 import { ReviewItem } from '../components/cards';
@@ -12,6 +13,7 @@ export default function MyReviewsScreen() {
   return (
     <Screen header={<Header title={t('profile.reviews')} />} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
       {q.isLoading ? <Loading /> : null}
+      {q.isError && !q.data ? <ErrorState message={errorText(q.error, t)} onRetry={() => q.refetch()} /> : null}
       {q.data && !q.data.length ? <EmptyState icon="star-outline" title={t('myReviews.empty')} /> : null}
       {q.data?.map((r) => (
         <Card key={r.id} onPress={() => router.push(`/order/${r.order_id}`)}>
