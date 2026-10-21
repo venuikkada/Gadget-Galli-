@@ -44,7 +44,9 @@ async function step(name, fn) {
 }
 
 const browser = await chromium.launch({ headless: process.env.HEADED !== '1' });
-const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+// A phone browser: the apps show UPI buttons only where a UPI app can open
+const PHONE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
+const phone = { userAgent: PHONE_UA, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const pageErrors = [];
 
 async function newMobilePage(label) {

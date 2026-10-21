@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router';
 
 import { Layout } from './components/Layout';
-import { Spinner, ToastHost } from './components/ui';
+import { Button, Spinner, ToastHost } from './components/ui';
 // Fonts are bundled with the site (the Content-Security-Policy allows no outside font hosts).
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
@@ -39,7 +39,19 @@ const queryClient = new QueryClient({
 });
 
 function RequireAdmin() {
-  const { session, profile, isAdmin, loading } = useAuth();
+  const { session, profile, isAdmin, loading, profileError, reload, signOut } = useAuth();
+  if (session && !profile && profileError) {
+    return (
+      <div className="mx-auto mt-16 max-w-sm space-y-3 rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h1 className="text-lg font-bold">Could not load your account</h1>
+        <p className="text-sm text-ink-muted">Check the internet connection and try again.</p>
+        <div className="flex justify-center gap-2">
+          <Button onClick={() => reload()}>Try again</Button>
+          <Button variant="outline" onClick={() => signOut()}>Log out</Button>
+        </div>
+      </div>
+    );
+  }
   if (loading || (session && !profile)) return <Spinner label="Loading…" />;
   if (!session || !isAdmin) return <Navigate to="/login" replace />;
   return <Outlet />;

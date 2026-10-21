@@ -126,7 +126,7 @@ export default function OrderScreen() {
           : null
       : null;
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
-  // "I have paid" sent and not yet checked: the order stays as it is until support confirms it (docs/DECISIONS.md #54).
+  // "I have paid" sent and not yet checked: the order stays as it is until support confirms it (docs/DECISIONS.md #55).
   const payChecking = o.status === 'CONFIRMED' && !!o.payment_claimed_at;
   const supportWhatsApp = () => openWhatsApp(process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp, `Hi, about my order ${o.order_no}`);
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;

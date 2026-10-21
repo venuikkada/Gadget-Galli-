@@ -120,7 +120,8 @@ export default function CustomersPage() {
                           <option value="super_admin">Super admin</option>
                         </Select>
                       ) : null}
-                      {u.id !== profile?.user.id && !u.deleted ? (
+                      {/* Blocking an admin needs a super admin (docs/DECISIONS.md #55) */}
+                      {u.id !== profile?.user.id && !u.deleted && (isSuper || !u.admin_role) ? (
                         <Button
                           size="sm"
                           variant={u.is_blocked ? 'outline' : 'danger'}
@@ -141,6 +142,7 @@ export default function CustomersPage() {
           </Table>
         )}
       </Card>
+      {(q.data?.length ?? 0) >= 200 ? <p className="text-xs text-ink-muted">Showing the newest 200. Search by name or phone to find others.</p> : null}
     </div>
   );
 }

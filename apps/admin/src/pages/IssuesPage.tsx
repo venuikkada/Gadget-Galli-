@@ -83,6 +83,7 @@ export default function IssuesPage() {
           </Table>
         )}
       </Card>
+      {(q.data?.length ?? 0) >= 200 ? <p className="text-xs text-ink-muted">Showing the newest 200.</p> : null}
     </div>
   );
 }

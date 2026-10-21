@@ -43,13 +43,15 @@ export function useAdminAlerts() {
 
   useEffect(() => {
     if (!q.data) return;
+    // Per claim, not per order: a customer who corrects a rejected reference rings again.
+    const key = (i: { id: string; payment_claimed_at: string | null }) => `${i.id}:${i.payment_claimed_at ?? ''}`;
     if (seen.current === null) {
-      seen.current = new Set(q.data.items.map((i) => i.id));
+      seen.current = new Set(q.data.items.map(key));
       return;
     }
-    const fresh = q.data.items.filter((i) => !seen.current!.has(i.id));
+    const fresh = q.data.items.filter((i) => !seen.current!.has(key(i)));
     if (!fresh.length) return;
-    fresh.forEach((i) => seen.current!.add(i.id));
+    fresh.forEach((i) => seen.current!.add(key(i)));
     chime();
     for (const i of fresh) {
       toast(`Payment to verify · ${i.order_no} · ${formatINR(i.grand_total)} by ${i.payment_method === 'bank_transfer' ? 'bank transfer' : 'UPI'}. Open Payments to confirm.`, 'info');

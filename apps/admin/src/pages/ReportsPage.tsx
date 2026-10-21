@@ -19,8 +19,10 @@ function downloadCsv(name: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   const cols = Object.keys(rows[0]!);
   const esc = (v: unknown) => {
-    const s = v == null ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    let s = v == null ? '' : String(v);
+    // Search words and shop names are typed by people: a leading = + - @ would run as a formula in Excel or Sheets.
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const csv = [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
   const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }));
@@ -84,7 +86,7 @@ export default function ReportsPage() {
             <Stat label="Searches" value={searches} tone="primary" hint={searches ? `${((r.totals.orders / searches) * 100).toFixed(1)}% became orders` : undefined} />
             <Stat label="Customers" value={r.customers.active} tone="action" hint={`${r.customers.new} new · ${r.customers.repeat} ordered twice or more`} />
             <Stat label="Rejected by shops" value={r.totals.rejected} tone="error" />
-            <Stat label="Expired (no reply in 2 hrs)" value={r.totals.expired} tone="warning" />
+            <Stat label="Expired (no shop reply in 2 hrs, or not paid in 24 hrs)" value={r.totals.expired} tone="warning" />
             <Stat label="Cancelled by customers" value={r.totals.cancelled} tone="warning" />
             <Stat label="New shops" value={r.new_shops.length} tone="success" hint={`${r.new_shops.filter((s) => s.status === 'approved').length} live`} />
           </div>

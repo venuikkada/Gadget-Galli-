@@ -8,6 +8,7 @@ import { formatDateIST, formatINR, formatINRCompact, timeAgo } from '@gg/shared'
 import { useOverview } from '@/components/Layout';
 import { Badge, Card, Empty, ErrorBox, OrderStatusBadge, PageHeader, ShopStatusBadge, Spinner, Stat } from '@/components/ui';
 import { errorMessage, rpc } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { chartTheme, useIsDark } from '@/lib/chartTheme';
 import type { AdminIssueRow, AdminOrderRow, AdminShopRow, Paged, PaymentSettings, Reports } from '@/lib/types';
 
@@ -18,6 +19,7 @@ function istDate(offsetDays = 0) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { isSuper } = useAuth();
   const ct = chartTheme(useIsDark());
   const overview = useOverview();
   const o = overview.data;
@@ -32,9 +34,15 @@ export default function DashboardPage() {
       <PageHeader title="Dashboard" subtitle={`Today in Hyderabad · ${formatDateIST(new Date())}`} />
       {overview.isError ? <ErrorBox error={errorMessage(overview.error)} onRetry={() => overview.refetch()} /> : null}
       {payInfo.data && !payInfo.data.ready ? (
-        <Link to="/payments?tab=settings" className="block rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
-          <strong>Customers cannot pay yet.</strong> Add Gadget Galli's UPI ID, QR or bank account in Payments → Settings.
-        </Link>
+        isSuper ? (
+          <Link to="/payments?tab=settings" className="block rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
+            <strong>Customers cannot pay yet.</strong> Add Gadget Galli's UPI ID, QR or bank account in Payments → Settings.
+          </Link>
+        ) : (
+          <div className="rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
+            <strong>Customers cannot pay yet.</strong> Ask a super admin to add Gadget Galli's UPI ID or bank account in Payments → Settings.
+          </div>
+        )
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
@@ -53,6 +61,8 @@ export default function DashboardPage() {
       <Card title="Orders and paid value, last 14 days">
         {trend.isLoading ? (
           <Spinner />
+        ) : trend.isError ? (
+          <ErrorBox error={errorMessage(trend.error)} onRetry={() => trend.refetch()} />
         ) : trend.data ? (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -78,6 +88,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title="Shops waiting for review" actions={<Link to="/shops?status=under_review" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
+          {shops.isError ? <ErrorBox error={errorMessage(shops.error)} onRetry={() => shops.refetch()} /> : null}
           {shops.data && !shops.data.items.length ? <Empty title="All caught up" body="No shop is waiting for review." /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {shops.data?.items.map((s) => (
@@ -97,6 +108,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card title="Stuck orders" actions={<Link to="/orders?stuck=1" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
+          {stuck.isError ? <ErrorBox error={errorMessage(stuck.error)} onRetry={() => stuck.refetch()} /> : null}
           {stuck.data && !stuck.data.items.length ? <Empty title="Nothing stuck" body="Every order is moving on time." /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {stuck.data?.items.map((r) => (
@@ -119,6 +131,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card title="Open problems" actions={<Link to="/problems" className="text-sm font-semibold text-link">See all</Link>} padded={false}>
+          {issues.isError ? <ErrorBox error={errorMessage(issues.error)} onRetry={() => issues.refetch()} /> : null}
           {issues.data && !issues.data.length ? <Empty title="No open problems" /> : null}
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {issues.data?.map((i) => (

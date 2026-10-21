@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router';
 
 import { formatDateTimeIST, formatPhone, mapsUrl } from '@gg/shared';
 
-import { Badge, Button, Card, Empty, Field, Input, Modal, PageHeader, Select, Spinner, Table, Tabs, Td, Th, toast, Toggle, Tr } from '@/components/ui';
+import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, PageHeader, Select, Spinner, Table, Tabs, Td, Th, toast, Toggle, Tr } from '@/components/ui';
 import { errorMessage, selectAll, upsertRow } from '@/lib/api';
 import { useAreas, useZones } from '@/lib/reference';
 import type { Area, NotifyMe, Zone } from '@/lib/types';
@@ -94,8 +94,11 @@ function AreaForm({ area, open, onClose }: { area: Area | null; open: boolean; o
 
 function AreasTab() {
   const qc = useQueryClient();
-  const { data: zones = [], isLoading: zl } = useZones();
-  const { data: areas = [], isLoading: al } = useAreas();
+  const zonesQ = useZones();
+  const areasQ = useAreas();
+  const { data: zones = [], isLoading: zl } = zonesQ;
+  const { data: areas = [], isLoading: al } = areasQ;
+  const [savingZone, setSavingZone] = useState(false);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Area | null>(null);
   const [creating, setCreating] = useState(false);
@@ -103,16 +106,24 @@ function AreasTab() {
   const filtered = useMemo(() => areas.filter((a) => !query || a.name.toLowerCase().includes(query.toLowerCase()) || a.pincode.includes(query)), [areas, query]);
 
   const saveZone = async (z: Partial<Zone>) => {
+    setSavingZone(true);
     try {
       await upsertRow('zones', z);
       qc.invalidateQueries({ queryKey: ['ref', 'zones'] });
       toast('Zone saved');
+      return true;
     } catch (e) {
       toast(errorMessage(e), 'error');
+      return false;
+    } finally {
+      setSavingZone(false);
     }
   };
 
   if (zl || al) return <Spinner />;
+  if (zonesQ.isError || areasQ.isError) {
+    return <ErrorBox error={errorMessage(zonesQ.error ?? areasQ.error)} onRetry={() => (zonesQ.refetch(), areasQ.refetch())} />;
+  }
   return (
     <div className="space-y-6">
       <Card title="Zones" actions={
@@ -120,13 +131,12 @@ function AreasTab() {
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!zoneName.trim()) return;
-            saveZone({ name: zoneName.trim(), sort: zones.length + 1, is_active: true });
-            setZoneName('');
+            if (!zoneName.trim() || savingZone) return;
+            saveZone({ name: zoneName.trim(), sort: zones.length + 1, is_active: true }).then((ok) => ok && setZoneName(''));
           }}
         >
           <Input className="h-8" placeholder="New zone" value={zoneName} onChange={(e) => setZoneName(e.target.value)} />
-          <Button size="sm" type="submit" icon={<Plus className="size-3.5" />}>
+          <Button size="sm" type="submit" icon={<Plus className="size-3.5" />} loading={savingZone}>
             Add
           </Button>
         </form>
@@ -205,6 +215,7 @@ function WaitlistTab() {
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [q.data]);
   if (q.isLoading) return <Spinner />;
+  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <Card title="Where people are asking from" className="h-fit">

@@ -1,4 +1,4 @@
--- Order and payment safety fixes from the October bug sweep (docs/DECISIONS.md #54), plus home-feed extras.
+-- Order and payment safety fixes from the October bug sweep (docs/DECISIONS.md #55), plus home-feed extras.
 --
 --  1. Once a customer says they paid Gadget Galli, nobody can cancel, reject or put the order on hold with a problem
 --     report while the payment is checked (PAYMENT_UNDER_REVIEW). Support handles any change and refund.

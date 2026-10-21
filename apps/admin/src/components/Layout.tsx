@@ -139,7 +139,7 @@ export function Layout() {
   return (
     <div className="flex min-h-full">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 bg-gradient-to-b from-primary-800 to-primary-950 p-4 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-gradient-to-b from-primary-800 to-primary-950 p-4 lg:flex">
         {brand}
         {nav}
         {footer}
@@ -148,7 +148,7 @@ export function Layout() {
       {/* Mobile drawer */}
       {open ? (
         <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={() => setOpen(false)}>
-          <aside className="flex h-full w-72 flex-col gap-6 bg-gradient-to-b from-primary-800 to-primary-950 p-4" onClick={(e) => e.stopPropagation()}>
+          <aside className="flex h-full w-72 flex-col gap-6 overflow-y-auto bg-gradient-to-b from-primary-800 to-primary-950 p-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               {brand}
               <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-2 text-white hover:bg-white/10" aria-label="Close menu">

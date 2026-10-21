@@ -3,10 +3,11 @@ import { ArrowLeft, Phone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { formatDateTimeIST, formatINR, formatPhone, ISSUE_TYPE_LABEL, ORDER_STATUSES, STATUS_LABEL, type IssueType, type Order, type OrderStatus } from '@gg/shared';
+import { formatDateTimeIST, formatINR, formatPhone, ISSUE_TYPE_LABEL, STATUS_LABEL, type IssueType, type Order, type OrderStatus } from '@gg/shared';
 
 import { Badge, Button, Card, ErrorBox, Field, OrderStatusBadge, PageHeader, Select, ShopStatusBadge, Spinner, Textarea, toast } from '@/components/ui';
 import { errorMessage, rpc, signedUrl } from '@/lib/api';
+import { manualStatuses } from '@/lib/orderRules';
 
 interface IssueDetail {
   id: string;
@@ -50,6 +51,9 @@ export default function IssueDetailPage() {
     qc.invalidateQueries({ queryKey: ['issues'] });
     qc.invalidateQueries({ queryKey: ['overview'] });
     qc.invalidateQueries({ queryKey: ['order', data.order.id] });
+    // Resolving can release a held payout or change the order
+    qc.invalidateQueries({ queryKey: ['orders'] });
+    qc.invalidateQueries({ queryKey: ['payments'] });
   };
 
   const addNote = async () => {
@@ -153,7 +157,7 @@ export default function IssueDetailPage() {
                   <Field label="Order status after resolving" hint="Leave as is to return the order to its previous status.">
                     <Select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value as OrderStatus | '')}>
                       <option value="">Keep / restore automatically</option>
-                      {ORDER_STATUSES.filter((s) => s !== 'ISSUE_REPORTED').map((s) => (
+                      {manualStatuses(o).filter((s) => s !== 'ISSUE_REPORTED').map((s) => (
                         <option key={s} value={s}>
                           {STATUS_LABEL[s]}
                         </option>

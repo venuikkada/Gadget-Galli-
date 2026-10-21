@@ -10,6 +10,8 @@ interface AuthState {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  /** Signed in, but the profile could not be loaded (offline, server error); reload() tries again. */
+  profileError: boolean;
   isAdmin: boolean;
   isSuper: boolean;
   /** Signed in with the password, but 2-step verification is on and the 6-digit code is still needed. */
@@ -27,8 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsCode, setNeedsCode] = useState(false);
+  const [profileError, setProfileError] = useState(false);
 
   const loadProfile = useCallback(async (s: Session | null) => {
+    setProfileError(false);
     if (!s) {
       setProfile(null);
       setNeedsCode(false);
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(await rpc<Profile>('my_profile'));
     } catch {
       setProfile(null);
+      setProfileError(true);
     }
   }, []);
 
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
+      profileError,
       isAdmin: !!role && !profile?.user.is_blocked && !needsCode,
       isSuper: role === 'super_admin' && !needsCode,
       needsCode,
@@ -100,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       reload: () => loadProfile(session),
     };
-  }, [session, profile, loading, needsCode, signIn, verifyCode, signOut, loadProfile]);
+  }, [session, profile, loading, profileError, needsCode, signIn, verifyCode, signOut, loadProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

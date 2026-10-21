@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Plus, Send, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { bannerPresets, bannerStyle, formatDateIST, formatDateTimeIST, formatPhone } from '@gg/shared';
 
-import { Badge, Button, Card, cx, Empty, Field, Input, Modal, PageHeader, Select, Spinner, Stat, Table, Tabs, Td, Textarea, Th, toast, Toggle, Tr } from '@/components/ui';
+import { Badge, Button, Card, cx, Empty, ErrorBox, Field, Input, Modal, PageHeader, Select, Spinner, Stat, Table, Tabs, Td, Textarea, Th, toast, Toggle, Tr } from '@/components/ui';
 import { deleteRow, errorMessage, publicUrl, rpc, selectAll, uploadPublic, upsertRow } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAreas, useCategories } from '@/lib/reference';
@@ -218,6 +218,7 @@ function BannersTab() {
         </Button>
       </div>
       {q.isLoading ? <Spinner /> : null}
+      {q.isError ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : null}
       {q.data && !q.data.length ? <Empty title="No banners" body="Banners appear in the carousel at the top of the customer home screen." /> : null}
       <div className="grid gap-4 md:grid-cols-2">
         {q.data?.map((b) => (
@@ -282,21 +283,32 @@ function FeaturedTab() {
     enabled: productQuery.trim().length >= 2,
   });
   const [names, setNames] = useState<Record<string, string>>({});
+  // Ask for each product's name once: products_by_ids leaves out products that are not live, and asking again
+  // for those would loop forever.
+  const asked = useRef(new Set<string>());
   useEffect(() => {
-    const ids = (featured.data ?? []).filter((f) => f.kind === 'product' && f.catalog_product_id && !names[f.catalog_product_id]).map((f) => f.catalog_product_id!);
+    const ids = (featured.data ?? []).filter((f) => f.kind === 'product' && f.catalog_product_id && !asked.current.has(f.catalog_product_id)).map((f) => f.catalog_product_id!);
     if (!ids.length) return;
+    ids.forEach((i) => asked.current.add(i));
     rpc<{ product_id: string; name: string }[]>('products_by_ids', { p_ids: ids })
-      .then((rows) => setNames((n) => ({ ...n, ...Object.fromEntries(rows.map((r) => [r.product_id, r.name])) })))
-      .catch(() => undefined);
-  }, [featured.data, names]);
+      .then((rows) =>
+        setNames((n) => ({ ...n, ...Object.fromEntries(ids.map((i) => [i, 'Not live (pending or rejected)'])), ...Object.fromEntries(rows.map((r) => [r.product_id, r.name])) })),
+      )
+      .catch(() => ids.forEach((i) => asked.current.delete(i)));
+  }, [featured.data]);
 
+  const [adding, setAdding] = useState(false);
   const add = async (row: Partial<Featured>) => {
+    if (adding) return;
+    setAdding(true);
     try {
       await upsertRow('featured', { sort: (featured.data?.length ?? 0) + 1, is_active: true, ...row });
       qc.invalidateQueries({ queryKey: ['featured'] });
       toast('Added to featured');
     } catch (e) {
       toast(errorMessage(e), 'error');
+    } finally {
+      setAdding(false);
     }
   };
   const shopName = (id: string | null) => shops.data?.items.find((s) => s.id === id)?.name ?? id;
@@ -363,6 +375,7 @@ function FeaturedTab() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  disabled={adding}
                   onClick={() => {
                     setNames((n) => ({ ...n, [p.id]: p.name }));
                     add({ kind: 'product', catalog_product_id: p.id });
@@ -488,6 +501,7 @@ function CampaignsTab() {
 function ReferralsTab() {
   const q = useQuery({ queryKey: ['referrals'], queryFn: () => rpc<Referrals>('admin_referrals', { p_limit: 50 }) });
   if (q.isLoading) return <Spinner />;
+  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   const d = q.data;
   if (!d) return null;
   return (

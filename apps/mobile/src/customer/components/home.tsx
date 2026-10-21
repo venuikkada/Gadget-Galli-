@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Dimensions, Pressable, ScrollView, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 
-import { bannerStyle, familyFor, type Banner, type Category } from '@gg/shared';
+import { bannerStyle, deviceArtSvg, deviceKindFor, familyFor, type Banner, type Category, type DeviceKind } from '@gg/shared';
 
 import { publicUrl } from '@/shared/api/storage';
 import { useLocationStore } from '@/shared/hooks/location';
@@ -106,21 +107,31 @@ export function SearchBarButton({ onPress }: { onPress?: () => void }) {
 }
 
 /** Top-level categories as round tiles in their category colours (scrolls sideways when they don't fit). */
+/** The device drawn on each top-level category tile (the same drawings products without a photo use). */
+const TILE_KIND: Record<string, DeviceKind> = { mobiles: 'phone', 'laptops-computers': 'laptop', components: 'gpu', 'cctv-security': 'cctvCamera' };
+
 export function CategoryTiles({ categories, onPress }: { categories: Category[]; onPress?: (c: Category) => void }) {
   const { dark, colors } = useTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4, paddingRight: 8 }} style={{ marginHorizontal: -4 }}>
       {categories.map((c) => {
         const fam = familyFor(c.slug, c.name)[dark ? 'dark' : 'light'];
+        const kind = TILE_KIND[c.slug] ?? deviceKindFor(c.slug, c.name);
         return (
           <Pressable
             key={c.id}
             testID={`category-${c.slug}`}
             onPress={() => (onPress ? onPress(c) : router.push({ pathname: '/search', params: { category: String(c.id), title: localName(c) } }))}
-            style={({ pressed }) => ({ width: 80, alignItems: 'center', gap: 7, opacity: pressed ? 0.75 : 1 })}
+            style={({ pressed }) => ({ width: 84, alignItems: 'center', gap: 7, opacity: pressed ? 0.75 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}
           >
-            <LinearGradient colors={[fam.tint, fam.tint2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: dark ? colors.border : 'rgba(255,255,255,0.9)' }}>
-              <Icon name={c.icon} set="mci" size={30} color={fam.icon} />
+            <LinearGradient
+              colors={[fam.tint, fam.tint2]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[shadow(1, dark), { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 1, borderColor: dark ? colors.border : 'rgba(255,255,255,0.9)' }]}
+            >
+              <View pointerEvents="none" style={{ position: 'absolute', width: 40, height: 40, borderRadius: 20, top: -10, right: -8, backgroundColor: '#FFFFFF', opacity: dark ? 0.06 : 0.35 }} />
+              {kind !== 'box' ? <CategoryArt kind={kind} seed={c.slug} dark={dark} /> : <Icon name={c.icon} set="mci" size={30} color={fam.icon} />}
             </LinearGradient>
             <AppText variant="caption" weight="semibold" align="center" numberOfLines={2} color={colors.text} style={{ fontSize: 11.5 }}>
               {localName(c)}
@@ -130,6 +141,11 @@ export function CategoryTiles({ categories, onPress }: { categories: Category[];
       })}
     </ScrollView>
   );
+}
+
+function CategoryArt({ kind, seed, dark }: { kind: DeviceKind; seed: string; dark: boolean }) {
+  const xml = useMemo(() => deviceArtSvg({ kind, seed, dark }), [kind, seed, dark]);
+  return <SvgXml xml={xml} width={56} height={56} />;
 }
 
 function bannerPress(b: Banner) {

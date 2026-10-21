@@ -243,11 +243,14 @@ export function BrandsTab() {
           className="ml-auto flex gap-2"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (!name.trim()) return;
+            if (!name.trim() || busy) return;
             setBusy(true);
-            await save({ name: name.trim(), slug: slugify(name), is_active: true });
-            setName('');
-            setBusy(false);
+            try {
+              await save({ name: name.trim(), slug: slugify(name), is_active: true });
+              setName('');
+            } finally {
+              setBusy(false);
+            }
           }}
         >
           <Input placeholder="New brand name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -303,6 +306,7 @@ export function SynonymsTab() {
   });
 
   const add = async () => {
+    if (busy) return; // Enter pressed again while saving
     const list = words
       .split(',')
       .map((w) => w.trim().toLowerCase())

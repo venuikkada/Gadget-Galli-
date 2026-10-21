@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import type { PaidPayout, PaymentSettings, PaymentsToVerify, PayoutShop } from '@/lib/types';
 
 type Tab = 'verify' | 'due' | 'held' | 'paid' | 'settings';
+const TABS: Tab[] = ['verify', 'due', 'held', 'paid', 'settings'];
 
 /**
  * Customers pay Gadget Galli by UPI or bank transfer and enter the reference; you check your bank app and confirm,
@@ -21,7 +22,11 @@ type Tab = 'verify' | 'due' | 'held' | 'paid' | 'settings';
 export default function PaymentsPage() {
   const { isSuper } = useAuth();
   const settings = useQuery({ queryKey: ['payments', 'settings'], queryFn: () => rpc<PaymentSettings>('platform_payment_info'), enabled: isSuper });
-  const [tab, setTab] = useState<Tab>(() => (new URLSearchParams(location.search).get('tab') as Tab) || 'verify');
+  const [tab, setTab] = useState<Tab>(() => {
+    const asked = new URLSearchParams(location.search).get('tab') as Tab | null;
+    // Settings is for super admins; an unknown or not-allowed tab falls back to the payments to verify
+    return asked && TABS.includes(asked) && (asked !== 'settings' || isSuper) ? asked : 'verify';
+  });
   const verify = useQuery({ queryKey: ['payments', 'verify'], queryFn: () => rpc<PaymentsToVerify>('admin_list_payments_to_verify'), refetchInterval: 15_000 });
   // Nothing set up yet: open Settings first, because customers cannot pay until it is filled in
   const notReady = isSuper && settings.data?.ready === false;
@@ -153,7 +158,7 @@ function VerifyTab({ q }: { q: ReturnType<typeof useQuery<PaymentsToVerify>> }) 
         open={!!rejecting}
         onClose={() => setRejecting(null)}
         title="Payment not received"
-        description="The customer sees this message and can enter the correct UPI reference."
+        description="The customer sees this message and can enter the correct UPI reference or bank UTR."
         placeholder="No payment with this reference in the bank statement."
         confirmLabel="Tell the customer"
         danger
@@ -303,7 +308,7 @@ function PayoutModal({ shop, onClose, onDone }: { shop: PayoutShop | null; onClo
               <div className="font-mono text-sm">{shop.upi_id}</div>
             </div>
           </div>
-          <Field label="UPI reference of your payment" hint="The 12-digit UTR from your UPI or bank app. The shop sees it.">
+          <Field label="UPI reference or bank UTR of your payment" hint="The 12-digit UTR from your UPI or bank app. The shop sees it.">
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. 412345678901" autoFocus data-testid="payout-ref" />
           </Field>
         </div>
@@ -327,7 +332,7 @@ function PaidTab() {
             <tr>
               <Th>Paid on</Th>
               <Th>Shop</Th>
-              <Th>UPI reference</Th>
+              <Th>Reference (UPI / UTR)</Th>
               <Th>Orders</Th>
               <Th className="text-right">Amount</Th>
             </tr>
@@ -410,7 +415,9 @@ function SettingsTab() {
     if (!file) return;
     setUploading(true);
     try {
-      setF({ ...f, qr_path: await uploadPublic('banners', 'payments', file) });
+      const qr_path = await uploadPublic('banners', 'payments', file);
+      // Merge into the latest form: anything typed while the image uploaded stays
+      setF((x) => ({ ...x, qr_path }));
       toast('QR uploaded. Click Save to show it to customers.');
     } catch (e) {
       toast(errorMessage(e), 'error');

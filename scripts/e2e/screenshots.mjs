@@ -22,10 +22,11 @@ const PHOTO = join(ROOT, 'apps', 'mobile', 'assets', 'images', 'icon.png');
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
-// The story: Ravi (Kukatpally) orders an iPhone 15 from Miyapur Mobile Bazaar.
+// The story: Ravi (Kukatpally) orders an iPhone 15 from Hitech Gadget Hub, which is open 24 hours in the demo
+// data, so the tour also runs at night.
 const PRODUCT = 'Apple iPhone 15 (128 GB, Black)';
-const SHOP = 'Miyapur Mobile Bazaar';
-const SHOP_PHONE = '9000010006';
+const SHOP = 'Hitech Gadget Hub';
+const SHOP_PHONE = '9000010003';
 
 const shots = [];
 const problems = [];
@@ -57,7 +58,9 @@ async function shot(page, section, file, title, caption, who) {
 const browser = await chromium.launch({ headless: process.env.HEADED !== '1' });
 const india = { locale: 'en-IN', timezoneId: 'Asia/Kolkata' };
 // Location is allowed and set to Kukatpally, so "Use my current location" can place an address pin.
-const phone = { ...india, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
+// A phone browser: the apps show UPI buttons only where a UPI app can open
+const PHONE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
+const phone = { userAgent: PHONE_UA, ...india, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
 // Map tiles come from OpenStreetMap, which this machine may not reach: serve a stand-in tile (real streets show live).
 const TILE = readFileSync(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
 const stubTiles = (ctx) => ctx.route(/tile\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'image/png', body: TILE }));
@@ -138,7 +141,7 @@ await step('compare shops', async () => {
   productId = customer.url().match(/product\/([0-9a-f-]{36})/)?.[1] ?? '';
   await customer.locator('[data-testid^="offer-"]').filter({ hasText: SHOP }).waitFor();
   await scrollToTop(customer.getByText('Available at these shops').first());
-  await shot(customer, 'order', 'o-03-compare', 'Compare shops', `Shops across Hyderabad have it in stock. He compares price, distance, delivery time and rating, and adds it from ${SHOP}, 3.8 km away.`, 'Customer');
+  await shot(customer, 'order', 'o-03-compare', 'Compare shops', `Shops across Hyderabad have it in stock. He compares price, distance, delivery time and rating, and adds it from ${SHOP}.`, 'Customer');
   await customer.locator('[data-testid^="offer-"]').filter({ hasText: SHOP }).getByText('Add', { exact: true }).click();
   const replace = customer.getByText('Start new cart', { exact: true });
   if (await replace.waitFor({ timeout: 1500 }).then(() => true, () => false)) await replace.click();

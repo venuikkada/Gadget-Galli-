@@ -91,7 +91,7 @@ export function nextShopStep(status: OrderStatus): 'confirm' | 'payment' | 'pack
   }
 }
 
-/** Until the customer says they paid; then support handles a cancellation and refund (docs/DECISIONS.md #54). */
+/** Until the customer says they paid; then support handles a cancellation and refund (docs/DECISIONS.md #55). */
 export function customerCanCancel(status: OrderStatus, paymentClaimedAt?: string | null): boolean {
   return status === 'REQUESTED' || (status === 'CONFIRMED' && !paymentClaimedAt);
 }

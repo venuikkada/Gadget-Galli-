@@ -3,6 +3,8 @@ import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, typ
 
 import { STATUS_LABEL, statusColors, type OrderStatus, type ShopStatus } from '@gg/shared';
 
+import { errorMessage } from '@/lib/api';
+
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
 }
@@ -455,6 +457,9 @@ export function ReasonModal({
               try {
                 await onConfirm(reason.trim());
                 onClose();
+              } catch (e) {
+                // e.g. another admin confirmed the payment meanwhile: say so instead of a spinner that just stops
+                toast(errorMessage(e), 'error');
               } finally {
                 setBusy(false);
               }

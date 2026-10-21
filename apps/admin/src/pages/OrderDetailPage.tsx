@@ -12,7 +12,6 @@ import {
   formatPhone,
   ISSUE_TYPE_LABEL,
   mapsUrl,
-  ORDER_STATUSES,
   PAYMENT_METHOD_LABEL,
   STATUS_LABEL,
   variantText,
@@ -24,6 +23,7 @@ import { MiniMap } from '@/components/MiniMap';
 import { ProductThumb } from '@/components/ProductThumb';
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, OrderStatusBadge, PageHeader, ReasonModal, Select, Spinner, Textarea, toast } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
+import { manualStatuses } from '@/lib/orderRules';
 
 const ACTOR: Record<string, string> = { customer: 'Customer', shop: 'Shop', admin: 'Admin', system: 'System' };
 
@@ -69,9 +69,10 @@ function ChangeStatus({ order, onDone }: { order: Order; onDone: (o: Order) => v
         }
       >
         <p className="text-sm text-slate-600 dark:text-slate-300">Use this only to fix a stuck or wrong order, for example after a call with the customer and the shop. Every change is logged.</p>
+        {!order.paid_at ? <p className="text-xs text-ink-muted">Not paid yet: use “Payment received” in the Payment card to mark it paid.</p> : null}
         <Field label="New status">
           <Select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)}>
-            {ORDER_STATUSES.map((s) => (
+            {manualStatuses(order).map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABEL[s]}
               </option>
@@ -92,6 +93,7 @@ function ChangeStatus({ order, onDone }: { order: Order; onDone: (o: Order) => v
  */
 function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order) => void }) {
   const [ref, setRef] = useState('');
+  const [method, setMethod] = useState<'upi' | 'bank_transfer'>('upi');
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   return (
@@ -107,9 +109,17 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
       )}
       {order.payment_rejected_reason ? <div className="text-xs text-error-ink">Last check: {order.payment_rejected_reason}</div> : null}
       {!order.payment_claimed_at ? (
-        <Field label="UPI reference or bank UTR (if the customer paid but did not enter it)">
-          <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="412345678901" />
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+          <Field label="Paid by">
+            <Select value={method} onChange={(e) => setMethod(e.target.value as 'upi' | 'bank_transfer')}>
+              <option value="upi">UPI</option>
+              <option value="bank_transfer">Bank transfer</option>
+            </Select>
+          </Field>
+          <Field label={method === 'bank_transfer' ? 'Bank UTR (if the customer paid but did not enter it)' : 'UPI reference (if the customer paid but did not enter it)'}>
+            <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="412345678901" />
+          </Field>
+        </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button
@@ -120,7 +130,7 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
           onClick={async () => {
             setBusy(true);
             try {
-              onChange(await rpc<Order>('admin_confirm_payment', { p_order_id: order.id, p_ref: ref.trim() || null }));
+              onChange(await rpc<Order>('admin_confirm_payment', { p_order_id: order.id, p_ref: ref.trim() || null, ...(order.payment_claimed_at ? {} : { p_method: method }) }));
               toast('Payment confirmed. The shop has been told to pack and send.');
             } catch (e) {
               toast(errorMessage(e), 'error');
@@ -182,6 +192,7 @@ export default function OrderDetailPage() {
     qc.setQueryData(['order', id], n);
     qc.invalidateQueries({ queryKey: ['orders'] });
     qc.invalidateQueries({ queryKey: ['overview'] });
+    qc.invalidateQueries({ queryKey: ['payments'] });
   };
 
   return (
@@ -354,7 +365,7 @@ export default function OrderDetailPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-ink-muted">Not paid yet. Customers pay Gadget Galli by UPI.</p>
+              <p className="text-sm text-ink-muted">Not paid yet. Customers pay Gadget Galli by UPI or bank transfer.</p>
             )}
             {o.status === 'CONFIRMED' ? <PaymentActions order={o} onChange={updated} /> : null}
             {o.payout_status && o.payout_status !== 'not_due' ? (

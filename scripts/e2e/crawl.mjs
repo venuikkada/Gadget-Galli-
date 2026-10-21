@@ -56,7 +56,9 @@ await db.end();
 const findings = [];
 const browser = await chromium.launch();
 const TILE = readFileSync(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
-const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
+// A phone browser: the apps show UPI buttons only where a UPI app can open
+const PHONE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
+const phone = { userAgent: PHONE_UA, viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
 const desktop = { viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 };
 
 // Requests that fail on purpose or don't matter here

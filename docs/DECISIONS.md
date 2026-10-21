@@ -174,3 +174,14 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - Removed: the "Delivers to my area" filter, the "shops in other areas" section and every "doesn't deliver" message, the area/radius step in shop registration, and the "area not served" reject reason.
     - **Still in place:** addresses outside Hyderabad are refused (#8, the waitlist). Each shop keeps its own delivery charge (free, flat or per km), so far orders can cost more and the customer sees the charge before ordering. ETAs still grow with distance (#12a). Store pickup stays.
     - The old coverage columns and `delivery_areas` table are kept, unused, so this can be undone.
+
+## Order and payment safety
+
+55. **Once a customer says "I have paid", the order is frozen until Gadget Galli checks the payment** (migration 0017, from the October bug sweep). Otherwise money could arrive for an order that was already cancelled, with nothing telling anyone to refund it.
+    - **While a payment is being checked** (CONFIRMED with a payment claim): the customer can't cancel or report a problem, and the shop can't reject (`PAYMENT_UNDER_REVIEW`). The apps hide those buttons and offer a WhatsApp chat with support instead. Support confirms or rejects the payment first, then changes the order and refunds if needed.
+    - **Admin "Change status"** and problem resolution can't skip the payment check: an order becomes PAID only through **Payment received** (which records the payment, the method and the stock), and packing, sending and delivery need a confirmed payment.
+    - **Confirming an unclaimed payment** records whether it came by UPI or bank transfer.
+    - **Only super admins can block another admin**, so a support login can't lock out the owners.
+    - **Payouts lock their orders** while being marked paid: two admins (or two tabs) can't pay and notify the same payout twice.
+    - **Alarms:** the Shop Partner app also rings (and sends a loud push) when an order is paid, the moment to pack and send. In a browser the alarm plays only after the owner has tapped the page once; the alarm offers "Turn on sound" when the browser blocks it.
+    - **Home feed:** featured shops (Admin → Content) lead "Shops near you" with a Featured tag; featured products show as "Handpicked for you"; **Top deals** lists the biggest discounts off MRP among the 50 most popular products in stock.

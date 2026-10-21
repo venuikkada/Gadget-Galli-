@@ -85,6 +85,8 @@ export default function ShopDetailPage() {
     if (shop) qc.setQueryData(['shop', id], shop);
     qc.invalidateQueries({ queryKey: ['shops'] });
     qc.invalidateQueries({ queryKey: ['overview'] });
+    // Payouts list the shop's UPI details and status
+    qc.invalidateQueries({ queryKey: ['payments'] });
   };
 
   const run = async (key: string, fn: () => Promise<AdminShop | void>, ok: string) => {
