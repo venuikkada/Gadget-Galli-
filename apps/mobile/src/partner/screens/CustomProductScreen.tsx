@@ -192,7 +192,10 @@ function TypeTile({ category, onPress }: { category: Category; onPress: () => vo
       style={({ pressed }) => ({
         width: '31%',
         minWidth: 96,
+        // One height for every tile, whether its name takes one line or two
+        minHeight: 118,
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 6,
         paddingVertical: 12,
         paddingHorizontal: 6,
