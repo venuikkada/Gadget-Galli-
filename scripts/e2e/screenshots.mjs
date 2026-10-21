@@ -86,10 +86,15 @@ async function visit(page, path, waitForText) {
   if (waitForText) await page.getByText(waitForText, { exact: false }).first().waitFor({ timeout: 15000 });
 }
 
-/** Dismisses the shop's loud new-order alerts ("Later"). */
+/**
+ * Dismisses the shop's loud alarms ("Later"). After a page load the app rings once for every open request and paid
+ * order it has not shown yet, a moment after the page appears, so wait briefly for them before a screenshot.
+ */
 async function dismissAlerts(page) {
   const later = page.getByText('Later', { exact: true });
-  for (let i = 0; i < 10 && (await later.isVisible()); i++) {
+  for (let i = 0; i < 20; i++) {
+    const shown = await later.waitFor({ timeout: i === 0 ? 3000 : 800 }).then(() => true, () => false);
+    if (!shown) return;
     await later.click();
     await page.waitForTimeout(300);
   }
@@ -169,6 +174,9 @@ await step('shop gets the alarm', async () => {
   await dismissAlerts(shop);
 });
 
+// Alarms for the shop's other open orders can pop up at any moment from here on; close them before each action.
+await shop.addLocatorHandler(shop.getByText('Later', { exact: true }), (later) => later.click());
+
 await step('shop opens and accepts the order', async () => {
   await visit(shop, `/partner/order/${orderId}`, orderNo);
   await dismissAlerts(shop);
@@ -203,8 +211,6 @@ await step('Gadget Galli confirms the payment', async () => {
   await actx.close();
 });
 
-// Alarms for other open orders can pop up at any moment from here on; close them before each action.
-await shop.addLocatorHandler(shop.getByText('Later', { exact: true }), (later) => later.click());
 await step('shop packs and sends the order', async () => {
   await visit(shop, `/partner/order/${orderId}`, orderNo);
   await dismissAlerts(shop);
