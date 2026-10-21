@@ -111,9 +111,18 @@ export function itemTotal(items: Pick<OrderItem, 'price' | 'qty' | 'with_install
   );
 }
 
+/** Variant options in a fixed reading order (the database keeps no key order): "8 GB · 128 GB · Blue". */
+const VARIANT_ORDER = ['ram', 'storage', 'memory', 'capacity', 'wattage', 'resolution', 'type', 'channels', 'size', 'screen', 'connectivity', 'length', 'switches', 'colour'];
+
 export function variantText(variant: Record<string, string> | null | undefined): string {
   if (!variant) return '';
-  return Object.values(variant).filter(Boolean).join(' · ');
+  // Unknown keys go just before the colour
+  const rank = (k: string) => (VARIANT_ORDER.includes(k) ? VARIANT_ORDER.indexOf(k) : VARIANT_ORDER.length - 1.5);
+  return Object.entries(variant)
+    .filter(([, v]) => v)
+    .sort((a, b) => rank(a[0]) - rank(b[0]))
+    .map(([, v]) => v)
+    .join(' · ');
 }
 
 export function addressLines(a: AddressSnapshot | null | undefined): string {

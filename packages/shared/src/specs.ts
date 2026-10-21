@@ -1,5 +1,6 @@
 /**
- * Specification forms per category, for products a shop adds that are not in the catalog yet (docs/DECISIONS.md #30).
+ * Specification forms per category, for products a shop adds that are not in the catalog yet (docs/DECISIONS.md #30),
+ * and the details a shop gives about its own piece when it lists any product (#56).
  * Keys match the demo catalog (supabase/seed/data-products.mjs): variant options are lowercase (`ram`, `storage`)
  * and become the variant chips customers pick from; specs use the English names customers read (`Processor`).
  */
@@ -14,6 +15,10 @@ export interface SpecField {
   options?: string[];
   /** Turns the value into a highlight on product cards; `{v}` is the value, e.g. `{v} RAM`. */
   highlight?: string;
+  /** The product cannot be added without it. */
+  required?: boolean;
+  /** Listing details only: asked only about open-box, refurbished and used pieces. */
+  when?: 'preowned';
 }
 
 export interface SpecTemplate {
@@ -21,6 +26,10 @@ export interface SpecTemplate {
   variant: SpecField[];
   /** Everything else about the product. */
   specs: SpecField[];
+  /** What a shop tells buyers about its own piece (battery health, bill…); stored on the listing. */
+  listing?: SpecField[];
+  /** Brands to offer as one-tap chips. */
+  brands?: string[];
   /** Example of a full product name in this category. */
   nameExample?: string;
 }
@@ -44,6 +53,18 @@ const BOARD_SIZES = ['ATX', 'Micro-ATX', 'Mini-ITX'];
 const f = (key: string, placeholder?: string, more: Omit<SpecField, 'key' | 'placeholder'> = {}): SpecField => ({ key, placeholder, ...more });
 const pick = (key: string, options: string[], more: Omit<SpecField, 'key' | 'options'> = {}): SpecField => ({ key, options, placeholder: options[0], ...more });
 const hl = '{v}';
+
+/** Asked only about open-box, refurbished and used pieces. */
+const preowned = (field: SpecField): SpecField => ({ ...field, when: 'preowned' });
+/** A shop's own details for a listing: the category's first, then how a pre-owned piece looks, its box and the bill. */
+const listing = (...first: SpecField[]): SpecField[] => [
+  ...first,
+  preowned(pick('Physical condition', ['Like new', 'Very good', 'Good', 'Fair'])),
+  preowned(pick('Box & accessories', ['Original box, all accessories', 'Box only', 'No box'])),
+  pick('Bill', ['GST bill', 'Shop bill', 'No bill']),
+];
+const WINDOWS = pick('Windows', ['Genuine, activated', 'Not activated', 'Not installed']);
+const DISK_HEALTH = preowned(f('Health', '98% (CrystalDiskInfo)'));
 
 const colour = pick('colour', COLOURS, { label: 'Colour' });
 const ram = (options = PC_RAM) => pick('ram', options, { label: 'RAM', placeholder: options[1], highlight: '{v} RAM' });
@@ -510,6 +531,85 @@ export const SPEC_TEMPLATES: Record<string, SpecTemplate> = {
   peripherals: { variant: [colour], specs: [pick('Connection', WIRELESS, { highlight: hl }), f('Compatible', 'Windows, macOS'), f('Battery')] },
 };
 
+/** Per category: the fields a product must have, brand chips and the shop's own details (#56). */
+const EXTRAS: Record<string, { required?: string[]; brands?: string[]; listing?: SpecField[] }> = {
+  smartphones: {
+    required: ['storage', 'colour'], // not RAM: Apple does not publish it
+    brands: ['Apple', 'Samsung', 'OnePlus', 'Xiaomi', 'Vivo', 'Oppo', 'Realme', 'Motorola', 'Google', 'Nothing'],
+    listing: listing(preowned(f('Battery health', '90%')), preowned(f('Repairs', 'None / screen replaced'))),
+  },
+  tablets: {
+    required: ['storage', 'colour'],
+    brands: ['Apple', 'Samsung', 'Lenovo', 'Xiaomi', 'OnePlus', 'Realme'],
+    listing: listing(preowned(f('Battery health', '90%')), preowned(f('Repairs', 'None'))),
+  },
+  smartwatches: { brands: ['Apple', 'Samsung', 'Noise', 'boAt', 'Fire-Boltt', 'Amazfit'] },
+  earbuds: { brands: ['boAt', 'Noise', 'JBL', 'Sony', 'Apple', 'Samsung', 'OnePlus'] },
+  chargers: { brands: ['Samsung', 'Apple', 'Mi', 'Ambrane', 'Portronics', 'Anker'] },
+  cables: { brands: ['Ambrane', 'Portronics', 'boAt', 'Belkin', 'Apple', 'Samsung'] },
+  cases: { brands: ['Spigen', 'Apple', 'Samsung', 'Ringke', 'Nillkin'] },
+  'screen-guards': { brands: ['Spigen', 'Nillkin', 'Gorilla'] },
+  'power-banks': { brands: ['Mi', 'Ambrane', 'Anker', 'Portronics', 'Realme'] },
+  'cctv-cameras': {
+    required: ['resolution', 'type'],
+    brands: ['Hikvision', 'CP Plus', 'Dahua', 'Godrej', 'Honeywell', 'Ezviz', 'Imou'],
+    listing: listing(pick('Power adapter', ['Included', 'Not included'])),
+  },
+  'dvr-nvr': {
+    required: ['channels', 'Type'],
+    brands: ['Hikvision', 'CP Plus', 'Dahua', 'Godrej', 'Honeywell'],
+    listing: listing(pick('HDD included', ['No HDD', '500 GB', '1 TB', '2 TB'])),
+  },
+  'surveillance-hdd': { required: ['capacity'], brands: ['WD', 'Seagate', 'Toshiba'], listing: listing(DISK_HEALTH) },
+  'cctv-cables': { brands: ['Polycab', 'Finolex', 'D-Link'] },
+  'video-door-phones': { brands: ['Godrej', 'Hikvision', 'CP Plus', 'Dahua'] },
+  'cctv-kits': { required: ['channels', 'resolution', 'Cameras'], brands: ['Hikvision', 'CP Plus', 'Dahua', 'Godrej'] },
+  laptops: {
+    required: ['ram', 'storage', 'Processor'],
+    brands: ['HP', 'Dell', 'Lenovo', 'Asus', 'Acer', 'Apple', 'MSI'],
+    listing: listing(preowned(f('Battery backup', '3 hrs')), preowned(pick('Charger included', YES_NO)), WINDOWS),
+  },
+  desktops: { brands: ['HP', 'Dell', 'Lenovo', 'Asus', 'Acer'], listing: listing(WINDOWS) },
+  'all-in-ones': { brands: ['HP', 'Dell', 'Lenovo', 'Asus', 'Apple'], listing: listing(WINDOWS) },
+  monitors: {
+    required: ['size', 'Resolution'],
+    brands: ['LG', 'Samsung', 'Dell', 'BenQ', 'Acer', 'MSI'],
+    listing: listing(preowned(pick('Dead pixels', ['None', '1-2', 'More than 2']))),
+  },
+  'graphics-cards': {
+    required: ['memory', 'GPU'],
+    brands: ['Zotac', 'MSI', 'Asus', 'Gigabyte', 'Galax', 'Sapphire', 'PowerColor'],
+    listing: listing(preowned(pick('Used for mining', ['No', 'Yes']))),
+  },
+  processors: { required: ['Socket'], brands: ['AMD', 'Intel'] },
+  motherboards: { required: ['Socket'], brands: ['MSI', 'Asus', 'Gigabyte', 'ASRock'] },
+  ram: { required: ['capacity', 'Type'], brands: ['Corsair', 'G.Skill', 'Kingston', 'Crucial', 'Adata'] },
+  storage: { required: ['capacity', 'Type'], brands: ['Samsung', 'WD', 'Crucial', 'Kingston', 'Seagate'], listing: listing(DISK_HEALTH) },
+  psu: { required: ['wattage'], brands: ['Corsair', 'Deepcool', 'Cooler Master', 'Antec', 'MSI'] },
+  cabinets: { brands: ['Ant Esports', 'Deepcool', 'Cooler Master', 'Lian Li', 'NZXT'] },
+  coolers: { brands: ['Deepcool', 'Cooler Master', 'Noctua', 'Ant Esports', 'NZXT'] },
+  keyboards: { brands: ['Logitech', 'Redragon', 'HP', 'Dell', 'Cosmic Byte'] },
+  mice: { brands: ['Logitech', 'Redragon', 'HP', 'Dell', 'Zebronics'] },
+  headsets: { brands: ['HyperX', 'Logitech', 'Redragon', 'Cosmic Byte', 'Sony'] },
+  webcams: { brands: ['Logitech', 'HP', 'Zebronics'] },
+  printers: { brands: ['HP', 'Epson', 'Canon', 'Brother'], listing: listing(preowned(f('Page count', '3,000 pages'))) },
+  routers: { brands: ['TP-Link', 'D-Link', 'Tenda', 'Netgear', 'Asus'] },
+  ups: { brands: ['APC', 'Luminous', 'Microtek', 'V-Guard'], listing: listing(preowned(f('Battery age', '6 months'))) },
+  speakers: { brands: ['JBL', 'boAt', 'Sony', 'Zebronics', 'Marshall'] },
+};
+for (const [slug, x] of Object.entries(EXTRAS)) {
+  const t = SPEC_TEMPLATES[slug]!;
+  const need = new Set(x.required ?? []);
+  const mark = (fd: SpecField) => (need.has(fd.key) ? { ...fd, required: true } : fd);
+  t.variant = t.variant.map(mark);
+  t.specs = t.specs.map(mark);
+  if (x.brands) t.brands = x.brands;
+  if (x.listing) t.listing = x.listing;
+}
+
+/** The listing details every category asks for when it has none of its own. */
+const DEFAULT_LISTING = listing();
+
 /** For a category with no form of its own: a colour and free rows. */
 export const GENERIC_SPEC_TEMPLATE: SpecTemplate = { variant: [colour], specs: [] };
 
@@ -538,4 +638,63 @@ export function buildSpecPatch(template: SpecTemplate, values: Record<string, st
     .map(([fd, v]) => fd.highlight!.replace('{v}', v))
     .slice(0, 4);
   return { variant, specs, key_specs };
+}
+
+/** Keys of the required fields still empty, in form order. */
+export function missingRequired(template: SpecTemplate, values: Record<string, string | undefined>): string[] {
+  return [...template.variant, ...template.specs].filter((fd) => fd.required && !(values[fd.key] ?? '').trim()).map((fd) => fd.key);
+}
+
+/** The listing details to ask for a piece in this condition (pre-owned questions only when it is not new). */
+export function visibleListingFields(template: SpecTemplate, condition: string | null | undefined): SpecField[] {
+  const preownedPiece = !!condition && condition !== 'new';
+  return (template.listing ?? DEFAULT_LISTING).filter((fd) => fd.when !== 'preowned' || preownedPiece);
+}
+
+/** Every listing-detail key of a template, whatever the condition. */
+export function listingKeys(template: SpecTemplate): string[] {
+  return (template.listing ?? DEFAULT_LISTING).map((fd) => fd.key);
+}
+
+/** A model example for the form: the category's example name without its brand and bracketed details. */
+export function modelHint(template: SpecTemplate): string | undefined {
+  const name = template.nameExample?.replace(/\s*\(.*\)\s*$/, '');
+  if (!name) return undefined;
+  const brand = template.brands?.find((b) => name.toLowerCase().startsWith(`${b.toLowerCase()} `));
+  return brand ? name.slice(brand.length).trim() : name;
+}
+
+/**
+ * A full product name from what the shop filled in: brand, model and the variant in form order,
+ * e.g. "Samsung Galaxy S24 FE (8 GB RAM, 128 GB, Blue)". Empty until there is a brand or model.
+ */
+export function suggestProductName({ brand, model, template, values }: { brand?: string; model?: string; template: SpecTemplate; values: Record<string, string | undefined> }): string {
+  const b = (brand ?? '').trim();
+  const m = (model ?? '').trim();
+  const head = b && m.toLowerCase().startsWith(b.toLowerCase()) ? m : [b, m].filter(Boolean).join(' ');
+  if (!head) return '';
+  const details = template.variant
+    .map((fd) => [fd, (values[fd.key] ?? '').trim()] as const)
+    .filter(([, v]) => v)
+    .map(([fd, v]) => (fd.highlight ? fd.highlight.replace('{v}', v) : v));
+  return details.length ? `${head} (${details.join(', ')})` : head;
+}
+
+/** Splits a typed search like "samsung galaxy s24 fe" into a known brand and the rest (the model). */
+export function splitBrandModel(query: string, brands: string[]): { brand: string; model: string } {
+  const q = query.trim().replace(/\s+/g, ' ');
+  const lower = q.toLowerCase();
+  // Longest first, so "CP Plus" wins over a shorter brand that starts the same way
+  const hit = [...brands].sort((a, b) => b.length - a.length).find((b) => lower === b.toLowerCase() || lower.startsWith(`${b.toLowerCase()} `));
+  return hit ? { brand: hit, model: q.slice(hit.length).trim() } : { brand: '', model: q };
+}
+
+/** Spec rows in the category's reading order (its specs, then the shop's details), anything else after. */
+export function orderSpecEntries(specs: Record<string, string>, template?: SpecTemplate | null): [string, string][] {
+  const order = template ? [...template.specs.map((fd) => fd.key), ...listingKeys(template)] : [];
+  const rank = (k: string) => {
+    const i = order.indexOf(k);
+    return i === -1 ? order.length : i;
+  };
+  return Object.entries(specs).sort((a, b) => rank(a[0]) - rank(b[0]));
 }

@@ -65,7 +65,14 @@ export default function ProductAddScreen() {
       <Card style={{ gap: 8, backgroundColor: colors.primarySoft }}>
         <AppText variant="title">{t('p.add.notFound')}</AppText>
         <AppText variant="caption" color="textMuted">{t('p.add.customHint')}</AppText>
-        <Button title={t('p.add.custom')} icon="create-outline" variant="primary" onPress={() => router.push({ pathname: '/partner/product/custom', params: { name: query } })} />
+        {/* The browsed category, if any, opens the custom form straight on that kind of product */}
+        <Button
+          testID="add-custom"
+          title={t('p.add.custom')}
+          icon="create-outline"
+          variant="primary"
+          onPress={() => router.push({ pathname: '/partner/product/custom', params: { name: query, ...(category ? { category: String(category) } : {}) } })}
+        />
       </Card>
     </Screen>
   );

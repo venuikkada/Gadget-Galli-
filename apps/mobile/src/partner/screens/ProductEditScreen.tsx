@@ -1,16 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { CONDITIONS, variantText, type CatalogLookupItem, type Condition, type SpecRow } from '@gg/shared';
+import { CONDITIONS, listingKeys, specTemplateFor, variantText, visibleListingFields, type CatalogLookupItem, type Condition, type SpecRow } from '@gg/shared';
 
 import { errorText, rpc } from '@/shared/api/rpc';
 import { PhotoPicker } from '@/shared/components/PhotoPicker';
-import { useTranslation } from '@/shared/i18n';
-import { AppText, Button, Card, Chip, Header, InfoBanner, Input, Loading, ProductImage, Row, Screen, Segmented, SwitchRow, toast } from '@/shared/ui';
+import { useCategories } from '@/shared/hooks/reference';
+import { localName, useTranslation } from '@/shared/i18n';
+import { AppText, Button, Card, Chip, Header, InfoBanner, Input, Loading, ProductImage, Row, Screen, Segmented, SwitchRow, Tag, toast } from '@/shared/ui';
 
 import { productActions, useListing, useMyShop } from '../api';
-import { SpecRowsEditor } from '../components/SpecFields';
+import { SpecFields, SpecRowsEditor } from '../components/SpecFields';
 
 /**
  * Price & stock form for a listing. Params:
@@ -39,12 +40,21 @@ export default function ProductEditScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [specs, setSpecs] = useState<SpecRow[]>([]);
+  // The category's own questions for this piece (battery health, bill…), saved with the free rows in the listing's specs
+  const [details, setDetails] = useState<Record<string, string>>({});
   const [inBox, setInBox] = useState('');
   const [install, setInstall] = useState(false);
   const [installCharge, setInstallCharge] = useState('');
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
+
+  const { data: categories = [] } = useCategories();
+  const category = categories.find((c) => c.id === (catalogItem?.category_id ?? source.data?.category.id));
+  const parent = categories.find((c) => c.id === category?.parent_id);
+  const template = specTemplateFor(category?.slug, parent?.slug);
+  const detailFields = visibleListingFields(template, condition);
+  const detailKeys = useMemo(() => new Set(listingKeys(template)), [template]);
 
   // Prefill from an existing listing (edit or duplicate)
   useEffect(() => {
@@ -66,8 +76,11 @@ export default function ProductEditScreen() {
     setActive(s.is_active);
     setInBox(own?.in_the_box ?? '');
     setDescription(own?.description ?? '');
-    setSpecs(Object.entries(own?.specs ?? {}).map(([k, v]) => ({ k, v: String(v) })));
-  }, [source.data, id]);
+    // The category's questions go back into their fields; anything else stays a free row
+    const ownSpecs = Object.entries(own?.specs ?? {}).map(([k, v]) => [k, String(v)] as const);
+    setDetails(Object.fromEntries(ownSpecs.filter(([k]) => detailKeys.has(k))));
+    setSpecs(ownSpecs.filter(([k]) => !detailKeys.has(k)).map(([k, v]) => ({ k, v })));
+  }, [source.data, id, detailKeys]);
 
   // Catalog product summary (+ other variants of the same model for "Duplicate")
   useEffect(() => {
@@ -114,7 +127,11 @@ export default function ProductEditScreen() {
         in_stock: track ? Number(qty || 0) > 0 : inStock,
         photos,
         description: description || null,
-        specs: Object.fromEntries(specs.filter((s) => s.k && s.v).map((s) => [s.k, s.v])),
+        // Free rows, then the category's details for this condition (a used phone's battery health is dropped if it is now new)
+        specs: Object.fromEntries([
+          ...specs.filter((s) => s.k.trim() && s.v.trim()).map((s) => [s.k.trim(), s.v.trim()]),
+          ...detailFields.map((fd) => [fd.key, (details[fd.key] ?? '').trim()]).filter(([, v]) => v),
+        ]),
         in_the_box: inBox || null,
         installation_available: install,
         installation_charge: install ? Number(installCharge || 0) : null,
@@ -143,6 +160,13 @@ export default function ProductEditScreen() {
             <AppText variant="caption" color="textMuted">{[displayBrand, variantText(catalogItem?.variant ?? source.data?.variant)].filter(Boolean).join(' · ')}</AppText>
           </View>
         </Row>
+        {(catalogItem?.key_specs ?? source.data?.key_specs)?.length ? (
+          <Row wrap gap={6} style={{ marginTop: 10 }}>
+            {(catalogItem?.key_specs ?? source.data?.key_specs ?? []).slice(0, 4).map((k) => (
+              <Tag key={k} label={k} />
+            ))}
+          </Row>
+        ) : null}
       </Card>
 
       {duplicate ? (
@@ -164,6 +188,17 @@ export default function ProductEditScreen() {
           ))}
         </Row>
       </View>
+      {/* What a buyer of this kind of product asks: battery health for a used phone, HDD for a DVR, the bill… */}
+      <Card style={{ gap: 12 }} testID="listing-details">
+        <View style={{ gap: 2 }}>
+          <Row justify="space-between" gap={8}>
+            <AppText variant="title" style={{ flex: 1 }}>{t('p.edit.detailsTitle')}</AppText>
+            {category ? <Tag label={localName(category)} tone="primary" /> : null}
+          </Row>
+          <AppText variant="caption" color="textMuted">{t('p.edit.detailsHint')}</AppText>
+        </View>
+        <SpecFields fields={detailFields} values={details} onChange={(key, value) => setDetails((d) => ({ ...d, [key]: value }))} />
+      </Card>
       <Row gap={10}>
         <Input testID="listing-price" label={t('p.edit.price')} prefix="₹" keyboardType="decimal-pad" value={price} onChangeText={(v) => { setPrice(v.replace(/[^\d.]/g, '')); setPriceError(null); }} error={priceError} style={{ flex: 1 }} />
         <Input label={t('p.edit.mrp')} prefix="₹" keyboardType="decimal-pad" value={mrp} onChangeText={(v) => setMrp(v.replace(/[^\d.]/g, ''))} style={{ flex: 1 }} placeholder={catalogItem?.mrp ? String(catalogItem.mrp) : ''} />

@@ -214,31 +214,49 @@ await step('partner: rejects the customer request (out of stock)', async () => {
   await s.getByText('Rejected').first().waitFor({ timeout: 15000 });
   await s.screenshot({ path: join(OUT, 'p-03-rejected.png') });
 });
-await step('partner: custom product → price & stock → saved', async () => {
+await step('partner: custom product → pick the kind → its own form → price & stock with details → saved', async () => {
   await s.goto(`${MOBILE}/partner/product/add?q=Nothing Phone 3a`);
   await dismissAlerts(s);
   await s.getByText('Add a custom product').click();
-  await s.getByTestId('custom-name').fill('Nothing Phone (3a) 8 GB 128 GB Black');
-  // No sub-categories and no form until a main category is picked
+  // First the kind of product, as tiles with drawings
   await s.getByTestId('custom-pick-category').waitFor();
-  if (await s.getByTestId('custom-cat-smartphones').count()) throw new Error('sub-categories shown before a main category was picked');
-  // Each category has its own form: a laptop asks for graphics, a phone for its rear camera
-  await s.getByText('Laptops & Computers', { exact: true }).first().click();
+  await s.screenshot({ path: join(OUT, 'p-04a-custom-types.png') });
+  // Each kind has its own form: a CCTV camera asks for resolution and type, a laptop for graphics, a phone for its camera
+  await s.getByTestId('custom-cat-cctv-cameras').click();
+  await s.getByTestId('spec-resolution').waitFor();
+  await s.getByTestId('spec-type').waitFor();
+  if (await s.getByTestId('spec-storage').count()) throw new Error('phone fields shown for a CCTV camera');
+  await s.getByTestId('custom-change-type').click();
   await s.getByTestId('custom-cat-laptops').click();
   await s.getByTestId('spec-Graphics').waitFor();
-  await s.getByText('Mobiles', { exact: true }).first().click();
+  await s.getByTestId('custom-change-type').click();
   await s.getByTestId('custom-cat-smartphones').click();
   await s.getByTestId('spec-Rear camera').waitFor();
   if (await s.getByTestId('spec-Graphics').count()) throw new Error('laptop fields shown for a phone');
+  // The search text became the brand and the model
+  await s.waitForFunction(() => document.querySelector('[data-testid="custom-brand"]')?.value === 'Nothing', null, { timeout: 10000 });
+  await s.getByTestId('custom-model').fill('Phone (3a)');
+  // Storage and colour are required for a phone
+  await s.getByTestId('custom-next').click();
+  await s.getByText('Required', { exact: true }).first().waitFor();
   await s.getByTestId('spec-ram-8 GB').click();
   await s.getByTestId('spec-storage-128 GB').click();
+  await s.getByTestId('spec-colour-Black').click();
   await s.getByTestId('spec-Display').fill('6.77-inch AMOLED, 120Hz');
   await s.getByTestId('spec-Rear camera').fill('50 MP + 50 MP');
-  await s.screenshot({ path: join(OUT, 'p-04a-custom-specs.png') });
+  // The full name is built from brand, model and version
+  await s.waitForFunction(() => document.querySelector('[data-testid="custom-name"]')?.value === 'Nothing Phone (3a) (8 GB RAM, 128 GB, Black)', null, { timeout: 5000 });
+  await s.screenshot({ path: join(OUT, 'p-04b-custom-specs.png'), fullPage: true });
   await s.getByTestId('custom-next').click();
   await s.getByText('8 GB · 128 GB', { exact: false }).first().waitFor({ timeout: 15000 });
+  // Price & stock asks what buyers of a phone ask; a used piece adds battery health
+  await s.getByTestId('spec-Bill').waitFor();
+  if (await s.getByTestId('spec-Battery health').count()) throw new Error('battery health asked for a new phone');
+  await s.getByText('Used', { exact: true }).first().click();
+  await s.getByTestId('spec-Battery health').fill('91%');
+  await s.getByTestId('spec-Bill-GST bill').click();
   await s.getByTestId('listing-price').fill('24999');
-  await s.screenshot({ path: join(OUT, 'p-04-custom-price.png') });
+  await s.screenshot({ path: join(OUT, 'p-04-custom-price.png'), fullPage: true });
   await s.getByTestId('save-product').click();
   await s.waitForTimeout(1500);
   await s.goto(`${MOBILE}/partner/products`);

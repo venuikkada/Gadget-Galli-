@@ -151,7 +151,7 @@ export const productActions = {
   quick: (id: string, price: number | null, inStock: boolean | null, qty: number | null) =>
     rpc<{ id: string; price: number; in_stock: boolean; stock_qty: number | null }>('shop_quick_update', { p_id: id, p_price: price, p_in_stock: inStock, p_stock_qty: qty }).then((r) => (productsChanged(), r)),
   remove: (id: string) => rpc('shop_delete_product', { p_id: id }).then(productsChanged),
-  createCustom: (patch: Record<string, unknown>) => rpc<{ id: string; name: string; status: string }>('shop_create_custom_product', { p_patch: patch }),
+  createCustom: (patch: Record<string, unknown>) => rpc<{ id: string; name: string; status: string; category_id: number }>('shop_create_custom_product', { p_patch: patch }).then((r) => (productsChanged(), r)),
   bulk: (shopId: string, rows: Record<string, unknown>[]) =>
     rpc<{ results: { row: number; status: string; name: string; message?: string }[]; created: number; updated: number; errors: number }>('shop_bulk_upsert', { p_shop_id: shopId, p_rows: rows }).then((r) => (productsChanged(), r)),
 };

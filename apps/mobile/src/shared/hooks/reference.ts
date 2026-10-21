@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import type { Area, Brand, Category, Zone } from '@gg/shared';
+import { specTemplateFor, type Area, type Brand, type Category, type SpecTemplate, type Zone } from '@gg/shared';
 
 import { toApiError } from '../api/rpc';
 import { supabase } from '../api/supabase';
@@ -48,4 +48,12 @@ export function useBrands() {
     queryFn: () => select<Brand>('brands', 'name'),
     staleTime: HOUR,
   });
+}
+
+/** The specification form of a category (its own, else its main category's), e.g. to order a spec table. */
+export function useSpecTemplate(categoryId: number | null | undefined): SpecTemplate {
+  const { data: categories = [] } = useCategories();
+  const c = categories.find((x) => x.id === categoryId);
+  const parent = categories.find((x) => x.id === c?.parent_id);
+  return specTemplateFor(c?.slug, parent?.slug);
 }

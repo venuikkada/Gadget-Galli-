@@ -1,26 +1,42 @@
 import { View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
+import { useMemo } from 'react';
 
-import type { SpecField, SpecRow, SpecTemplate } from '@gg/shared';
+import { deviceArtSvg, deviceKindFor, type SpecField, type SpecRow } from '@gg/shared';
 
 import { useTranslation } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { Button, Chip, IconButton, Input, Row } from '@/shared/ui';
 
-/** A category's specification form: one input per field, with its suggestions as chips that fill the value. */
-export function SpecFields({ template, values, onChange }: { template: SpecTemplate; values: Record<string, string>; onChange: (key: string, value: string) => void }) {
+/**
+ * Part of a category's form: one input per field, with its suggestions as chips that fill the value.
+ * Required fields carry a `*`; `errors` holds the message to show under a field.
+ */
+export function SpecFields({
+  fields,
+  values,
+  onChange,
+  errors,
+}: {
+  fields: SpecField[];
+  values: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+  errors?: Record<string, string | undefined>;
+}) {
   return (
     <View style={{ gap: 12 }}>
-      {[...template.variant, ...template.specs].map((f) => (
-        <SpecInput key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => onChange(f.key, v)} />
+      {fields.map((f) => (
+        <SpecInput key={f.key} field={f} value={values[f.key] ?? ''} error={errors?.[f.key]} onChange={(v) => onChange(f.key, v)} />
       ))}
     </View>
   );
 }
 
-function SpecInput({ field, value, onChange }: { field: SpecField; value: string; onChange: (value: string) => void }) {
+function SpecInput({ field, value, error, onChange }: { field: SpecField; value: string; error?: string; onChange: (value: string) => void }) {
+  const label = field.label ?? field.key;
   return (
     <View style={{ gap: 6 }}>
-      <Input testID={`spec-${field.key}`} label={field.label ?? field.key} placeholder={field.placeholder} value={value} onChangeText={onChange} />
+      <Input testID={`spec-${field.key}`} label={field.required ? `${label} *` : label} placeholder={field.placeholder} value={value} onChangeText={onChange} error={error} />
       {field.options?.length ? (
         <Row wrap gap={6}>
           {field.options.map((o) => (
@@ -30,6 +46,13 @@ function SpecInput({ field, value, onChange }: { field: SpecField; value: string
       ) : null}
     </View>
   );
+}
+
+/** The device drawing for a category, as on the customer home tiles. */
+export function CategoryArt({ slug, name, size = 44 }: { slug: string; name: string; size?: number }) {
+  const { dark } = useTheme();
+  const xml = useMemo(() => deviceArtSvg({ kind: deviceKindFor(slug, name), seed: slug, dark }), [slug, name, dark]);
+  return <SvgXml xml={xml} width={size} height={size} />;
 }
 
 /** Free name/value specification rows, for anything a form doesn't ask. */

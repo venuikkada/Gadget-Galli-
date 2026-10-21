@@ -3,12 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { deliveryEtaMins, formatINR, percentOff, type Offer } from '@gg/shared';
+import { deliveryEtaMins, formatINR, orderSpecEntries, percentOff, variantText, type Offer } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoGallery } from '@/shared/components/PhotoViewer';
 import { useRecent } from '@/shared/hooks/recent';
-import { useCategories } from '@/shared/hooks/reference';
+import { useCategories, useSpecTemplate } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { productShareUrl, shareText } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -55,6 +55,8 @@ export default function ProductScreen() {
   }, [id, addRecent]);
 
   const p = page.data?.product;
+  // Specs read in the category's order (a laptop: processor, display, graphics…), not the database's
+  const template = useSpecTemplate(p?.category.id);
   const offers = page.data?.offers ?? [];
   const lowest = offers.filter((o) => o.in_stock).reduce<number | null>((m, o) => (m == null || o.price < m ? o.price : m), null);
   const off = lowest != null && p?.mrp ? percentOff(lowest, p.mrp) : 0;
@@ -78,7 +80,7 @@ export default function ProductScreen() {
   );
 
   const specRows = p
-    ? ([[t('product.brand'), p.brand], [t('product.model'), p.model], ...Object.entries(p.specs)] as [string, string | null | undefined][]).filter(([, v]) => v)
+    ? ([[t('product.brand'), p.brand], [t('product.model'), p.model], ...orderSpecEntries(p.specs, template)] as [string, string | null | undefined][]).filter(([, v]) => v)
     : [];
 
   return (
@@ -131,9 +133,9 @@ export default function ProductScreen() {
                 <View style={{ gap: 6, marginTop: 4 }}>
                   <AppText variant="label" color="textMuted">{t('product.variants')}</AppText>
                   <Row wrap gap={8}>
-                    <Chip label={Object.values(p!.variant).join(' · ') || p!.name} selected />
+                    <Chip label={variantText(p!.variant) || p!.name} selected />
                     {page.data.variants.map((v) => (
-                      <Chip key={v.id} label={Object.values(v.variant).join(' · ') || v.name} onPress={() => router.replace(`/product/${v.id}`)} />
+                      <Chip key={v.id} label={variantText(v.variant) || v.name} onPress={() => router.replace(`/product/${v.id}`)} />
                     ))}
                   </Row>
                 </View>

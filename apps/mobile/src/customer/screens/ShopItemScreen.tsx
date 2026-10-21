@@ -2,10 +2,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { deliveryEtaMins, formatINR, percentOff, variantText } from '@gg/shared';
+import { deliveryEtaMins, formatINR, orderSpecEntries, percentOff, variantText } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { PhotoGallery } from '@/shared/components/PhotoViewer';
+import { useSpecTemplate } from '@/shared/hooks/reference';
 import { useTranslation } from '@/shared/i18n';
 import { tDeliversIn } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -20,6 +21,8 @@ export default function ShopItemScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useShopProduct(id);
+  // The product's specs and the shop's own details (battery health, bill…) in the category's order
+  const template = useSpecTemplate(q.data?.category.id);
   const add = useAddToCart();
   const { qtyOf, setQty, cart } = useCartQty();
   const [withInstall, setWithInstall] = useState(false);
@@ -122,7 +125,7 @@ export default function ShopItemScreen() {
         {Object.keys(item.specs).length ? (
           <Card>
             <AppText variant="h3" style={{ marginBottom: 6 }}>{t('product.specs')}</AppText>
-            {[[t('product.model'), item.model], [t('product.modelNumber'), item.model_number], ...Object.entries(item.specs)]
+            {[[t('product.model'), item.model], [t('product.modelNumber'), item.model_number], ...orderSpecEntries(item.specs, template)]
               .filter(([, v]) => v)
               .map(([k, v], i) => (
                 <View key={`${k}${i}`}>
