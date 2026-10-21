@@ -185,3 +185,19 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - **Payouts lock their orders** while being marked paid: two admins (or two tabs) can't pay and notify the same payout twice.
     - **Alarms:** the Shop Partner app also rings (and sends a loud push) when an order is paid, the moment to pack and send. In a browser the alarm plays only after the owner has tapped the page once; the alarm offers "Turn on sound" when the browser blocks it.
     - **Home feed:** featured shops (Admin → Content) lead "Shops near you" with a Featured tag; featured products show as "Handpicked for you"; **Top deals** lists the biggest discounts off MRP among the 50 most popular products in stock.
+
+## Product forms
+
+56. **Every kind of product gets its own form in the Shop Partner app** (packages/shared/src/specs.ts). The founder's request: a phone, a CCTV camera and a graphics card must not share one generic form.
+    - **Custom product:** the shop first picks the kind of product from tiles with drawings, then sees only that kind's questions:
+      - brand chips and a model example;
+      - "This version" (RAM / storage / colour, resolution / camera type, channels…) and the specifications;
+      - fields a product can't do without are marked * and checked, for example storage and colour for a phone, resolution and type for a CCTV camera, processor, RAM and storage for a laptop.
+      - The full product name is built from brand, model and version (the shop can still type its own). What the shop searched for pre-fills the brand and model.
+    - **Price & stock** ("Details for buyers") asks what buyers of that kind of product ask:
+      - for every listing: the bill;
+      - for open-box, refurbished and used pieces also: physical condition, box & accessories;
+      - by kind: battery health and repairs for a used phone, battery backup, charger and Windows for a laptop, mining for a used graphics card, HDD included for a DVR, power adapter for a camera.
+      - These are stored on the listing (`shop_products.specs`), so customers see them with the product's specs on the shop item page. No database change was needed.
+    - Spec tables and variant labels now read in a fixed order ("8 GB · 128 GB · Black"; a laptop's processor, display, graphics…), because the database keeps no key order.
+    - Spec field names stay in English (RAM, Processor, Resolution): they're trade terms, and the spec tables show them in English to customers too.
