@@ -238,7 +238,8 @@ await step('partner: custom product → pick the kind → its own form → price
   await s.getByTestId('custom-model').fill('Phone (3a)');
   // Storage and colour are required for a phone
   await s.getByTestId('custom-next').click();
-  await s.getByText('Required', { exact: true }).first().waitFor();
+  // Screens under this one stay mounted (hidden) on the web, so only look at visible text
+  await s.locator('text="Required" >> visible=true').first().waitFor();
   await s.getByTestId('spec-ram-8 GB').click();
   await s.getByTestId('spec-storage-128 GB').click();
   await s.getByTestId('spec-colour-Black').click();
@@ -248,11 +249,11 @@ await step('partner: custom product → pick the kind → its own form → price
   await s.waitForFunction(() => document.querySelector('[data-testid="custom-name"]')?.value === 'Nothing Phone (3a) (8 GB RAM, 128 GB, Black)', null, { timeout: 5000 });
   await s.screenshot({ path: join(OUT, 'p-04b-custom-specs.png'), fullPage: true });
   await s.getByTestId('custom-next').click();
-  await s.getByText('8 GB · 128 GB', { exact: false }).first().waitFor({ timeout: 15000 });
+  await s.locator('text=8 GB · 128 GB >> visible=true').first().waitFor({ timeout: 15000 });
   // Price & stock asks what buyers of a phone ask; a used piece adds battery health
   await s.getByTestId('spec-Bill').waitFor();
   if (await s.getByTestId('spec-Battery health').count()) throw new Error('battery health asked for a new phone');
-  await s.getByText('Used', { exact: true }).first().click();
+  await s.locator('text="Used" >> visible=true').first().click();
   await s.getByTestId('spec-Battery health').fill('91%');
   await s.getByTestId('spec-Bill-GST bill').click();
   await s.getByTestId('listing-price').fill('24999');
