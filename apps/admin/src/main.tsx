@@ -5,6 +5,14 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 
 import { Layout } from './components/Layout';
 import { Spinner, ToastHost } from './components/ui';
+// Fonts are bundled with the site (the Content-Security-Policy allows no outside font hosts).
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
+import '@fontsource/poppins/latin-500.css';
+import '@fontsource/poppins/latin-600.css';
+import '@fontsource/poppins/latin-700.css';
 import './index.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { isConfigured } from './lib/supabase';

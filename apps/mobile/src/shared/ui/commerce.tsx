@@ -1,26 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, SvgXml } from 'react-native-svg';
 
-import { avatarColor, familyFor, formatINR, initials, ORDER_FLOW, percentOff, statusColors, type OrderStatus } from '@gg/shared';
+import { avatarColor, deviceArtSvg, deviceKindFor, familyFor, formatINR, initials, ORDER_FLOW, percentOff, statusColors, type OrderStatus } from '@gg/shared';
 
 import { publicUrl, thumbUrl, type Bucket } from '../api/storage';
 import { useTranslation } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts, shadow } from '../theme/tokens';
 import { useFont } from '../theme/useFont';
-import { AppText, Icon, Row } from './primitives';
+import { AppText, Row } from './primitives';
 
-// Category -> icon (MaterialCommunityIcons) and top-level slug, for product placeholders when no photo exists.
-const CATEGORY_ICON: Record<number, string> = {};
+// Category -> own slug and top-level slug, for product art and colours when no photo exists.
+const CATEGORY_SLUG: Record<number, string> = {};
 const CATEGORY_ROOT: Record<number, string> = {};
 export function registerCategoryIcons(categories: { id: number; icon: string; slug?: string; parent_id?: number | null }[]) {
   const byId = new Map(categories.map((c) => [c.id, c]));
   categories.forEach((c) => {
-    CATEGORY_ICON[c.id] = c.icon;
+    if (c.slug) CATEGORY_SLUG[c.id] = c.slug;
     let root = c;
     for (let i = 0; i < 5 && root.parent_id != null && byId.has(root.parent_id); i++) root = byId.get(root.parent_id)!;
     if (root.slug) CATEGORY_ROOT[c.id] = root.slug;
@@ -32,7 +32,7 @@ export function categoryFamily(categoryId: number | null | undefined, seed = '')
   return familyFor(categoryId ? CATEGORY_ROOT[categoryId] : null, seed || String(categoryId ?? ''));
 }
 
-/** Product photo, or designed placeholder art (category icon on the category's colours, plus the brand) when there is no photo. */
+/** Product photo, or a drawing of the device (by category, coloured per brand) on the category's colours when there is no photo. */
 export function ProductImage({
   path,
   bucket = 'product-photos',
@@ -62,6 +62,8 @@ export function ProductImage({
   const w = width ?? size;
   const h = height ?? size;
   const [failedThumb, setFailedThumb] = useState(false);
+  const kind = deviceKindFor(categoryId ? (CATEGORY_SLUG[categoryId] ?? CATEGORY_ROOT[categoryId]) : null, `${brand ?? ''} ${name ?? ''}`);
+  const xml = useMemo(() => (path ? null : deviceArtSvg({ kind, seed: `${brand ?? ''}|${name ?? ''}`, dark })), [path, kind, brand, name, dark]);
   const uri = path ? (thumb && !failedThumb ? thumbUrl(bucket, path) : publicUrl(bucket, path)) : null;
   if (uri) {
     return (
@@ -75,18 +77,16 @@ export function ProductImage({
     );
   }
   const fam = categoryFamily(categoryId, name ?? brand ?? '')[dark ? 'dark' : 'light'];
-  const icon = (categoryId && CATEGORY_ICON[categoryId]) || 'cube-outline';
   const numericH = typeof h === 'number' ? h : 72;
-  const iconSize = Math.max(18, Math.min(56, numericH * 0.4));
-  const disc = Math.round(iconSize * 1.9);
+  const numericW = typeof w === 'number' ? w : numericH;
+  const showBrand = !!brand && numericH >= 120;
+  const art = Math.round(Math.min(numericW, numericH) * (showBrand ? 0.7 : 0.9));
   return (
     <LinearGradient colors={[fam.tint, fam.tint2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ width: w, height: h, borderRadius: radius, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, style]}>
-      <View style={{ position: 'absolute', width: disc * 1.6, height: disc * 1.6, borderRadius: disc, right: -disc * 0.55, top: -disc * 0.6, backgroundColor: dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.45)' }} />
-      <View style={{ width: disc, height: disc, borderRadius: disc / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)' }}>
-        <Icon name={icon} set="mci" size={iconSize} color={fam.icon} />
-      </View>
-      {brand && numericH >= 90 ? (
-        <Text numberOfLines={1} style={{ marginTop: 8, fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.6, color: fam.icon, maxWidth: '86%', textTransform: 'uppercase' }}>
+      <View style={{ position: 'absolute', width: numericH * 0.9, height: numericH * 0.9, borderRadius: numericH, right: -numericH * 0.28, top: -numericH * 0.34, backgroundColor: dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.4)' }} />
+      {xml ? <SvgXml xml={xml} width={art} height={art} /> : null}
+      {showBrand ? (
+        <Text numberOfLines={1} style={{ marginTop: 2, fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.6, color: fam.icon, maxWidth: '86%', textTransform: 'uppercase' }}>
           {brand}
         </Text>
       ) : null}

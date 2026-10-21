@@ -1,3 +1,4 @@
+export * from './art/deviceArt';
 export * from './constants';
 export * from './format';
 export * from './hours';

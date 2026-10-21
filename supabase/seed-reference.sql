@@ -377,7 +377,7 @@ insert into public.catalog_products (id, category_id, brand_id, name, model, mod
   ('33333333-0000-4000-8000-0000000000ac', 42, 57, 'boAt Stone 350 Bluetooth Speaker', 'Stone 350', 'Stone 350', '{"colour":"Black"}'::jsonb, array['10W', 'IPX7', '12 hrs playback']::text[], '{"Power":"10W","Battery":"Up to 12 hrs","Rating":"IPX7"}'::jsonb, null, 'bluetooth speaker boat portable', 3490, 'approved', 81);
 
 insert into public.banners (title, subtitle, bg_color, link_type, link_value, sort) values
-  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay the shop by UPI', '#0B7A80', 'none', null, 1),
+  ('Hyderabad shops, delivered in hours', 'Order by call or WhatsApp · pay safely by UPI', '#0B7A80', 'none', null, 1),
   ('Graphics cards in stock near you', 'RTX 4060 · RTX 5060 · RX 7600 from ₹25,999', '#03282C', 'search', 'graphics card', 2),
   ('Secure your home this festive season', 'CCTV kits with same-day installation', '#FFB300', 'category', '11', 3),
   ('Invite friends to Gadget Galli', 'Share your code on WhatsApp', '#237A2E', 'url', '/referral', 4);
