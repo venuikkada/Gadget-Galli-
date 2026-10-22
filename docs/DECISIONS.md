@@ -106,7 +106,7 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 ## Business model (v1)
 
-44. **No commission or fees in v1.** (A `commission_pct` setting exists since #52 and is 0.) The schema already has `featured` (paid placement) and shop stats, so monetisation can be switched on later without migrations. See MARKETING.md for the suggested plans.
+44. **No commission or fees in v1.** (A `commission_pct` setting exists since #52 and is 0; since #57 shops pay it to Gadget Galli on delivered orders once it is set above 0.) The schema already has `featured` (paid placement) and shop stats, so monetisation can be switched on later without migrations. See MARKETING.md for the suggested plans.
 
 ## Websites (Hostinger)
 
@@ -144,7 +144,7 @@ The brief said "if something is unclear, make a sensible choice and list your ch
 
 ## Payments
 
-52. **Customers pay Gadget Galli; shops are paid after delivery.** The founder's choice, so a shop only sends goods once the money is safe, and is only paid once the customer has the goods.
+52. ~~**Customers pay Gadget Galli; shops are paid after delivery.**~~ Replaced by #57 for new orders: customers now pay the shop. Orders placed before migration 0018 finish on this flow (payee `gadget_galli`), so the Payments tabs for them stay. The original decision, kept for those orders: the founder's choice, so a shop only sends goods once the money is safe, and is only paid once the customer has the goods.
     - **Flow:** the shop accepts (CONFIRMED) → the customer pays Gadget Galli's UPI ID or QR and enters the UPI reference (UTR) → an admin checks the bank app and taps **Payment received** (PAID; only admins can do this) → the shop packs and sends → DELIVERED makes the shop's **payout due** → an admin pays the shop's UPI ID and records the reference (**payout paid**).
     - **Checks are manual for now**, so there is no payment gateway. A gateway (Razorpay, Cashfree) can later call `admin_confirm_payment` from a webhook without changing the apps.
     - **Payment method:** UPI to Gadget Galli only; there is no cash on delivery. The shop's own UPI ID is used only for its payouts.
@@ -201,3 +201,27 @@ The brief said "if something is unclear, make a sensible choice and list your ch
       - These are stored on the listing (`shop_products.specs`), so customers see them with the product's specs on the shop item page. No database change was needed.
     - Spec tables and variant labels now read in a fixed order ("8 GB · 128 GB · Black"; a laptop's processor, display, graphics…), because the database keeps no key order.
     - Spec field names stay in English (RAM, Processor, Resolution): they're trade terms, and the spec tables show them in English to customers too.
+
+## Customers pay the shop
+
+57. **Customers pay the shop directly; Gadget Galli makes sure the shop delivers** (migration 0018). The founder's request: collecting every order's money made all of it Gadget Galli's turnover, with more tax. Holding customers' money for shops is also what RBI-authorised payment aggregators do. Now only the commission reaches Gadget Galli. (Tax and RBI points are for the founder to confirm with a CA; this is not legal advice.)
+    - **Two ways to pay**, set when the shop accepts:
+      - **Advance:** the customer pays the shop's UPI ID in the app (button, QR with the exact amount, or the shop's own QR image) and enters the UPI reference. The shop checks its UPI app and taps **Payment received** (or **Not received**, with a reason the customer sees). Only for shops with a UPI ID Gadget Galli has checked, and only up to the shop's limit.
+      - **Pay on delivery:** the customer pays the shop at handover (UPI or cash), or at the shop for a pickup. "No product, no payment." The shop packs straight away and records how the customer paid at handover.
+      - By default the order is advance when the shop's limit allows it and the order is delivered; otherwise pay on delivery. The shop can always choose pay on delivery when accepting.
+    - **Advance limits** (the founder's choice: advance for every shop that has earned it):
+      - **New** (not verified): pay on delivery only.
+      - **Verified:** up to ₹10,000.
+      - **Trusted** (25+ deliveries, 4.3★ or better, no open complaints): up to ₹50,000.
+      - Both limits and the trusted thresholds are settings (Admin → Payments → Settings). An admin can also set one shop's own limit (0 turns advance off) on its page.
+    - **Protection for advance payments:**
+      - **Delivery code:** every order has a 4-digit code (in `private.order_codes`, which no API or shop can read). The customer sees it once the order is sent and gives it only with the product in hand. The shop or rider enters it at handover (`shop_mark_delivered`); 5 wrong tries lock it for 30 minutes. Otherwise the customer taps "I received my order". Orders paid to the shop are never marked delivered automatically.
+      - **Send-by time** once paid: paid before 9 AM → by 1 PM; 9 AM to 5 PM → within 4 hours; after 5 PM → by 1 PM next day (IST).
+      - **Overdue alerts** (order jobs, every 5 minutes): a payment the shop hasn't confirmed in 2 hours, an order not sent by its send-by time, or not delivered 2 days after sending. Each alerts the customer, the shop (loud alarm) and the admins once. The customer can then report it even while a payment is unconfirmed.
+      - **Advance pauses** while the shop has an overdue order, an open "paid but not sent" / "not received" complaint, or a strike: its new orders are paid on delivery.
+      - **Refunds:** a shop that can't deliver a paid order refunds the customer by UPI and records the reference (`shop_cancel_order`); the customer is told the reference and can contact support if it doesn't arrive.
+      - **Strikes** (admin, on the shop page) for a proven "paid but not delivered or refunded": 1 turns advance off, 2 suspend the shop. Clearing them is an admin action too.
+    - **Commission** (the founder's choice: a % on delivered orders): `commission_pct` of each delivered order paid to a shop becomes **due**; a reported problem holds it, a cancellation removes it. The shop pays everything due from **Commission & payments** in the Shop Partner app (Gadget Galli's UPI ID and QR from Settings) and enters the reference. An admin confirms it (Admin → Payments → Commission), rejects it with a reason, or records one paid in cash. 0% (the default) means nothing is due.
+    - **Older orders** placed before 0018 were paid to Gadget Galli (#52) and finish that way: admin payment check, payouts to shops, delivery 72 hours after sending. Requests no shop had accepted yet switched to the new flow.
+    - Code: `supabase/migrations/20261024000018_pay_the_shop.sql` (tests `11_pay_the_shop.test.sql`); customer `OrderScreen.tsx`, `PayCard.tsx`, `OrderProtection.tsx`; partner `OrderScreen.tsx`, `orderSheets.tsx`, `PayoutsScreen.tsx`; admin `PaymentsPage.tsx`, `ShopDetailPage.tsx`.
+

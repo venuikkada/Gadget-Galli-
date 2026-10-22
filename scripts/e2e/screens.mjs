@@ -360,7 +360,7 @@ await step('admin: content — new banner, featured shop, push campaign, referra
   await a.goto(`${ADMIN}/content?tab=referrals`);
   await a.getByText('Joined with a code').waitFor();
 });
-await step('admin: payment settings — UPI, QR image upload and bank account', async () => {
+await step('admin: payment settings — UPI, QR image, bank account, commission and advance limits', async () => {
   await a.goto(`${ADMIN}/payments?tab=settings`);
   await a.getByTestId('settings-bank-ifsc').waitFor({ timeout: 15000 });
   if ((await a.getByTestId('settings-bank-ifsc').inputValue()) !== 'HDFC0001234') throw new Error('bank IFSC not loaded');
@@ -368,11 +368,39 @@ await step('admin: payment settings — UPI, QR image upload and bank account', 
   await a.getByTestId('settings-bank-ifsc').fill('HDFC123');
   await a.getByText('An IFSC has 11 characters', { exact: false }).waitFor();
   await a.getByTestId('settings-bank-ifsc').fill('HDFC0001234');
+  // The trusted advance limit cannot be below the verified one (docs/DECISIONS.md #57)
+  if ((await a.getByTestId('settings-limit-verified').inputValue()) !== '10000') throw new Error('advance limit not loaded');
+  await a.getByTestId('settings-limit-trusted').fill('5000');
+  await a.getByText('The trusted limit must be at least the verified one', { exact: false }).waitFor();
+  await a.getByTestId('settings-limit-trusted').fill('50000');
   await a.getByTestId('settings-qr-file').setInputFiles(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
   await a.getByTestId('settings-qr-preview').waitFor({ timeout: 15000 });
   await a.getByTestId('settings-save').click();
-  await a.getByText('Payment details saved', { exact: false }).waitFor({ timeout: 10000 });
+  await a.getByText('Payment settings saved', { exact: false }).waitFor({ timeout: 10000 });
   await ashot('03b-payment-settings');
+});
+
+await step('admin: a shop\'s advance limit and strikes', async () => {
+  await a.goto(`${ADMIN}/shops?status=approved`);
+  await a.getByText('Uppal Tech Point').first().click();
+  await a.getByTestId('shop-trust').waitFor({ timeout: 15000 });
+  await a.getByTestId('shop-trust').getByText('New: pay on delivery').waitFor();
+  await a.getByTestId('shop-limit').fill('5000');
+  await a.getByTestId('shop-trust').getByRole('button', { name: 'Save' }).click();
+  await a.getByText('Advance limit saved').waitFor({ timeout: 10000 });
+  await a.getByTestId('shop-trust').getByText('₹5,000').first().waitFor({ timeout: 10000 });
+  await a.getByTestId('add-strike').click();
+  await a.locator('textarea').last().fill('Order GG-26-009999: paid in advance, not delivered or refunded.');
+  await a.getByRole('button', { name: 'Add strike' }).click();
+  await a.getByText('Strike added').waitFor({ timeout: 10000 });
+  await a.getByTestId('shop-trust').getByText('1 strike', { exact: true }).waitFor({ timeout: 10000 });
+  await ashot('03c-shop-trust');
+  // Clear it again so other tests see the shop as before
+  await a.getByRole('button', { name: 'Clear strikes' }).click();
+  await a.getByText('Strikes cleared').waitFor({ timeout: 10000 });
+  await a.getByTestId('shop-limit').fill('');
+  await a.getByTestId('shop-trust').getByRole('button', { name: 'Save' }).click();
+  await a.getByText('Advance limit saved').waitFor({ timeout: 10000 });
 });
 
 await step('admin: areas — add an area; waitlist shows the notify-me request', async () => {

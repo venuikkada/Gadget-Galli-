@@ -24,7 +24,8 @@ mkdirSync(OUT, { recursive: true });
 
 // The story: Ravi (Kukatpally) orders an iPhone 15 from Hitech Gadget Hub, which is open 24 hours in the demo
 // data, so the tour also runs at night.
-const PRODUCT = 'Apple iPhone 15 (128 GB, Black)';
+// Under Hitech's ₹50,000 advance limit (a trusted shop), so Ravi pays the shop in advance by UPI (docs/DECISIONS.md #57)
+const PRODUCT = 'Nothing Phone (3a) 5G (8 GB/128 GB, White)';
 const SHOP = 'Hitech Gadget Hub';
 const SHOP_PHONE = '9000010003';
 
@@ -135,10 +136,10 @@ await step('customer login', async () => {
 
 await step('search with a typo', async () => {
   await visit(customer, '/search');
-  await customer.getByTestId('search-input').fill('iphon 15');
+  await customer.getByTestId('search-input').fill('nothng phone 3a');
   await customer.keyboard.press('Enter');
   await customer.getByText(PRODUCT).first().waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-02-search', 'Search that forgives typos', 'He types “iphon 15”. The app still finds the iPhone 15 and shows the shops that have it, all of which deliver to him.', 'Customer');
+  await shot(customer, 'order', 'o-02-search', 'Search that forgives typos', 'He types “nothng phone 3a”. The app still finds the Nothing Phone (3a) and shows the shops that have it, all of which deliver to him.', 'Customer');
 });
 
 await step('compare shops', async () => {
@@ -184,63 +185,70 @@ await step('shop opens and accepts the order', async () => {
   await shot(shop, 'order', 'o-07-shop-order', 'Order details', 'The owner sees the items, the customer, the address and the distance, with one big button for the next step.', 'Shop');
   await shop.getByTestId('step-accept').click();
   await shop.getByTestId('confirm-order').waitFor();
-  await shot(shop, 'order', 'o-08-accept', 'Accept the order', 'He accepts it. If they agreed a different price on the call, he can change the price or quantity first.', 'Shop');
+  await shop.getByTestId('confirm-payment-mode').waitFor();
+  await shot(shop, 'order', 'o-08-accept', 'Accept the order', 'He accepts it, changing the price first if they agreed one on the call. As a trusted shop he can take the payment in advance (up to its limit) or let Ravi pay on delivery.', 'Shop');
   await shop.getByTestId('confirm-order').click();
   await shop.getByTestId('awaiting-payment').waitFor({ timeout: 15000 });
 });
 
-await step('customer pays Gadget Galli by UPI', async () => {
+await step('customer pays the shop by UPI', async () => {
   await visit(customer, `/order/${orderId}`);
   await customer.getByTestId('pay-upi').waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-09-pay', 'Pay Gadget Galli: UPI or bank', 'Ravi pays Gadget Galli, not the shop: one tap opens any UPI app, he scans the QR, or he sends a bank transfer with the details shown. His money is safe until the phone reaches him.', 'Customer');
+  await shot(customer, 'order', 'o-09-pay', 'Pay the shop by UPI', `Ravi pays ${SHOP} directly: one tap opens any UPI app, or he scans the QR. Gadget Galli protects the payment: the shop must send it on time or refund him.`, 'Customer');
   await customer.getByTestId('payment-ref').fill('412345678901');
   await customer.getByTestId('payment-done').click();
   await customer.getByTestId('payment-verifying').waitFor({ timeout: 15000 });
 });
 
-await step('Gadget Galli confirms the payment', async () => {
-  const actx = await browser.newContext({ ...india, viewport: { width: 1440, height: 900 } });
-  const admin = await actx.newPage();
-  await admin.goto(`${ADMIN}/login`);
-  await admin.getByTestId('login-email').fill('admin@gadgetgalli.in');
-  await admin.getByTestId('login-password').fill('GadgetGalli@2026');
-  await admin.getByTestId('login-submit').click();
-  await admin.getByText('Orders today').waitFor({ timeout: 15000 });
-  await admin.goto(`${ADMIN}/payments`);
-  await admin.getByTestId(`confirm-payment-${orderNo}`).click();
-  await admin.getByText('Payment confirmed.', { exact: false }).waitFor({ timeout: 10000 });
-  await actx.close();
+await step('shop checks its UPI app and confirms the payment', async () => {
+  await visit(shop, `/partner/order/${orderId}`, orderNo);
+  await dismissAlerts(shop);
+  await shop.getByTestId('payment-claimed').waitFor({ timeout: 15000 });
+  await shot(shop, 'order', 'o-10-paid', 'Customer paid: check and confirm', 'The shop’s phone rings: the customer has paid. The owner checks his UPI app and taps Payment received.', 'Shop');
+  await shop.getByTestId('step-payment-received').click();
+  await shop.getByText('Yes, received', { exact: true }).click();
+  await shop.getByTestId('send-by').waitFor({ timeout: 15000 });
 });
 
 await step('shop packs and sends the order', async () => {
-  await visit(shop, `/partner/order/${orderId}`, orderNo);
   await dismissAlerts(shop);
-  await shop.getByTestId('paid-to-gg').waitFor({ timeout: 15000 });
-  await shot(shop, 'order', 'o-10-paid', 'Paid to Gadget Galli', 'Gadget Galli checks the payment and tells the shop to pack and send. The shop is paid after the customer receives the order.', 'Shop');
   await shop.getByTestId('step-packed').waitFor({ timeout: 15000 });
-  await dismissAlerts(shop);
   await shop.getByTestId('step-packed').click();
   await shop.getByTestId('mark-packed').click();
   await shop.getByTestId('step-send').waitFor({ timeout: 15000 });
   await shop.getByTestId('step-send').click();
   await shop.getByTestId('service-rapido').click();
   await shop.getByTestId('rider-name').fill('Ramesh');
-  await shot(shop, 'order', 'o-11-send', 'Send it', 'He packs the phone and sends it with Porter, Rapido, Uber or his own rider. The app opens those apps for him.', 'Shop');
+  await shot(shop, 'order', 'o-11-send', 'Send it on time', 'Paid in advance, the order has a send-by time. He packs the phone and sends it with Porter, Rapido, Uber or his own rider.', 'Shop');
   await shop.getByTestId('dispatch-order').click();
   await shop.getByText('Dispatched').first().waitFor({ timeout: 15000 });
 });
 
-await step('customer receives and reviews', async () => {
+let deliveryCode = '';
+await step('customer gets a delivery code', async () => {
   await visit(customer, `/order/${orderId}`, 'Rapido');
-  await shot(customer, 'order', 'o-12-on-the-way', 'On the way', 'Ravi sees the rider’s details and the full timeline of his order.', 'Customer');
-  await customer.getByTestId('received').click();
-  await customer.getByText('Yes, received', { exact: true }).click();
+  deliveryCode = (await customer.getByTestId('delivery-code').innerText()).trim();
+  await shot(customer, 'order', 'o-12-on-the-way', 'On the way, with a delivery code', 'Ravi sees the rider’s details, the timeline and his 4-digit delivery code. He gives the code only when the phone is in his hands.', 'Customer');
+});
+
+await step('shop hands over with the code', async () => {
+  await visit(shop, `/partner/order/${orderId}`, orderNo);
+  await dismissAlerts(shop);
+  await shop.getByTestId('step-handover').click();
+  await shop.getByTestId('handover-code').fill(deliveryCode);
+  await shot(shop, 'order', 'o-13-handover', 'Hand over with the code', 'At the door, the rider or the owner enters Ravi’s code. That is the proof of delivery.', 'Shop');
+  await shop.getByTestId('handover-done').click();
+  await shop.getByText('Delivered').first().waitFor({ timeout: 15000 });
+});
+
+await step('customer reviews', async () => {
+  await visit(customer, `/order/${orderId}`);
   await customer.getByTestId('rate-order').waitFor({ timeout: 15000 });
-  await shot(customer, 'order', 'o-13-delivered', 'Delivered', 'When the phone arrives, he taps “I received my order”.', 'Customer');
+  await shot(customer, 'order', 'o-14-delivered', 'Delivered', 'The order is delivered: handed over with his code (or he taps “I received my order” himself).', 'Customer');
   await customer.getByTestId('rate-order').click();
   await customer.getByLabel('5 stars').click();
   await customer.locator('textarea').first().fill('Sealed box with GST bill, delivered in about an hour. Good price.');
-  await shot(customer, 'order', 'o-14-review', 'Rate the shop', 'Then he rates the shop. Only customers with delivered orders can review, so ratings are real.', 'Customer');
+  await shot(customer, 'order', 'o-15-review', 'Rate the shop', 'Then he rates the shop. Only customers with delivered orders can review, so ratings are real.', 'Customer');
   await customer.getByText('Submit review', { exact: true }).click();
   await customer.waitForTimeout(1500);
 });
@@ -320,6 +328,9 @@ await step('shop tour', async () => {
   await visit(shop, '/partner/insights', 'Demand near you');
   await dismissAlerts(shop);
   await shot(shop, 'partner', 'p-insights', 'Insights', 'Sales, top products and speed, plus “Demand near you”: what people nearby searched for that the shop doesn’t list yet.');
+  await visit(shop, '/partner/payouts', 'Commission');
+  await shop.getByTestId('commission-due').waitFor({ timeout: 15000 });
+  await shot(shop, 'partner', 'p-commission', 'Commission & payments', 'Customers pay the shop directly. Gadget Galli’s commission on delivered orders builds up here, and the owner pays it by UPI in one go.');
   await visit(shop, '/partner/reviews');
   await dismissAlerts(shop);
   await shop.getByText('Not replied', { exact: false }).first().waitFor({ timeout: 15000 });
@@ -402,10 +413,15 @@ await step('admin tour', async () => {
   await shot(admin, 'admin', 'a-shops', 'Shops', 'All shops with status, Verified badge, rating and orders. Warn or suspend a shop when needed.');
   await go('/orders', orderNo);
   await shot(admin, 'admin', 'a-orders', 'Orders', 'Every order with filters. Orders that are stuck are flagged automatically.');
-  await go('/payments?tab=due', 'Mark ');
-  await shot(admin, 'admin', 'a-payments', 'Payments and payouts', 'Check each customer’s UPI payment against the bank, then pay shops after delivery: scan the shop’s QR for the exact total and record the reference.');
-  await go('/payments?tab=settings', 'Bank account');
-  await shot(admin, 'admin', 'a-payment-settings', 'Where customers pay', 'Set Gadget Galli’s UPI ID, upload your own QR image and add the bank account for NEFT / IMPS. Customers see them as soon as a shop accepts their order.');
+  await go('/payments?tab=commission', 'Commission due by shop');
+  await shot(admin, 'admin', 'a-payments', 'Commission', 'Customers pay shops directly. Shops pay Gadget Galli its commission on delivered orders from the app; check each payment against your bank and confirm it, or record one paid in cash.');
+  await go('/payments?tab=settings', 'Advance limit');
+  await shot(admin, 'admin', 'a-payment-settings', 'Commission and advance limits', 'Set the commission %, how much customers may pay verified and trusted shops in advance, and Gadget Galli’s UPI ID, QR and bank account where shops pay you.');
+  await go('/shops?status=approved', SHOP);
+  await admin.getByText(SHOP).first().click();
+  await admin.getByTestId('shop-trust').waitFor({ timeout: 15000 });
+  await admin.getByTestId('shop-trust').scrollIntoViewIfNeeded();
+  await shot(admin, 'admin', 'a-shop-trust', 'Advance limits and strikes', 'Each shop’s trust level and advance limit. A strike for a paid order that was not delivered or refunded turns advance payments off; a second one suspends the shop.');
   await go(`/orders/${orderId}`, 'Timeline');
   await shot(admin, 'admin', 'a-order', 'Order timeline', 'Each step with time and who did it, including payment and packing photos. Admins can step in with a note.');
   await go('/problems', 'GG-');

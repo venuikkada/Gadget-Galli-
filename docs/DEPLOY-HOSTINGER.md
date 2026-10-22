@@ -75,9 +75,9 @@ If a website still shows **http://** or a security warning, turn on SSL for it i
 
 | Website | Log in with | Try this |
 |---|---|---|
-| Customer app | `+91 90000 00001`, OTP `123456` (Ravi, Kukatpally) | Search `iphon 15`, compare shops, order on WhatsApp |
-| Shop Partner app | `+91 90000 10002`, OTP `123456` (KPHB Computer World) | Accept the order; after Gadget Galli confirms the payment, mark it packed and sent; see payouts |
-| Admin panel | The email and password you set in step 2.3 | Confirm the customer's payment in **Payments**, watch the order, pay the shop after delivery, approve shops |
+| Customer app | `+91 90000 00001`, OTP `123456` (Ravi, Kukatpally) | Search `rtx 4060` and order a card from KPHB Computer World. Within the shop's advance limit you pay the shop by UPI in the app (any 12-digit reference works in a demo); above it you pay on delivery. Give the 4-digit delivery code at handover |
+| Shop Partner app | `+91 90000 10002`, OTP `123456` (KPHB Computer World) | Accept the order (advance or pay on delivery), tap **Payment received**, pack and send, then **Hand over with code**; pay the commission in **Commission & payments** |
+| Admin panel | The email and password you set in step 2.3 | Watch the order, confirm a shop's commission in **Payments → Commission**, set advance limits and strikes on a shop's page, approve shops |
 
 Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 90000 10001` to `10016`, and `+91 90000 19999` to register a new shop. They all use OTP `123456`.
 
@@ -89,7 +89,8 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 
 ## Good to know
 
-- **Set where customers pay before taking orders:** Admin → **Payments → Settings** (super admin): your UPI ID, your own QR image (optional) and your bank account for NEFT / IMPS. Until one of them is saved, customers see "payment details are being set up" and cannot pay. Keep the admin panel open: each new payment rings. Check each payment in your bank app before tapping **Payment received**, and pay shops from **Payouts due** after delivery.
+- **Customers pay shops directly** ([DECISIONS.md](DECISIONS.md) #57): in advance by UPI to verified shops (up to ₹10,000, or ₹50,000 for trusted shops), otherwise on delivery. Shops confirm payments themselves; Gadget Galli watches late paid orders (they show as overdue on the Dashboard and in Orders → Stuck).
+- **Set where shops pay your commission:** Admin → **Payments → Settings** (super admin): your UPI ID, your own QR image (optional), your bank account, the commission % (0 by default) and the advance limits. Confirm each shop's commission payment in **Payments → Commission** after checking your bank app. Older orders paid to Gadget Galli keep their **Older: to verify** and **payouts** tabs until they are finished.
 - **Anyone with the links can use the demo logins.** Keep this project for demos only, with the fictional demo data.
 - **Supabase's free projects pause after a week with no activity.** Open the Supabase dashboard to wake the project up.
 - **The web Shop Partner app rings for new orders only while it is open in the browser.** For the loud alarm with the phone locked, shops need the Android app (see [SETUP.md](SETUP.md), section 4).
