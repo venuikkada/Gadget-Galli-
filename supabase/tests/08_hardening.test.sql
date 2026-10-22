@@ -25,7 +25,7 @@ begin
     assert not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and (p.proname like 'admin\_%' or p.proname like 'cart\_%' or p.proname like 'shop\_%' or p.proname = 'place_order')
-         and p.proname not in ('shop_catalog', 'shop_reviews', 'shop_is_public')
+         and p.proname not in ('shop_catalog', 'shop_reviews', 'shop_is_public', 'shop_payment_terms')
          and has_function_privilege('anon', p.oid, 'execute')
     ), 'anon can run a signed-in function';
     assert not has_function_privilege('anon', 'private.hit_limit(text, int, interval)', 'execute'), 'anon can run private helpers';

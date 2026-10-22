@@ -1,6 +1,24 @@
--- Customers pay Gadget Galli; shops are paid after delivery (20261020000014_platform_payments.sql)
+-- Orders placed before 20261024000018 were paid to Gadget Galli and shops were paid after delivery
+-- (20261020000014_platform_payments.sql). They still finish on that flow.
 \ir _prelude.sql
 begin;
+
+-- Turn the demo orders into such older orders: paid to Gadget Galli (one payment waiting to be checked), payouts
+-- paid for orders delivered over 3 days ago, due for recent ones and held while a problem is open
+update public.orders set payee = 'gadget_galli', payment_mode = case when confirmed_at is not null then 'advance' end,
+       commission_status = 'none', commission_amount = null, commission_payment_id = null, overdue_reason = null, overdue_at = null;
+delete from public.commission_payments;
+update public.orders set payment_claimed_at = null where status = 'CONFIRMED';
+update public.orders set payment_ref = '415628930417', payment_method = 'upi', payment_claimed_at = confirmed_at + interval '6 minutes'
+ where id = (select id from public.orders where status = 'CONFIRMED' order by confirmed_at desc limit 1);
+update public.orders set payout_amount = grand_total, commission_amount = 0,
+       payout_status = case when status = 'ISSUE_REPORTED' then 'held'
+                            when delivered_at < now() - interval '3 days' then 'paid' else 'due' end,
+       payout_ref = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
+                         then 'GGP' || to_char(delivered_at + interval '1 day', 'YYMMDD') || upper(left(md5(shop_id::text), 4)) end,
+       payout_at = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
+                        then date_trunc('day', delivered_at + interval '1 day') + interval '11 hours' end
+ where delivered_at is not null;
 
 -- Settings: only valid UPI IDs and commissions, super admins only
 select pg_temp.act_as('ravi');

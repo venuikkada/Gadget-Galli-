@@ -13,6 +13,8 @@ begin
   perform set_config('test.claimed_owner', (select s.owner_id::text from public.orders o join public.shops s on s.id = o.shop_id where o.id = oid), false);
   perform set_config('test.unpaid', (select id::text from public.orders where status = 'CONFIRMED' and payment_claimed_at is null limit 1), false);
   perform set_config('test.support', (select id::text from public.users where email = 'support@gadgetgalli.in'), false);
+  -- An advance order the customer has not paid yet
+  update public.orders set payment_mode = 'advance' where id = current_setting('test.unpaid')::uuid;
 end $$;
 
 -- After "I have paid": the customer cannot cancel or report a problem, and the shop cannot reject
@@ -67,14 +69,18 @@ select public.admin_block_user(current_setting('test.support')::uuid, true);
 select public.admin_block_user(current_setting('test.support')::uuid, false);
 reset role;
 
--- The shop dashboard only asks for attention on orders the shop can act on
-select pg_temp.act_as('kphb_owner');
+-- The shop dashboard only asks for attention on orders the shop can act on: a payment to check, yes; an advance
+-- order the customer has not paid yet, no
+select pg_temp.act_as('claimed_owner');
 set role authenticated;
 do $$
 declare
-  d jsonb := public.shop_dashboard(current_setting('test.kphb')::uuid);
+  d jsonb := public.shop_dashboard((select shop_id from public.orders where id = current_setting('test.claimed')::uuid));
 begin
-  assert not exists (select 1 from jsonb_array_elements(d->'attention') e where e->>'status' = 'CONFIRMED'),
+  assert exists (select 1 from jsonb_array_elements(d->'attention') e where e->>'id' = current_setting('test.claimed')),
+    'a payment the shop has to check needs its attention';
+  assert not exists (select 1 from jsonb_array_elements(d->'attention') e
+                     where e->>'status' = 'CONFIRMED' and e->>'payment_mode' = 'advance' and e->>'payment_claimed_at' is null),
     'orders waiting for the customer to pay need no attention from the shop';
 end $$;
 reset role;

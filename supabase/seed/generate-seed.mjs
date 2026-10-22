@@ -428,9 +428,14 @@ function lineFor(listing, qty, withInst = false) {
   };
 }
 
+// Customers pay the shop (supabase/migrations/20261024000018_pay_the_shop.sql): in advance to verified shops up to
+// ₹10,000, or ₹50,000 for trusted shops with a long delivery record; otherwise on delivery.
+const TRUSTED = { kphb: 140, hitech: 95, deccan: 70, banjara: 60, cyber: 48, secureeye: 40, dsnr: 35, mehdi: 30, sai: 28, miyapur: 26 };
+const advanceLimit = (key) => (!shopById[key].verified ? 0 : TRUSTED[key] ? 50000 : 10000);
+
 /**
  * spec: {customer, shop, status, ago (minutes since request), items: [[mn|null, qty]], method, pickup, review, issue,
- *        beforeIssue, updated, reject, cancel}
+ *        beforeIssue, updated, reject, cancel, mode ('advance' | 'on_delivery'), deliveredBy ('customer' | 'shop')}
  */
 function addOrder(spec) {
   onum += 1;
@@ -444,6 +449,11 @@ function addOrder(spec) {
     let l = mn ? listings.find((x) => x.product.mn === mn && x.condition === 'new') : null;
     if (!l) l = pick(listings.filter((x) => !items.some((i) => i.shop_product_id === x.id)));
     items.push(lineFor(l, qty, !!inst && !!l.instCharge));
+  }
+  // A discount agreed on the call
+  if (spec.priceCut) {
+    items[0].price -= spec.priceCut;
+    items[0].line_total -= spec.priceCut * items[0].qty;
   }
   const itemTotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const instTotal = items.reduce((s, i) => s + (i.with_installation ? (i.installation_charge ?? 0) * i.qty : 0), 0);
@@ -459,10 +469,10 @@ function addOrder(spec) {
   const grand = itemTotal + instTotal + charge;
   const orderNo = `GG-26-${String(1000 + onum).padStart(6, '0')}`;
 
-  // timeline (minutes after request)
+  // timeline (minutes after request). Orders paid on delivery skip PAID; the gap is kept so the random draws stay the same.
   const flow = ['REQUESTED', 'CONFIRMED', 'PAID', 'PACKED', 'DISPATCHED', 'DELIVERED'];
   const T = spec.ago;
-  const gaps = { CONFIRMED: between(4, 12), PAID: between(6, 18), PACKED: between(5, 15), DISPATCHED: between(8, 25), DELIVERED: spec.autoDelivered ? 72 * 60 : between(25, 90) };
+  const gaps = { CONFIRMED: between(4, 12), PAID: between(6, 18), PACKED: between(5, 15), DISPATCHED: between(8, 25), DELIVERED: between(25, 90) };
   const at = { REQUESTED: T };
   let cursor = T;
   const finalFlow = spec.status === 'ISSUE_REPORTED' ? spec.beforeIssue : spec.status;
@@ -471,6 +481,10 @@ function addOrder(spec) {
     cursor -= gaps[flow[i]];
     at[flow[i]] = Math.max(cursor, 1);
   }
+  const mode = reach < 1 ? null : spec.mode ?? (!pickup && grand <= advanceLimit(spec.shop) ? 'advance' : 'on_delivery');
+  if (mode === 'on_delivery' && finalFlow === 'PAID') throw new Error(`order ${onum}: a PAID order must be paid in advance (total ${grand})`);
+  const deliveredBy = at.DELIVERED == null ? null
+    : spec.deliveredBy ?? (mode === 'on_delivery' ? (onum % 4 === 0 ? 'customer' : 'shop') : onum % 3 === 0 ? 'shop' : 'customer');
   const ts = (s) => (at[s] != null ? ago(at[s]) : 'null');
   const address = pickup ? null : { name: cust.name, label: 'home', house: addr.house, building: addr.building || null, street: addr.street, landmark: addr.landmark, area: addr.area.name, pincode: addr.area.pincode, lat: addr.lat, lng: addr.lng };
 
@@ -489,42 +503,59 @@ function addOrder(spec) {
     at.ISSUE_REPORTED = Math.max(1, (at[spec.beforeIssue] ?? 10) - between(10, 60));
   }
 
-  orderRows.push(`  (${q(id)}, ${q(orderNo)}, ${q(custId)}, ${q(shop.id)}, ${q(spec.status)}, ${q(spec.status === 'ISSUE_REPORTED' ? spec.beforeIssue : null)}, ${q(spec.method ?? 'call')}, ${q(pickup ? 'pickup' : 'delivery')}, ${js(items)}, ${itemTotal}, ${instTotal}, ${charge}, ${grand}, ${q(cust.name)}, ${address ? js(address) : 'null'}, ${pickup ? 'null' : addr.area.id}, ${pickup ? 'null' : km}, ${q(spec.note ?? null)}, ${js({ name: shop.name, upi_id: shop.upi })}, ${!!spec.updated}, ${q(spec.reject ?? null)}, ${q(spec.cancel ?? null)}, ${q(at.DELIVERED != null && spec.status !== 'ISSUE_REPORTED' ? (spec.autoDelivered ? 'auto' : 'customer') : spec.status === 'ISSUE_REPORTED' && spec.beforeIssue === 'DELIVERED' ? 'customer' : null)}, ${ts('REQUESTED')}, ${ts('CONFIRMED')}, ${ts('PAID')}, ${ts('PACKED')}, ${ts('DISPATCHED')}, ${ts('DELIVERED')}, ${endCol === 'rejected_at' ? endTs : 'null'}, ${endCol === 'cancelled_at' ? endTs : 'null'}, ${endCol === 'expired_at' ? endTs : 'null'}, ${at.ISSUE_REPORTED != null ? ago(at.ISSUE_REPORTED) : 'null'}, ${ago(T)})`);
+  const paidAt = mode === 'on_delivery' ? (at.DELIVERED != null ? ts('DELIVERED') : 'null') : ts('PAID');
+  orderRows.push(`  (${q(id)}, ${q(orderNo)}, ${q(custId)}, ${q(shop.id)}, ${q(spec.status)}, ${q(spec.status === 'ISSUE_REPORTED' ? spec.beforeIssue : null)}, ${q(spec.method ?? 'call')}, ${q(pickup ? 'pickup' : 'delivery')}, ${js(items)}, ${itemTotal}, ${instTotal}, ${charge}, ${grand}, ${q(cust.name)}, ${address ? js(address) : 'null'}, ${pickup ? 'null' : addr.area.id}, ${pickup ? 'null' : km}, ${q(spec.note ?? null)}, ${js({ name: shop.name, upi_id: shop.upi })}, ${!!spec.updated}, ${q(spec.reject ?? null)}, ${q(spec.cancel ?? null)}, ${q(deliveredBy)}, 'shop', ${q(mode)}, ${ts('REQUESTED')}, ${ts('CONFIRMED')}, ${paidAt}, ${ts('PACKED')}, ${ts('DISPATCHED')}, ${ts('DELIVERED')}, ${endCol === 'rejected_at' ? endTs : 'null'}, ${endCol === 'cancelled_at' ? endTs : 'null'}, ${endCol === 'expired_at' ? endTs : 'null'}, ${at.ISSUE_REPORTED != null ? ago(at.ISSUE_REPORTED) : 'null'}, ${ago(T)})`);
 
   // events
-  const ev = (from, to, actorId, role, note, when, meta = {}) =>
-    eventRows.push(`  (${q(id)}, ${q(from)}, ${q(to)}, ${actorId ? q(actorId) : 'null'}, ${q(role)}, ${q(note)}, ${js(meta)}, ${ago(when)})`);
-  ev(null, 'REQUESTED', custId, 'customer', spec.method === 'whatsapp' ? 'Customer sent the order on WhatsApp' : 'Customer is calling the shop', at.REQUESTED, { contact_method: spec.method ?? 'call' });
+  let last = null;
+  const ev = (to, actorId, role, note, when, meta = {}) => {
+    eventRows.push(`  (${q(id)}, ${q(last)}, ${q(to)}, ${actorId ? q(actorId) : 'null'}, ${q(role)}, ${q(note)}, ${js(meta)}, ${ago(when)})`);
+    last = to;
+  };
+  ev('REQUESTED', custId, 'customer', spec.method === 'whatsapp' ? 'Customer sent the order on WhatsApp' : 'Customer is calling the shop', at.REQUESTED, { contact_method: spec.method ?? 'call' });
   const service = pickup ? 'store_pickup' : spec.service ?? pick(['porter', 'rapido', 'porter', 'own', 'uber']);
   const rider = pick(RIDERS);
-  // Payments are UPI to Gadget Galli only. The old cash-or-UPI draw is kept so the rest of the demo data stays the same.
+  // Pickups paid at the shop are half cash, half UPI
   const wasCash = pickup && rnd() < 0.5;
-  const payMethod = 'upi';
+  let doorTxn = null;
   for (let i = 1; i <= reach; i++) {
     const s = flow[i];
-    const prev = flow[i - 1];
-    if (s === 'CONFIRMED') ev(prev, s, ownerId, 'shop', spec.updated ? 'Shop updated the order after the call' : 'Confirmed on call', at[s], { updated: !!spec.updated });
+    if (s === 'CONFIRMED') {
+      ev(s, ownerId, 'shop', `${spec.updated ? 'Shop updated the order after the call' : 'Confirmed on call'}${mode === 'on_delivery' ? ' · Pay on delivery' : ''}`, at[s], { updated: !!spec.updated, payment_mode: mode });
+    }
     if (s === 'PAID') {
       const txn = wasCash ? `4${String(10000000000 + onum * 7919).slice(-11)}` : `4${between(10000000, 99999999)}${between(100, 999)}`;
-      // Customers pay Gadget Galli; an admin confirms the payment (supabase/migrations/20261020000014_platform_payments.sql)
-      ev(prev, s, users.admin.id, 'admin', `Payment received by Gadget Galli · UPI ref ${txn}`, at[s], { method: payMethod, txn_id: txn, paid_to: 'gadget_galli' });
-      paymentRows.push(`  (${q(id)}, ${q(payMethod)}, ${grand}, ${q(txn)}, ${q(users.admin.id)}, ${ago(at[s])})`);
+      if (mode === 'advance') {
+        // The customer paid the shop's UPI ID; the shop checked its UPI app and confirmed
+        ev(s, ownerId, 'shop', `Payment received by the shop · Ref ${txn}`, at[s], { method: 'upi', txn_id: txn, paid_to: 'shop' });
+        paymentRows.push(`  (${q(id)}, 'upi', ${grand}, ${q(txn)}, ${q(ownerId)}, ${ago(at[s])})`);
+      } else {
+        doorTxn = txn;
+      }
     }
-    if (s === 'PACKED') ev(prev, s, ownerId, 'shop', 'Packed', at[s]);
+    if (s === 'PACKED') ev(s, ownerId, 'shop', 'Packed', at[s]);
     if (s === 'DISPATCHED') {
-      ev(prev, s, ownerId, 'shop', pickup ? 'Ready for pickup' : `Sent via ${service[0].toUpperCase()}${service.slice(1)} · ${rider[0]}`, at[s], { service });
+      ev(s, ownerId, 'shop', pickup ? 'Ready for pickup' : `Sent via ${service[0].toUpperCase()}${service.slice(1)} · ${rider[0]}`, at[s], { service });
       dispatchRows.push(`  (${q(id)}, ${q(service)}, ${pickup ? 'null' : q(rider[0])}, ${pickup ? 'null' : q(rider[1])}, ${pickup ? 'null' : q(rider[2])}, ${service === 'porter' ? q(`https://porter.in/track/demo-${onum}`) : 'null'}, ${service === 'porter' || service === 'rapido' ? q(String(between(1000, 9999))) : 'null'}, ${at.DELIVERED ? 'null' : ago(at[s] - 45)}, ${ago(at[s])})`);
     }
     if (s === 'DELIVERED') {
-      ev(prev, s, spec.autoDelivered ? null : custId, spec.autoDelivered ? 'system' : 'customer', spec.autoDelivered ? 'Marked delivered automatically after 72 hours' : 'Customer received the order', at[s]);
+      if (deliveredBy === 'shop') {
+        // The shop entered the customer's delivery code at handover (and, if paid on delivery, how the customer paid)
+        const door = mode === 'on_delivery' ? (wasCash ? ' · Paid in cash' : ` · Paid by UPI · Ref ${doorTxn}`) : '';
+        ev(s, ownerId, 'shop', `Handed over · delivery code checked${door}`, at[s],
+          mode === 'on_delivery' ? { code_checked: true, method: wasCash ? 'cash' : 'upi', txn_id: wasCash ? null : doorTxn } : { code_checked: true });
+        if (mode === 'on_delivery') paymentRows.push(`  (${q(id)}, ${q(wasCash ? 'cash' : 'upi')}, ${grand}, ${wasCash ? 'null' : q(doorTxn)}, ${q(ownerId)}, ${ago(at[s])})`);
+      } else {
+        ev(s, custId, 'customer', 'Customer received the order', at[s]);
+      }
     }
   }
-  if (spec.status === 'REJECTED') ev(flow[reach], 'REJECTED', ownerId, 'shop', spec.reject.replace(/_/g, ' '), at.REJECTED, { reason: spec.reject });
-  if (spec.status === 'CANCELLED') ev(flow[reach], 'CANCELLED', custId, 'customer', spec.cancel, at.CANCELLED);
-  if (spec.status === 'EXPIRED') ev('REQUESTED', 'EXPIRED', null, 'system', 'No response from the shop in 2 hours', at.EXPIRED);
+  if (spec.status === 'REJECTED') ev('REJECTED', ownerId, 'shop', spec.reject.replace(/_/g, ' '), at.REJECTED, { reason: spec.reject });
+  if (spec.status === 'CANCELLED') ev('CANCELLED', custId, 'customer', spec.cancel, at.CANCELLED);
+  if (spec.status === 'EXPIRED') ev('EXPIRED', null, 'system', 'No response from the shop in 2 hours', at.EXPIRED);
   if (spec.status === 'ISSUE_REPORTED') {
     const iid = ID.issue(onum);
-    ev(spec.beforeIssue, 'ISSUE_REPORTED', custId, 'customer', `Problem reported: ${spec.issue.type.replace(/_/g, ' ')}`, at.ISSUE_REPORTED, { issue_id: iid });
+    ev('ISSUE_REPORTED', custId, 'customer', `Problem reported: ${spec.issue.type.replace(/_/g, ' ')}`, at.ISSUE_REPORTED, { issue_id: iid });
     issueRows.push(`  (${q(iid)}, ${q(id)}, ${q(custId)}, ${q(shop.id)}, ${q(spec.issue.type)}, ${q(spec.issue.text)}, 'open', ${ago(at.ISSUE_REPORTED)})`);
   }
   if (spec.review && (spec.status === 'DELIVERED' || (spec.status === 'ISSUE_REPORTED' && spec.beforeIssue === 'DELIVERED'))) {
@@ -540,12 +571,15 @@ const DAY = 1440;
 // ---- The demo scenario customers (Ravi in Kukatpally etc.)
 addOrder({ customer: 'ravi', shop: 'kphb', status: 'DELIVERED', ago: 20 * DAY, items: [['ZT-D40600H-10M', 1]], method: 'call', review: [5, 'Got the RTX 4060 within 50 minutes. Sealed box, GST bill given. Super fast!'] });
 addOrder({ customer: 'ravi', shop: 'cyber', status: 'DISPATCHED', ago: 95, items: [['RTX 5060 8G VENTUS 2X OC', 1]], method: 'whatsapp', service: 'porter', note: 'Need GST bill' });
-addOrder({ customer: 'ravi', shop: 'miyapur', status: 'CONFIRMED', ago: 25, items: [['24115RA8EI', 1], [null, 1]], method: 'call', updated: true });
+// Discount agreed on the call; Ravi has paid in advance and the shop has to check its UPI app
+addOrder({ customer: 'ravi', shop: 'miyapur', status: 'CONFIRMED', ago: 25, items: [['24115RA8EI', 1], [null, 1]], method: 'call', updated: true, priceCut: 1600 });
 addOrder({ customer: 'ravi', shop: 'sai', status: 'CANCELLED', ago: 6 * DAY, items: [['MTP03HN/A', 1]], method: 'call', cancel: 'Found a better colour option elsewhere', reachedBefore: 'CONFIRMED' });
 addOrder({ customer: 'priya', shop: 'hitech', status: 'REQUESTED', ago: 8, items: [['MW123HN/A', 1]], method: 'call', note: 'Please call before 6 PM' });
 addOrder({ customer: 'priya', shop: 'banjara', status: 'DELIVERED', ago: 9 * DAY, items: [['MG6K4HN/A', 1]], method: 'whatsapp', review: [5, 'Doorstep demo and data transfer done. Premium service!'] });
-addOrder({ customer: 'arjun', shop: 'dsnr', status: 'PAID', ago: 260, items: [['Z6Z13A', 1]], method: 'call' });
-addOrder({ customer: 'arjun', shop: 'secureeye', status: 'PACKED', ago: 70, items: [['HIK-4CH-2MP-KIT', 1, true]], method: 'call', note: 'Ground floor house, need installation today' });
+// Paid over 5 hours ago and not sent: overdue (the shop's customers pay on delivery until it is sent)
+addOrder({ customer: 'arjun', shop: 'dsnr', status: 'PAID', ago: 330, items: [['Z6Z13A', 1]], method: 'call' });
+// SecureEye has an open "paid but not sent" complaint, so this newer order is paid on delivery
+addOrder({ customer: 'arjun', shop: 'secureeye', status: 'PACKED', ago: 70, items: [['HIK-4CH-2MP-KIT', 1, true]], method: 'call', note: 'Ground floor house, need installation today', mode: 'on_delivery' });
 addOrder({ customer: 'sneha', shop: 'cyber', status: 'REQUESTED', ago: 42, items: [['DUAL-RTX4060-O8G', 1], [null, 1]], method: 'whatsapp' });
 addOrder({ customer: 'sneha', shop: 'kondapur', status: 'DELIVERED', ago: 3 * DAY, items: [['fq5007AU', 1]], method: 'call', review: true });
 addOrder({ customer: 'farhan', shop: 'mehdi', status: 'PAID', ago: 35, items: [['DS-2CE16D0T-ITPFS', 2, true], ['SRV-CCTV-1', 2]], method: 'call' });
@@ -558,7 +592,7 @@ addOrder({ customer: 'divya', shop: 'uppal', status: 'EXPIRED', ago: 3 * DAY, it
 addOrder({ customer: 'suresh', shop: 'secureeye', status: 'ISSUE_REPORTED', beforeIssue: 'PAID', ago: 26 * 60, items: [['CPP-8CH-24MP-KIT', 1]], method: 'call',
   issue: { type: 'paid_not_sent', text: 'Paid the full amount by UPI yesterday. Shop is not answering calls since morning.' } });
 addOrder({ customer: 'ananya', shop: 'banjara', status: 'CONFIRMED', ago: 15, items: [['MFYP4HN/A', 1]], method: 'whatsapp' });
-addOrder({ customer: 'vikram', shop: 'sai', status: 'DELIVERED', ago: 75 * 60, items: [['MYEC3HN/A', 1], [null, 1]], method: 'call', autoDelivered: true });
+addOrder({ customer: 'vikram', shop: 'sai', status: 'DELIVERED', ago: 75 * 60, items: [['MYEC3HN/A', 1], [null, 1]], method: 'call', deliveredBy: 'shop' });
 addOrder({ customer: 'meena', shop: 'miyapur', status: 'CANCELLED', ago: 2 * DAY, items: [[null, 1]], method: 'call', cancel: 'Ordered by mistake', reachedBefore: 'REQUESTED' });
 
 // ---- Order history across all shops (ratings, "usually delivers in", reports)
@@ -581,30 +615,40 @@ for (let i = 0; i < 70; i++) {
   });
 }
 
-emit(`insert into public.orders (id, order_no, customer_id, shop_id, status, status_before_issue, contact_method, fulfilment, items, item_total, installation_total, delivery_charge, grand_total, customer_name, address, area_id, distance_km, note, shop_snapshot, updated_by_shop, reject_reason, cancel_reason, delivered_by, requested_at, confirmed_at, paid_at, packed_at, dispatched_at, delivered_at, rejected_at, cancelled_at, expired_at, issue_reported_at, created_at) values\n${orderRows.join(',\n')};`);
+emit(`insert into public.orders (id, order_no, customer_id, shop_id, status, status_before_issue, contact_method, fulfilment, items, item_total, installation_total, delivery_charge, grand_total, customer_name, address, area_id, distance_km, note, shop_snapshot, updated_by_shop, reject_reason, cancel_reason, delivered_by, payee, payment_mode, requested_at, confirmed_at, paid_at, packed_at, dispatched_at, delivered_at, rejected_at, cancelled_at, expired_at, issue_reported_at, created_at) values\n${orderRows.join(',\n')};`);
 emit(`select setval('public.order_no_seq', ${1000 + onum + 1});`);
 emit(`insert into public.order_events (order_id, from_status, to_status, actor_id, actor_role, note, meta, created_at) values\n${eventRows.join(',\n')};`);
 emit(`insert into public.dispatch_details (order_id, service, rider_name, rider_phone, vehicle_no, tracking_url, delivery_otp, eta, created_at) values\n${dispatchRows.join(',\n')};`);
 emit(`insert into public.payments_log (order_id, method, amount, upi_txn_id, recorded_by, created_at) values\n${paymentRows.join(',\n')};`);
-// Payments to Gadget Galli and payouts to shops: the UPI reference on paid orders, one payment waiting to be
-// verified, and payouts paid (delivered over 3 days ago), due (recent) or held (problem reported after delivery).
-// Demo payment details (fictional account): customers can pay by UPI or bank transfer.
-emit(`insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '0'),
+// Customers pay the shop: the UPI reference on advance payments (and the one the shop recorded at the door), one
+// advance payment waiting for the shop to check, send-by times (a paid order past its time is overdue), and a 2%
+// commission on delivered orders: paid for orders delivered over a week ago, due since, held while a problem is open.
+// Demo payment details (fictional account) are where shops pay Gadget Galli its commission.
+emit(`insert into public.app_config (key, value) values ('platform_upi_id', 'gadgetgalli@ybl'), ('platform_upi_name', 'Gadget Galli'), ('commission_pct', '2'),
   ('platform_bank_account_name', 'Gadget Galli Technologies'), ('platform_bank_account_number', '000123456789'),
   ('platform_bank_ifsc', 'HDFC0001234'), ('platform_bank_name', 'HDFC Bank, Kukatpally')
   on conflict (key) do update set value = excluded.value;
-update public.orders o set payment_ref = p.upi_txn_id, payment_method = p.method, payment_claimed_at = o.paid_at - interval '4 minutes'
+update public.orders o set payment_ref = p.upi_txn_id, payment_method = p.method,
+       payment_claimed_at = case when o.payment_mode = 'advance' then o.paid_at - interval '4 minutes' end
   from public.payments_log p where p.order_id = o.id;
 update public.orders set payment_ref = '415628930417', payment_method = 'upi', payment_claimed_at = confirmed_at + interval '6 minutes'
- where id = (select id from public.orders where status = 'CONFIRMED' order by confirmed_at desc limit 1);
-update public.orders set payout_amount = grand_total, commission_amount = 0,
-       payout_status = case when status = 'ISSUE_REPORTED' then 'held'
-                            when delivered_at < now() - interval '3 days' then 'paid' else 'due' end,
-       payout_ref = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
-                         then 'GGP' || to_char(delivered_at + interval '1 day', 'YYMMDD') || upper(left(md5(shop_id::text), 4)) end,
-       payout_at = case when status = 'DELIVERED' and delivered_at < now() - interval '3 days'
-                        then date_trunc('day', delivered_at + interval '1 day') + interval '11 hours' end
- where delivered_at is not null;`);
+ where id = (select id from public.orders where status = 'CONFIRMED' and payment_mode = 'advance' order by confirmed_at desc limit 1);
+update public.orders set dispatch_due_at = paid_at + interval '4 hours' where payment_mode = 'advance' and paid_at is not null;
+update public.orders set overdue_reason = 'not_sent', overdue_at = dispatch_due_at
+ where status in ('PAID', 'PACKED') and payment_mode = 'advance' and dispatch_due_at < now();
+update public.orders set commission_amount = round(grand_total * 0.02, 2),
+       commission_status = case when status = 'ISSUE_REPORTED' then 'held' else 'due' end
+ where delivered_at is not null;
+insert into public.commission_payments (shop_id, amount, order_count, method, ref, status, submitted_by, submitted_at, decided_by, decided_at)
+select o.shop_id, sum(o.commission_amount), count(*), 'upi',
+       'GGC' || to_char(max(o.delivered_at), 'YYMMDD') || upper(left(md5(o.shop_id::text), 4)), 'confirmed',
+       s.owner_id, max(o.delivered_at) + interval '1 day', ${q(users.admin.id)}, max(o.delivered_at) + interval '1 day 3 hours'
+  from public.orders o join public.shops s on s.id = o.shop_id
+ where o.commission_status = 'due' and o.delivered_at < now() - interval '7 days'
+ group by o.shop_id, s.owner_id;
+update public.orders o set commission_status = 'paid', commission_payment_id = c.id
+  from public.commission_payments c
+ where c.shop_id = o.shop_id and o.commission_status = 'due' and o.delivered_at < now() - interval '7 days';`);
 emit(`insert into public.reviews (id, order_id, shop_id, customer_id, customer_name, rating, body, shop_reply, shop_replied_at, created_at) values\n${reviewRows.join(',\n')};`);
 emit(`insert into public.issues (id, order_id, customer_id, shop_id, type, description, status, created_at) values\n${issueRows.join(',\n')};`);
 
@@ -612,9 +656,11 @@ emit(`insert into public.issues (id, order_id, customer_id, shop_id, type, descr
 emit(`update public.shops s set
   rating_avg = coalesce((select round(avg(rating)::numeric, 1) from public.reviews r where r.shop_id = s.id), 0),
   rating_count = (select count(*) from public.reviews r where r.shop_id = s.id),
-  orders_delivered = (select count(*) from public.orders o where o.shop_id = s.id and o.delivered_at is not null),
+  -- Long-standing shops delivered orders before this demo history starts (they are "trusted": advance up to ₹50,000)
+  orders_delivered = (select count(*) from public.orders o where o.shop_id = s.id and o.delivered_at is not null)
+                     + case s.id ${Object.entries(TRUSTED).map(([k, n]) => `when ${q(shopById[k].id)} then ${n}`).join(' ')} else 0 end,
   avg_delivery_mins = (select round(avg(extract(epoch from (o.delivered_at - o.confirmed_at)) / 60))::int
-                       from public.orders o where o.shop_id = s.id and o.delivered_by = 'customer'
+                       from public.orders o where o.shop_id = s.id and o.delivered_by in ('customer', 'shop')
                          and o.fulfilment = 'delivery' and o.confirmed_at is not null and o.delivered_at is not null
                        having count(*) >= 3);`);
 
