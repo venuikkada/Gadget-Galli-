@@ -22,7 +22,8 @@ interface Incoming {
   customer_name: string | null;
   grand_total: number;
   /** new = a customer's request; paid = Gadget Galli confirmed the payment, so pack and send */
-  kind: 'new' | 'paid';
+  /** new request; paid (older orders: Gadget Galli confirmed the payment); claimed (the customer says they paid the shop); overdue */
+  kind: 'new' | 'paid' | 'claimed' | 'overdue';
 }
 
 /** The browser's audio element behind expo-audio's web player (expo-audio drops the promise play() returns). */
@@ -170,9 +171,12 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
   });
   useEffect(() => {
     for (const o of waiting.data?.items ?? []) {
-      if (o.status === 'REQUESTED' || o.status === 'PAID') {
-        push({ id: o.id, order_no: o.order_no, customer_name: o.customer_name, grand_total: o.grand_total, kind: o.status === 'PAID' ? 'paid' : 'new' });
-      }
+      const base = { id: o.id, order_no: o.order_no, customer_name: o.customer_name, grand_total: o.grand_total };
+      if (o.status === 'REQUESTED') push({ ...base, kind: 'new' });
+      // The shop marks its own advance payments received, so only Gadget Galli's confirmation (older orders) rings
+      else if (o.status === 'PAID' && o.payee === 'gadget_galli') push({ ...base, kind: 'paid' });
+      else if (o.status === 'CONFIRMED' && o.payee === 'shop' && o.payment_claimed_at) push({ ...base, kind: 'claimed' });
+      if (o.overdue) push({ ...base, kind: 'overdue' });
     }
   }, [waiting.data, push]);
 
@@ -187,7 +191,8 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
         ? { id: String(row.id), order_no: String(row.order_no ?? ''), customer_name: (row.customer_name as string) ?? null, grand_total: Number(row.grand_total ?? 0) }
         : null;
       if (order && payload.eventType === 'INSERT' && row.status === 'REQUESTED') push({ ...order, kind: 'new' });
-      else if (order && payload.eventType === 'UPDATE' && row.status === 'PAID') push({ ...order, kind: 'paid' });
+      else if (order && payload.eventType === 'UPDATE' && row.status === 'PAID' && row.payee === 'gadget_galli') push({ ...order, kind: 'paid' });
+      else if (order && payload.eventType === 'UPDATE' && row.status === 'CONFIRMED' && row.payee === 'shop' && row.payment_claimed_at) push({ ...order, kind: 'claimed' });
       else queryClient.invalidateQueries({ queryKey: ['partner'] });
     },
     !!shopId,
@@ -198,8 +203,10 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
     if (Platform.OS === 'web') return;
     const sub = Notifications.addNotificationReceivedListener((n) => {
       const data = n.request.content.data as Record<string, unknown>;
-      if ((data?.kind === 'new_order' || data?.kind === 'order_paid') && data.order_id) {
-        push({ id: String(data.order_id), order_no: String(data.order_no ?? ''), customer_name: null, grand_total: 0, kind: data.kind === 'order_paid' ? 'paid' : 'new' });
+      const kinds: Record<string, Incoming['kind']> = { new_order: 'new', order_paid: 'paid', payment_claimed: 'claimed', order_overdue: 'overdue' };
+      const kind = typeof data?.kind === 'string' ? kinds[data.kind] : undefined;
+      if (kind && data.order_id) {
+        push({ id: String(data.order_id), order_no: String(data.order_no ?? ''), customer_name: null, grand_total: 0, kind });
       }
     });
     return () => sub.remove();
@@ -242,7 +249,9 @@ export function NewOrderAlert({ shopId }: { shopId: string | undefined }) {
               <Ionicons name="notifications" size={48} color={colors.onAccent} />
             </Animated.View>
           </View>
-          <AppText variant="display" align="center">{current?.kind === 'paid' ? t('p.alert.paidTitle') : t('p.alert.title')}</AppText>
+          <AppText variant="display" align="center">
+            {current?.kind === 'paid' ? t('p.alert.paidTitle') : current?.kind === 'claimed' ? t('p.alert.claimedTitle') : current?.kind === 'overdue' ? t('p.alert.overdueTitle') : t('p.alert.title')}
+          </AppText>
           <AppText variant="h3" align="center">{current?.order_no}</AppText>
           {current?.grand_total ? (
             <AppText variant="body" color="textMuted" align="center">

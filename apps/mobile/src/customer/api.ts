@@ -13,6 +13,7 @@ import type {
   Paged,
   ProductCard,
   ProductPage,
+  PublicPaymentTerms,
   ResolvedLocation,
   ReviewsResult,
   SearchFilters,
@@ -111,6 +112,16 @@ export function useShopPage(id: string | undefined) {
     queryKey: ['shop', id, loc],
     queryFn: () => rpc<ShopPage | null>('get_shop_page', { p_shop_id: id, ...loc }),
     enabled: !!id,
+  });
+}
+
+/** How customers pay this shop: in advance (protected) up to its limit, or on delivery (docs/DECISIONS.md #57). */
+export function useShopPaymentTerms(shopId: string | undefined | null) {
+  return useQuery({
+    queryKey: ['shop-payment-terms', shopId],
+    queryFn: () => rpc<PublicPaymentTerms | null>('shop_payment_terms', { p_shop_id: shopId }),
+    enabled: !!shopId,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -227,7 +238,8 @@ export function useOrderActions(orderId: string) {
     mutationFn: () => rpc<Order>('customer_mark_received', { p_order_id: orderId }),
     onSuccess: afterOrderChange,
   });
-  // "I've paid": the UPI reference of the payment to Gadget Galli, which an admin then confirms.
+  // "I've paid": the UPI reference of the payment to the shop, which the shop then confirms (older orders: to Gadget Galli,
+  // which an admin confirms).
   const submitPayment = useMutation({
     mutationFn: ({ ref, method }: { ref: string; method: 'upi' | 'bank_transfer' }) =>
       rpc<Order>('customer_submit_payment', { p_order_id: orderId, p_ref: ref, p_method: method }),

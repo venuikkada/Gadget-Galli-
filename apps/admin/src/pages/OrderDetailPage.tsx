@@ -88,8 +88,9 @@ function ChangeStatus({ order, onDone }: { order: Order; onDone: (o: Order) => v
 }
 
 /**
- * Payment to Gadget Galli: confirm it once the money shows in the bank, or tell the customer it was not found. The
- * reference is optional here, for a customer who paid but did not enter it in the app.
+ * Older orders paid to Gadget Galli (#52): confirm the payment once the money shows in the bank, or tell the customer it
+ * was not found. Orders paid to the shop (#57): the shop confirms; support steps in only in a dispute, after checking
+ * with the shop. The reference is optional here, for a customer who paid but did not enter it in the app.
  */
 function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order) => void }) {
   const [ref, setRef] = useState('');
@@ -105,8 +106,11 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
           <div className="text-xs text-ink-muted">{formatDateTimeIST(order.payment_claimed_at)}</div>
         </div>
       ) : (
-        <div className="text-sm">Waiting for the customer to pay {formatINR(order.grand_total)} to Gadget Galli.</div>
+        <div className="text-sm">Waiting for the customer to pay {formatINR(order.grand_total)} to {order.payee === 'shop' ? order.shop.name : 'Gadget Galli'}.</div>
       )}
+      {order.payee === 'shop' ? (
+        <div className="text-xs text-ink-muted">The shop confirms payments in its app. Confirm here only after the shop tells you it has the money.</div>
+      ) : null}
       {order.payment_rejected_reason ? <div className="text-xs text-error-ink">Last check: {order.payment_rejected_reason}</div> : null}
       {!order.payment_claimed_at ? (
         <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
@@ -165,6 +169,7 @@ function PaymentActions({ order, onChange }: { order: Order; onChange: (o: Order
 }
 
 const PAYOUT_LABEL = { not_due: 'Not due yet', due: 'Due to the shop', held: 'On hold (problem open)', paid: 'Paid to the shop' } as const;
+const COMMISSION_LABEL = { none: 'None', due: 'Due from the shop', held: 'On hold (problem open)', paid: 'Received' } as const;
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -365,10 +370,39 @@ export default function OrderDetailPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-ink-muted">Not paid yet. Customers pay Gadget Galli by UPI or bank transfer.</p>
+              <p className="text-sm text-ink-muted">
+                {o.payee === 'gadget_galli'
+                  ? 'Not paid yet. This older order is paid to Gadget Galli by UPI or bank transfer.'
+                  : o.payment_mode === 'on_delivery'
+                    ? 'Pay on delivery: the customer pays the shop at handover.'
+                    : `Not paid yet. The customer pays ${o.shop.name} by UPI in advance; the shop confirms it.`}
+              </p>
             )}
-            {o.status === 'CONFIRMED' ? <PaymentActions order={o} onChange={updated} /> : null}
-            {o.payout_status && o.payout_status !== 'not_due' ? (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <Badge tone={o.payee === 'shop' ? 'primary' : 'neutral'}>{o.payee === 'shop' ? 'Paid to the shop' : 'Paid to Gadget Galli (older order)'}</Badge>
+              {o.payment_mode ? <Badge tone={o.payment_mode === 'on_delivery' ? 'success' : 'action'}>{o.payment_mode === 'on_delivery' ? 'Pay on delivery' : 'Advance'}</Badge> : null}
+              {o.overdue ? <Badge tone="error">Overdue</Badge> : null}
+            </div>
+            {o.dispatch_due_at && ['PAID', 'PACKED'].includes(o.status) ? (
+              <div className="mt-2 text-sm">Send by <b>{formatDateTimeIST(o.dispatch_due_at)}</b></div>
+            ) : null}
+            {o.delivery_code && ['PACKED', 'DISPATCHED', 'ISSUE_REPORTED'].includes(o.status) ? (
+              <div className="mt-2 text-sm" data-testid="admin-delivery-code">
+                Delivery code <span className="font-mono text-base font-bold tracking-widest">{o.delivery_code}</span>
+                <div className="text-xs text-ink-muted">Only the customer and Gadget Galli see it. Share it with the shop only after the customer confirms they have the product.</div>
+              </div>
+            ) : null}
+            {o.refund_ref ? (
+              <div className="mt-2 text-sm text-success-ink">Refunded {formatINR(o.refund_amount ?? o.grand_total)} · Ref {o.refund_ref}{o.refunded_at ? ` · ${formatDateTimeIST(o.refunded_at)}` : ''}</div>
+            ) : null}
+            {o.status === 'CONFIRMED' && (o.payee === 'gadget_galli' || o.payment_mode === 'advance') ? <PaymentActions order={o} onChange={updated} /> : null}
+            {o.payee === 'shop' && o.commission_status && o.commission_status !== 'none' ? (
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3 text-sm">
+                <span className="font-semibold">Commission {formatINR(o.commission_amount ?? 0)}</span>
+                <Badge tone={o.commission_status === 'paid' ? 'success' : o.commission_status === 'held' ? 'error' : 'warning'}>{COMMISSION_LABEL[o.commission_status]}</Badge>
+              </div>
+            ) : null}
+            {o.payee === 'gadget_galli' && o.payout_status && o.payout_status !== 'not_due' ? (
               <div className="mt-3 border-t border-line pt-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Shop payout</span>

@@ -40,11 +40,13 @@ export interface AddressSnapshot {
  */
 export const TRANSITIONS: Record<OrderStatus, Partial<Record<OrderStatus, Actor[]>>> = {
   REQUESTED: { CONFIRMED: ['shop'], REJECTED: ['shop'], CANCELLED: ['customer'], EXPIRED: ['system'] },
-  // PAID only by an admin (Confirm payment), which canTransition allows for every move
-  CONFIRMED: { REJECTED: ['shop'], CANCELLED: ['customer'], ISSUE_REPORTED: ['customer'], EXPIRED: ['system'] },
-  PAID: { PACKED: ['shop'], ISSUE_REPORTED: ['customer'] },
-  PACKED: { DISPATCHED: ['shop'], ISSUE_REPORTED: ['customer'] },
-  DISPATCHED: { DELIVERED: ['customer', 'system'], ISSUE_REPORTED: ['customer'] },
+  // The shop marks an advance payment received (PAID) or packs an order paid on delivery straight away (#57)
+  CONFIRMED: { PAID: ['shop'], PACKED: ['shop'], REJECTED: ['shop'], CANCELLED: ['customer'], ISSUE_REPORTED: ['customer'], EXPIRED: ['system'] },
+  // A shop that cannot deliver cancels, refunding a paid order
+  PAID: { PACKED: ['shop'], CANCELLED: ['shop'], ISSUE_REPORTED: ['customer'] },
+  PACKED: { DISPATCHED: ['shop'], CANCELLED: ['shop'], ISSUE_REPORTED: ['customer'] },
+  // The shop hands over with the customer's delivery code; older orders paid to Gadget Galli are delivered automatically
+  DISPATCHED: { DELIVERED: ['customer', 'shop', 'system'], CANCELLED: ['shop'], ISSUE_REPORTED: ['customer'] },
   DELIVERED: { ISSUE_REPORTED: ['customer'] },
   REJECTED: {},
   CANCELLED: {},
@@ -73,22 +75,41 @@ export function flowIndex(status: OrderStatus): number {
   return ORDER_FLOW.indexOf(status);
 }
 
-/** The next step a shop takes, for the big step button. */
-export function nextShopStep(status: OrderStatus): 'confirm' | 'payment' | 'pack' | 'dispatch' | 'await_customer' | null {
-  switch (status) {
+export type ShopStep = 'confirm' | 'await_payment' | 'check_payment' | 'pack' | 'dispatch' | 'handover' | null;
+
+/**
+ * The next step a shop takes, for the big step button (docs/DECISIONS.md #57): an advance payment is waited for, then
+ * checked; an order paid on delivery is packed straight away; a sent order is handed over with the delivery code.
+ * Older orders paid to Gadget Galli wait for Gadget Galli to check the payment.
+ */
+export function nextShopStep(o: {
+  status: OrderStatus;
+  status_before_issue?: OrderStatus | null;
+  payee?: 'shop' | 'gadget_galli';
+  payment_mode?: 'advance' | 'on_delivery' | null;
+  payment_claimed_at?: string | null;
+}): ShopStep {
+  switch (effectiveStatus(o.status, o.status_before_issue)) {
     case 'REQUESTED':
       return 'confirm';
     case 'CONFIRMED':
-      return 'payment';
+      if (o.payee === 'gadget_galli') return 'await_payment';
+      if (o.payment_mode === 'on_delivery') return 'pack';
+      return o.payment_claimed_at ? 'check_payment' : 'await_payment';
     case 'PAID':
       return 'pack';
     case 'PACKED':
       return 'dispatch';
     case 'DISPATCHED':
-      return 'await_customer';
+      return 'handover';
     default:
       return null;
   }
+}
+
+/** How a customer will pay this shop for an order of `total`, before the shop confirms. */
+export function expectedPaymentMode(terms: { advance_limit: number } | null | undefined, total: number, fulfilment: 'delivery' | 'pickup'): 'advance' | 'on_delivery' {
+  return fulfilment === 'delivery' && !!terms && terms.advance_limit > 0 && total > 0 && total <= terms.advance_limit ? 'advance' : 'on_delivery';
 }
 
 /** Until the customer says they paid; then support handles a cancellation and refund (docs/DECISIONS.md #55). */
@@ -173,7 +194,7 @@ export function buildWhatsAppOrderMessage(o: WhatsAppOrderInput): string {
   }
   if (o.note) lines.push(`Note: ${o.note}`);
   lines.push('');
-  lines.push('Please confirm availability. I will pay Gadget Galli in the app after you confirm.');
+  lines.push('Please confirm availability. I will pay as shown in the Gadget Galli app after you confirm.');
   return lines.join('\n');
 }
 

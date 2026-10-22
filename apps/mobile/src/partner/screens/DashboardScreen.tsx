@@ -6,17 +6,16 @@ import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { chartColors, formatINR, formatINRCompact } from '@gg/shared';
+import { chartColors, formatINR, formatINRCompact, type PaymentTerms } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
 import { useTranslation } from '@/shared/i18n';
-import { tDateTime } from '@/shared/i18n/format';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { shadow } from '@/shared/theme/tokens';
 import { AppText, BrandGradient, Button, Card, ErrorState, IconButton, InfoBanner, Row, Screen, ShopAvatar, Skeleton, toast } from '@/shared/ui';
 
-import { setShopOpen, useDashboard, useMyShop, usePayouts } from '../api';
+import { setShopOpen, useDashboard, useMyShop } from '../api';
 import { PartnerOrderRow } from '../components/PartnerOrderRow';
 
 function Stat({ label, value, icon, tone, highlight }: { label: string; value: string | number; icon: React.ComponentProps<typeof Ionicons>['name']; tone: string; highlight?: boolean }) {
@@ -41,7 +40,6 @@ export default function DashboardScreen() {
   const { data: profile } = useProfile();
   const { data: shop } = useMyShop();
   const dash = useDashboard(shop?.id);
-  const payouts = usePayouts(shop?.status === 'approved' ? shop.id : undefined);
   const d = dash.data;
   // Android can silence apps in the background; remind owners once to allow loud order alerts.
   const [showAlertTip, setShowAlertTip] = useState(false);
@@ -160,23 +158,8 @@ export default function DashboardScreen() {
         </Row>
       )}
 
-      {/* Needs attention */}
-      {/* Payouts: customers pay Gadget Galli, which pays the shop after delivery */}
-      {payouts.data ? (
-        <Pressable onPress={() => router.push('/partner/payouts')} testID="dash-payouts">
-          <Card style={{ gap: 4, borderLeftWidth: 4, borderLeftColor: payouts.data.due_total ? colors.accent : colors.success }}>
-            <Row justify="space-between">
-              <Row gap={8}>
-                <Ionicons name="wallet" size={18} color={colors.primary} />
-                <AppText variant="title">{t('p.payout.title')}</AppText>
-              </Row>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Row>
-            <AppText variant="h3">{payouts.data.due_total ? t('p.payout.dashDue', { amount: formatINR(payouts.data.due_total) }) : t('p.payout.dashNone')}</AppText>
-            {payouts.data.last_paid_at ? <AppText variant="caption" color="textMuted">{t('p.payout.lastPaid', { date: tDateTime(payouts.data.last_paid_at) })}</AppText> : null}
-          </Card>
-        </Pressable>
-      ) : null}
+      {/* How customers pay this shop (docs/DECISIONS.md #57), and Gadget Galli's commission due */}
+      {d?.payment_terms && shop?.status === 'approved' ? <TrustCard terms={d.payment_terms} commissionDue={d.commission_due ?? 0} /> : null}
 
       <AppText variant="h3">{t('p.dash.needsAttention')}</AppText>
       {d && !d.attention.length ? (
@@ -204,5 +187,42 @@ export default function DashboardScreen() {
       </Row>
       <AppText variant="caption" color="textSubtle" align="center">{d ? `${formatINR(d.today.sales)} · ${d.today.orders_today} ${t('p.ins.orders').toLowerCase()}` : ''}</AppText>
     </Screen>
+  );
+}
+
+/** The shop's payment terms (advance limit or pay on delivery, and why), with the commission due. */
+function TrustCard({ terms, commissionDue }: { terms: PaymentTerms; commissionDue: number }) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const advance = terms.advance_limit > 0;
+  return (
+    <Pressable onPress={() => router.push('/partner/payouts')} testID="dash-trust">
+      <Card style={{ gap: 6, borderLeftWidth: 4, borderLeftColor: terms.paused ? colors.error : advance ? colors.success : colors.accent }}>
+        <Row justify="space-between">
+          <Row gap={8} style={{ flex: 1 }}>
+            <Ionicons name={terms.paused ? 'pause-circle' : advance ? 'shield-checkmark' : 'cash-outline'} size={18} color={terms.paused ? colors.error : colors.primary} />
+            <AppText variant="title" style={{ flex: 1 }}>{t(`p.trust.level_${terms.level}`)}</AppText>
+          </Row>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Row>
+        <AppText variant="bodySmall">
+          {terms.paused
+            ? t(`p.trust.paused_${terms.paused}`)
+            : advance
+              ? t('p.trust.advance', { limit: formatINR(terms.advance_limit) })
+              : !terms.upi_ready
+                ? t('p.trust.noUpi')
+                : t('p.trust.codOnly')}
+        </AppText>
+        {terms.level === 'verified' && !terms.paused ? (
+          <AppText variant="caption" color="textMuted">{t('p.trust.toTrusted', { orders: terms.trusted_min_deliveries, rating: terms.trusted_min_rating, limit: formatINR(terms.trusted_limit) })}</AppText>
+        ) : terms.level === 'new' ? (
+          <AppText variant="caption" color="textMuted">{t('p.trust.toVerified', { limit: formatINR(terms.verified_limit) })}</AppText>
+        ) : null}
+        <AppText variant="label" color={commissionDue > 0 ? 'accentInk' : 'textMuted'} testID="dash-commission">
+          {commissionDue > 0 ? t('p.commission.dashDue', { amount: formatINR(commissionDue) }) : t('p.commission.dashNone')}
+        </AppText>
+      </Card>
+    </Pressable>
   );
 }

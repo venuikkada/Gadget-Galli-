@@ -42,6 +42,14 @@ export function PartnerOrderRow({ o }: { o: OrderCard }) {
             </AppText>
             <AppText variant="price" style={{ fontSize: 15 }}>{formatINR(o.grand_total)}</AppText>
           </Row>
+          {/* What the shop has to do about the money (docs/DECISIONS.md #57) */}
+          {o.overdue ? (
+            <Tag label={t(`p.order.overdueTag_${o.overdue_reason ?? 'not_sent'}`)} tone="error" icon="alarm" />
+          ) : o.status === 'CONFIRMED' && o.payee === 'shop' && o.payment_claimed_at ? (
+            <Tag label={t('p.order.checkPaymentTag')} tone="accent" icon="wallet-outline" />
+          ) : o.payee === 'shop' && o.payment_mode === 'on_delivery' && ['CONFIRMED', 'PACKED', 'DISPATCHED'].includes(o.status) ? (
+            <Tag label={t('p.order.modeCod')} tone="primary" icon="cash-outline" />
+          ) : null}
           {o.note ? <AppText variant="caption" color="textMuted" numberOfLines={1}>📝 {o.note}</AppText> : null}
         </View>
       </Row>

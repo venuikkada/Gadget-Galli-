@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, deliveryEtaMins, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
+import { buildWhatsAppOrderMessage, deliveryEtaMins, expectedPaymentMode, formatINR, variantText, type CartProblem, type ContactMethod } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { useProfile } from '@/shared/hooks/profile';
@@ -39,7 +39,7 @@ import {
   TrustStrip,
 } from '@/shared/ui';
 
-import { cartClear, cartUpdate, placeOrder, useCart } from '../api';
+import { cartClear, cartUpdate, placeOrder, useCart, useShopPaymentTerms } from '../api';
 import { useCartQty } from '../components/cartBits';
 
 const BLOCKING: CartProblem[] = ['SHOP_CLOSED', 'MIN_ORDER_NOT_MET', 'ITEM_UNAVAILABLE', 'ADDRESS_REQUIRED', 'PICKUP_NOT_AVAILABLE', 'SHOP_UNAVAILABLE'];
@@ -48,6 +48,8 @@ export default function CartScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { data: cart, isLoading, isError, error, refetch, isRefetching } = useCart();
+  // How this shop is paid: in advance by UPI (protected) up to its limit, otherwise on delivery (docs/DECISIONS.md #57)
+  const terms = useShopPaymentTerms(cart?.shop?.id);
   const { data: profile } = useProfile();
   const { setQty } = useCartQty();
   const [note, setNote] = useState('');
@@ -73,6 +75,7 @@ export default function CartScreen() {
   const shop = cart.shop;
   const pickup = cart.cart.fulfilment === 'pickup';
   const blocking = cart.problems.filter((p) => BLOCKING.includes(p));
+  const payMode = expectedPaymentMode(terms.data, cart.totals.grand_total, cart.cart.fulfilment);
   // What the customer saves against the printed MRP; shown under the bill when there is a saving.
   const savings = cart.items.reduce((sum, i) => sum + (i.mrp && i.mrp > i.price ? (i.mrp - i.price) * i.qty : 0), 0);
 
@@ -163,8 +166,10 @@ export default function CartScreen() {
             onPress={() => order('whatsapp')}
           />
           <Row gap={6} align="flex-start">
-            <Ionicons name="shield-checkmark" size={15} color={colors.success} style={{ marginTop: 1 }} />
-            <AppText variant="caption" color="textMuted" style={{ flex: 1 }}>{t('cart.safety')}</AppText>
+            <Ionicons name={payMode === 'advance' ? 'shield-checkmark' : 'cash-outline'} size={15} color={colors.success} style={{ marginTop: 1 }} />
+            <AppText variant="caption" color="textMuted" style={{ flex: 1 }} testID="cart-pay-how">
+              {pickup ? t('cart.payPickup') : payMode === 'advance' ? t('cart.payAdvance', { shop: shop.name }) : t('cart.payOnDelivery')}
+            </AppText>
           </Row>
         </View>
       }

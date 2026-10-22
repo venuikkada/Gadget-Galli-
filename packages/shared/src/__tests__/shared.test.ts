@@ -7,6 +7,7 @@ import {
   deliversInText,
   distanceKm,
   durationParts,
+  expectedPaymentMode,
   formatDateTimeIST,
   formatDistance,
   formatDuration,
@@ -19,6 +20,7 @@ import {
   hoursTable,
   isShopOpenNow,
   isValidUpiId,
+  nextShopStep,
   normalizeIndianPhone,
   normalizeQuery,
   openingHint,
@@ -134,6 +136,28 @@ describe('orders', () => {
     expect(canTransition('DISPATCHED', 'DELIVERED', 'customer')).toBe(true);
     expect(canTransition('ISSUE_REPORTED', 'PACKED', 'shop', 'PAID')).toBe(true);
     expect(canTransition('DELIVERED', 'REQUESTED', 'admin')).toBe(true);
+    // The shop confirms an advance payment, packs a pay-on-delivery order, hands over with the code, refunds a paid order
+    expect(canTransition('CONFIRMED', 'PAID', 'shop')).toBe(true);
+    expect(canTransition('CONFIRMED', 'PACKED', 'shop')).toBe(true);
+    expect(canTransition('DISPATCHED', 'DELIVERED', 'shop')).toBe(true);
+    expect(canTransition('PAID', 'CANCELLED', 'shop')).toBe(true);
+    expect(canTransition('CONFIRMED', 'PAID', 'customer')).toBe(false);
+  });
+  it('gives the shop the next step for each way of paying', () => {
+    expect(nextShopStep({ status: 'REQUESTED' })).toBe('confirm');
+    expect(nextShopStep({ status: 'CONFIRMED', payee: 'shop', payment_mode: 'advance' })).toBe('await_payment');
+    expect(nextShopStep({ status: 'CONFIRMED', payee: 'shop', payment_mode: 'advance', payment_claimed_at: '2026-10-24T05:00:00Z' })).toBe('check_payment');
+    expect(nextShopStep({ status: 'CONFIRMED', payee: 'shop', payment_mode: 'on_delivery' })).toBe('pack');
+    expect(nextShopStep({ status: 'CONFIRMED', payee: 'gadget_galli', payment_mode: 'advance', payment_claimed_at: '2026-10-24T05:00:00Z' })).toBe('await_payment');
+    expect(nextShopStep({ status: 'ISSUE_REPORTED', status_before_issue: 'DISPATCHED' })).toBe('handover');
+    expect(nextShopStep({ status: 'DELIVERED' })).toBeNull();
+  });
+  it('expects advance payment only within the shop\'s limit, for deliveries', () => {
+    expect(expectedPaymentMode({ advance_limit: 10000 }, 9500, 'delivery')).toBe('advance');
+    expect(expectedPaymentMode({ advance_limit: 10000 }, 10500, 'delivery')).toBe('on_delivery');
+    expect(expectedPaymentMode({ advance_limit: 50000 }, 9500, 'pickup')).toBe('on_delivery');
+    expect(expectedPaymentMode({ advance_limit: 0 }, 500, 'delivery')).toBe('on_delivery');
+    expect(expectedPaymentMode(null, 500, 'delivery')).toBe('on_delivery');
   });
   it('limits problem reports to 7 days after delivery', () => {
     const now = new Date('2026-10-08T10:00:00Z');

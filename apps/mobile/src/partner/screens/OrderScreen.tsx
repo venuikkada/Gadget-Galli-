@@ -17,11 +17,12 @@ import { useTranslation } from '@/shared/i18n';
 import { tAgo, tDateTime } from '@/shared/i18n/format';
 import { callPhone, openMaps, openUrl, openWhatsApp, shareOnWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Card, Divider, ErrorState, Header, InfoBanner, Loading, ProductImage, Row, Screen, StatusChip, Tag } from '@/shared/ui';
+import { AppText, Button, Card, confirmDialog, Divider, ErrorState, Header, InfoBanner, Loading, ProductImage, Row, Screen, StatusChip, Tag, toast } from '@/shared/ui';
 
-import { ConfirmSheet, DispatchSheet, PackSheet, RejectSheet } from '../components/orderSheets';
+import { CancelSheet, CheckPaymentSheet, ConfirmSheet, DispatchSheet, HandoverSheet, PackSheet, RejectSheet } from '../components/orderSheets';
+import { orderActions } from '../api';
 
-type SheetName = 'confirm' | 'reject' | 'pay' | 'pack' | 'dispatch' | 'update' | null;
+type SheetName = 'confirm' | 'reject' | 'notReceived' | 'pack' | 'dispatch' | 'update' | 'handover' | 'cancel' | null;
 
 /** Shop's order screen: one big button per step. */
 export default function PartnerOrderScreen() {
@@ -30,6 +31,7 @@ export default function PartnerOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useOrder(id);
   const [sheet, setSheet] = useState<SheetName>(null);
+  const [confirming, setConfirming] = useState(false);
   const [media, setMedia] = useState<{ label: string; uri: string }[]>([]);
   useRealtime(`porder-${id}`, 'orders', `id=eq.${id}`, () => q.refetch(), !!id);
 
@@ -48,7 +50,29 @@ export default function PartnerOrderScreen() {
   if (!o) return <Screen header={<Header />}><Loading /></Screen>;
 
   const status = o.status === 'ISSUE_REPORTED' && o.status_before_issue ? o.status_before_issue : o.status;
-  const step = nextShopStep(status);
+  const step = nextShopStep(o);
+  // Customers pay the shop (docs/DECISIONS.md #57); older orders were paid to Gadget Galli (#52)
+  const toShop = o.payee === 'shop';
+  const amount = formatINR(o.grand_total);
+  const canCancel = toShop && ['PAID', 'PACKED', 'DISPATCHED'].includes(status);
+  const paymentReceived = async () => {
+    const ok = await confirmDialog({
+      title: t('p.step.paymentReceived'),
+      message: t('p.check.confirmBody', { amount, ref: o.payment_ref ?? '-' }),
+      confirmText: t('p.check.yesReceived'),
+      cancelText: t('common.cancel'),
+      icon: 'checkmark-circle',
+    });
+    if (!ok) return;
+    setConfirming(true);
+    try {
+      await orderActions.confirmPayment(o.id, o.payment_ref);
+    } catch (e) {
+      toast(errorText(e, t), 'error');
+    } finally {
+      setConfirming(false);
+    }
+  };
   const issue = o.issues.find((i) => i.status !== 'resolved');
   const addressText = [o.address?.house, o.address?.building, o.address?.street, o.address?.area, o.address?.pincode].filter(Boolean).join(', ');
   // Everything a rider needs in one WhatsApp message, with a map link to the customer's exact pin.
@@ -74,8 +98,8 @@ export default function PartnerOrderScreen() {
             <Button testID="step-accept" title={t('p.step.accept')} icon="checkmark-circle" variant="success" size="xl" full onPress={() => setSheet('confirm')} />
             <Button title={t('p.step.reject')} icon="close-circle-outline" variant="danger" full onPress={() => setSheet('reject')} />
           </View>
-        ) : step === 'payment' ? (
-          // Customers pay Gadget Galli; the order moves to PAID when Gadget Galli confirms the money arrived.
+        ) : step === 'await_payment' && !toShop ? (
+          // Older orders: the customer pays Gadget Galli, which confirms the money arrived.
           <View style={{ gap: 10 }}>
             <InfoBanner
               testID="awaiting-payment"
@@ -84,7 +108,7 @@ export default function PartnerOrderScreen() {
               text={
                 o.payment_claimed_at
                   ? t(o.payment_method === 'bank_transfer' ? 'p.order.paymentClaimedBank' : 'p.order.paymentClaimed', { ref: o.payment_ref ?? '' })
-                  : t('p.order.awaitingPayment', { amount: formatINR(o.grand_total) })
+                  : t('p.order.awaitingPayment', { amount })
               }
             />
             {/* Once the customer says they paid, only Gadget Galli support can cancel (and refund) the order */}
@@ -94,19 +118,52 @@ export default function PartnerOrderScreen() {
               <Button title={t('p.step.reject')} variant="ghost" size="sm" onPress={() => setSheet('reject')} />
             )}
           </View>
+        ) : step === 'await_payment' ? (
+          // Paid in advance to the shop's UPI ID: wait for the customer's "I've paid"
+          <View style={{ gap: 10 }}>
+            <InfoBanner testID="awaiting-payment" tone="warning" icon="time-outline" text={t('p.order.awaitingShopPayment', { amount, upi: o.shop.upi_id ?? '' })} />
+            <Row gap={10}>
+              <Button title={t('p.step.reject')} variant="ghost" size="sm" style={{ flex: 1 }} onPress={() => setSheet('reject')} />
+              <Button testID="payment-received-anyway" title={t('p.check.alreadyPaid')} icon="checkmark-circle-outline" variant="outline" size="sm" style={{ flex: 1 }} loading={confirming} onPress={paymentReceived} />
+            </Row>
+          </View>
+        ) : step === 'check_payment' ? (
+          // The customer says they paid: check the UPI app, then confirm (or say it is not there)
+          <View style={{ gap: 10 }}>
+            <InfoBanner testID="payment-claimed" tone={o.overdue ? 'error' : 'info'} icon="wallet-outline" text={t('p.order.claimedShop', { amount, ref: o.payment_ref ?? '' })} />
+            <Button testID="step-payment-received" title={t('p.step.paymentReceived')} icon="checkmark-circle" variant="success" size="xl" full loading={confirming} onPress={paymentReceived} />
+            <Button testID="step-not-received" title={t('p.check.notReceived')} icon="close-circle-outline" variant="outline" full onPress={() => setSheet('notReceived')} />
+          </View>
         ) : step === 'pack' ? (
-          <Button testID="step-packed" title={t('p.step.packed')} icon="cube" variant="primary" size="xl" full onPress={() => setSheet('pack')} />
+          <View style={{ gap: 10 }}>
+            {status === 'CONFIRMED' ? <InfoBanner testID="cod-pack" tone="info" icon="cash-outline" text={t('p.order.codPack', { amount })} /> : null}
+            <Button testID="step-packed" title={t('p.step.packed')} icon="cube" variant="primary" size="xl" full onPress={() => setSheet('pack')} />
+            {status === 'CONFIRMED' ? <Button title={t('p.step.reject')} variant="ghost" size="sm" onPress={() => setSheet('reject')} /> : null}
+          </View>
         ) : step === 'dispatch' ? (
           <Button testID="step-send" title={o.fulfilment === 'pickup' ? t('p.step.readyPickup') : t('p.step.send')} icon="bicycle" variant="action" size="xl" full onPress={() => setSheet('dispatch')} />
-        ) : step === 'await_customer' ? (
+        ) : step === 'handover' ? (
+          // Handover with the customer's delivery code, or the customer taps "I received my order"
           <View style={{ gap: 10 }}>
-            <InfoBanner tone="info" icon="time" text={t('p.step.waiting')} />
+            {o.status !== 'ISSUE_REPORTED' ? (
+              <Button testID="step-handover" title={t('p.step.handover')} icon="key" variant="success" size="xl" full onPress={() => setSheet('handover')} />
+            ) : null}
+            <AppText variant="caption" color="textMuted" align="center">{t('p.step.waiting')}</AppText>
             {o.fulfilment === 'delivery' ? <Button title={t('p.order.updateRider')} icon="create-outline" variant="outline" full onPress={() => setSheet('update')} /> : null}
           </View>
         ) : undefined
       }
     >
-      {status === 'PAID' ? <InfoBanner tone="success" icon="checkmark-circle" text={t('p.order.paidToGG')} testID="paid-to-gg" /> : null}
+      {status === 'PAID' && !toShop ? <InfoBanner tone="success" icon="checkmark-circle" text={t('p.order.paidToGG')} testID="paid-to-gg" /> : null}
+      {/* Paid in advance: the send-by time, or an overdue warning (advance payments pause until it is sent) */}
+      {o.overdue ? (
+        <InfoBanner tone="error" icon="alarm" text={t(`p.order.overdue_${o.overdue_reason ?? 'not_sent'}`)} testID="overdue" />
+      ) : toShop && ['PAID', 'PACKED'].includes(status) && o.dispatch_due_at ? (
+        <InfoBanner tone="success" icon="time-outline" text={t('p.order.sendBy', { time: tDateTime(o.dispatch_due_at) })} testID="send-by" />
+      ) : null}
+      {o.status === 'CANCELLED' && o.refund_ref ? (
+        <InfoBanner tone="info" icon="return-down-back" text={t('p.order.refunded', { amount: formatINR(o.refund_amount ?? o.grand_total), ref: o.refund_ref })} />
+      ) : null}
       {issue ? <InfoBanner tone="error" text={t('p.order.issue', { type: t(`issue.${issue.type}`) }) + (issue.description ? ` — ${issue.description}` : '')} /> : null}
 
       {/* Customer */}
@@ -192,10 +249,24 @@ export default function PartnerOrderScreen() {
         {o.payments.map((p, i) => (
           <Tag key={i} tone="success" icon="checkmark-circle" label={`${t('order.paidVia', { method: t(`payment.${p.method}`) })}${p.upi_txn_id ? ` · ${p.upi_txn_id}` : ''}`} />
         ))}
+        {toShop && o.payment_mode && !o.payments.length ? (
+          <Tag tone={o.payment_mode === 'on_delivery' ? 'primary' : 'accent'} icon={o.payment_mode === 'on_delivery' ? 'cash-outline' : 'phone-portrait-outline'} label={o.payment_mode === 'on_delivery' ? t('p.order.modeCod') : t('p.order.modeAdvance')} testID="payment-mode-tag" />
+        ) : null}
       </Card>
 
-      {/* What Gadget Galli pays the shop for this order, once it is delivered */}
-      {o.payout_status && o.payout_status !== 'not_due' ? (
+      {/* Gadget Galli's commission on this order, once it is delivered */}
+      {toShop && o.commission_status && o.commission_status !== 'none' ? (
+        <Card style={{ gap: 6, borderWidth: 1.5, borderColor: o.commission_status === 'paid' ? colors.success : o.commission_status === 'held' ? colors.error : colors.accent }} testID="order-commission">
+          <Row justify="space-between">
+            <AppText variant="h3">{t('p.commission.thisOrder')}</AppText>
+            <Tag label={t(`p.commission.status_${o.commission_status}`)} tone={o.commission_status === 'paid' ? 'success' : o.commission_status === 'held' ? 'error' : 'warning'} />
+          </Row>
+          <AppText variant="bodySmall">{t('p.commission.orderLine', { amount: formatINR(o.commission_amount ?? 0) })}</AppText>
+        </Card>
+      ) : null}
+
+      {/* Older orders: what Gadget Galli pays the shop for this order, once it is delivered */}
+      {!toShop && o.payout_status && o.payout_status !== 'not_due' ? (
         <Card style={{ gap: 6, borderWidth: 1.5, borderColor: o.payout_status === 'paid' ? colors.success : o.payout_status === 'held' ? colors.error : colors.accent }} testID="order-payout">
           <Row justify="space-between">
             <AppText variant="h3">{t('p.payout.yourPayout')}</AppText>
@@ -236,6 +307,18 @@ export default function PartnerOrderScreen() {
         <OrderTimeline order={o} />
       </Card>
 
+      {/* Cannot deliver: refund a paid order, or cancel one paid on delivery */}
+      {canCancel ? (
+        <Card style={{ gap: 8 }}>
+          <AppText variant="title">{t('p.cancel.cantDeliver')}</AppText>
+          <AppText variant="caption" color="textMuted">{o.paid_at ? t('p.cancel.cantDeliverPaid') : t('p.cancel.cantDeliverCod')}</AppText>
+          <Button testID="open-cancel" title={o.paid_at ? t('p.cancel.refundTitle') : t('p.cancel.title')} icon="return-down-back" variant="outline" size="sm" onPress={() => setSheet('cancel')} style={{ alignSelf: 'flex-start' }} />
+        </Card>
+      ) : null}
+
+      <CheckPaymentSheet order={o} visible={sheet === 'notReceived'} onClose={() => setSheet(null)} />
+      <HandoverSheet order={o} visible={sheet === 'handover'} onClose={() => setSheet(null)} />
+      <CancelSheet order={o} visible={sheet === 'cancel'} onClose={() => setSheet(null)} />
       <ConfirmSheet order={o} visible={sheet === 'confirm'} onClose={() => setSheet(null)} />
       <RejectSheet order={o} visible={sheet === 'reject'} onClose={() => setSheet(null)} />
       <PackSheet order={o} visible={sheet === 'pack'} onClose={() => setSheet(null)} />

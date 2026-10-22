@@ -8,9 +8,12 @@ import type {
   MyShop,
   Order,
   Paged,
+  PaymentMethod,
+  PaymentMode,
   PayoutStatus,
   PhotoKind,
   ReviewsResult,
+  ShopCommission,
   ShopDashboard,
   ShopInsights,
   ShopOrderFilter,
@@ -95,9 +98,27 @@ function orderChanged(order: Order) {
   queryClient.invalidateQueries({ queryKey: ['partner'] });
 }
 
+/** A wrong delivery code comes back as an answer (it is counted), not an error. */
+export type HandoverResult = Order | { error: 'WRONG_DELIVERY_CODE'; attempts_left: number };
+
 export const orderActions = {
-  confirm: (orderId: string, items: unknown[] | null, deliveryCharge: number | null, note: string | null) =>
-    rpc<Order>('shop_confirm_order', { p_order_id: orderId, p_items: items, p_delivery_charge: deliveryCharge, p_note: note }).then((o) => (orderChanged(o), o)),
+  /** paymentMode: null lets Gadget Galli pick (advance within the shop's limit, else on delivery). */
+  confirm: (orderId: string, items: unknown[] | null, deliveryCharge: number | null, note: string | null, paymentMode: PaymentMode | null = null) =>
+    rpc<Order>('shop_confirm_order', { p_order_id: orderId, p_items: items, p_delivery_charge: deliveryCharge, p_note: note, p_payment_mode: paymentMode }).then((o) => (orderChanged(o), o)),
+  // Customers pay the shop (docs/DECISIONS.md #57): the shop checks its UPI app, then confirms or says it is not there
+  confirmPayment: (orderId: string, ref: string | null, method: PaymentMethod = 'upi') =>
+    rpc<Order>('shop_confirm_payment', { p_order_id: orderId, p_ref: ref, p_method: method }).then((o) => (orderChanged(o), o)),
+  rejectPayment: (orderId: string, reason: string) =>
+    rpc<Order>('shop_reject_payment', { p_order_id: orderId, p_reason: reason }).then((o) => (orderChanged(o), o)),
+  /** Handover with the customer's delivery code; for pay on delivery, also how the customer paid. */
+  handover: async (orderId: string, code: string, method: PaymentMethod | null, ref: string | null) => {
+    const r = await rpc<HandoverResult>('shop_mark_delivered', { p_order_id: orderId, p_code: code, p_method: method, p_ref: ref });
+    if (!('error' in r)) orderChanged(r);
+    return r;
+  },
+  /** The shop cannot deliver: a paid order needs the refund reference. */
+  cancel: (orderId: string, reason: string, refundRef: string | null) =>
+    rpc<Order>('shop_cancel_order', { p_order_id: orderId, p_reason: reason, p_refund_ref: refundRef }).then((o) => (orderChanged(o), o)),
   reject: (orderId: string, reason: string, note: string | null) =>
     rpc<Order>('shop_reject_order', { p_order_id: orderId, p_reason: reason, p_note: note }).then((o) => (orderChanged(o), o)),
   packed: (orderId: string, packPhoto: string | null, billPhoto: string | null) =>
@@ -159,7 +180,19 @@ export const productActions = {
 // ---------------------------------------------------------------------------
 // Insights, reviews
 // ---------------------------------------------------------------------------
-/** What Gadget Galli owes and has paid this shop (customers pay Gadget Galli; shops are paid after delivery). */
+/** Gadget Galli's commission on this shop's delivered orders, and where to pay it (docs/DECISIONS.md #57). */
+export function useCommission(shopId: string | undefined) {
+  return useQuery({ queryKey: ['partner', 'commission', shopId], queryFn: () => rpc<ShopCommission>('shop_commission'), enabled: !!shopId });
+}
+
+export async function payCommission(ref: string, method: PaymentMethod) {
+  const c = await rpc<ShopCommission>('shop_pay_commission', { p_ref: ref, p_method: method });
+  queryClient.setQueriesData({ queryKey: ['partner', 'commission'] }, c);
+  queryClient.invalidateQueries({ queryKey: ['partner', 'dashboard'] });
+  return c;
+}
+
+/** Older orders paid to Gadget Galli (#52): what Gadget Galli owes and has paid this shop. */
 export interface ShopPayouts {
   upi_id: string | null;
   due_total: number;

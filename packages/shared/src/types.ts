@@ -497,7 +497,8 @@ export interface Order {
   updated_by_shop: boolean;
   reject_reason: string | null;
   cancel_reason: string | null;
-  delivered_by: 'customer' | 'auto' | 'admin' | null;
+  /** customer: "I received my order"; shop: handed over with the customer's delivery code; auto: older orders, 72 hours after sending. */
+  delivered_by: 'customer' | 'shop' | 'auto' | 'admin' | null;
   pack_photo_path: string | null;
   bill_photo_path: string | null;
   requested_at: string;
@@ -538,34 +539,104 @@ export interface Order {
   payments: { method: PaymentMethod; amount: number; upi_txn_id: string | null; proof_path: string | null; created_at: string }[];
   review: { id: Uuid; rating: number; body: string | null; photos: string[]; shop_reply: string | null; created_at: string } | null;
   issues: { id: Uuid; type: IssueType; description: string | null; photos: string[]; status: 'open' | 'in_progress' | 'resolved'; resolution: string | null; created_at: string; resolved_at: string | null }[];
-  /** The UPI reference the customer entered after paying Gadget Galli, and when. */
+  /** Who the customer pays: the shop (docs/DECISIONS.md #57), or Gadget Galli for orders placed before it (#52). */
+  payee: Payee;
+  /** How: in advance to the shop's UPI ID, or on delivery. Set when the shop confirms. */
+  payment_mode: PaymentMode | null;
+  /** The UPI reference the customer entered after paying, and when. */
   payment_ref: string | null;
   payment_claimed_at: string | null;
-  /** Why Gadget Galli could not find the payment (the customer can try again). */
+  /** Why the shop (or Gadget Galli) could not find the payment (the customer can try again). */
   payment_rejected_reason: string | null;
-  /** How the customer says they paid (UPI or bank transfer). */
+  /** How the customer paid (UPI, bank transfer, or cash on delivery). */
   payment_method?: PaymentMethod | null;
-  /** Where the customer pays Gadget Galli (null for shops): set in Admin -> Payments -> Settings. */
+  /** Where the customer pays (null for the shop): the shop's UPI ID, or Gadget Galli's for older orders. */
   pay_to: PayTo | null;
-  /** The shop's payout for this order (shop and admin only). */
+  /** The 4-digit code the customer gives at handover: the customer sees it once the order is sent; shops never do. */
+  delivery_code?: string | null;
+  /** When an advance-paid order must be sent by. */
+  dispatch_due_at?: string | null;
+  /** An advance payment that is late: not confirmed in 2 hours, not sent on time, or not delivered in 2 days. */
+  overdue?: boolean;
+  overdue_reason?: OverdueReason | null;
+  overdue_at?: string | null;
+  /** A shop that could not deliver a paid order refunded the customer. */
+  refund_ref?: string | null;
+  refund_amount?: number | null;
+  refunded_at?: string | null;
+  /** For the shop's confirm sheet (requests only): can the customer pay in advance? */
+  payment_terms?: PaymentTerms | null;
+  /** Gadget Galli's commission on this order (shop and admin only). */
+  commission_status?: CommissionStatus | null;
+  commission_amount?: number | null;
+  /** Older orders paid to Gadget Galli: the shop's payout (shop and admin only). */
   payout_status?: PayoutStatus | null;
   payout_amount?: number | null;
-  commission_amount?: number | null;
   payout_ref?: string | null;
   payout_at?: string | null;
 }
 
-/** not_due until delivery; due once delivered; held while a problem is open; paid once Gadget Galli pays the shop. */
-/** Gadget Galli's payment details shown to customers. `ready` is false until a UPI ID or a bank account is saved. */
+export type Payee = 'shop' | 'gadget_galli';
+export type PaymentMode = 'advance' | 'on_delivery';
+export type OverdueReason = 'payment_not_confirmed' | 'not_sent' | 'not_delivered';
+/** none: not delivered (or 0%); due once delivered; held while a problem is open; paid once Gadget Galli confirms it. */
+export type CommissionStatus = 'none' | 'due' | 'held' | 'paid';
+
+/**
+ * How a shop's customers can pay it in advance (docs/DECISIONS.md #57). level: new (not verified: pay on delivery),
+ * verified (advance up to verified_limit) or trusted (enough deliveries and rating: up to trusted_limit).
+ * paused: advance payments are off while the shop has a strike, an overdue order or an open complaint.
+ */
+export interface PaymentTerms {
+  level: 'new' | 'verified' | 'trusted';
+  advance_limit: number;
+  paused: 'strikes' | 'overdue' | 'complaint' | null;
+  strikes: number;
+  limit_override: number | null;
+  upi_ready: boolean;
+  verified_limit: number;
+  trusted_limit: number;
+  trusted_min_deliveries: number;
+  trusted_min_rating: number;
+  orders_delivered: number;
+  rating_avg: number;
+}
+
+/** What customers see about a shop before ordering. */
+export interface PublicPaymentTerms {
+  level: PaymentTerms['level'];
+  advance_limit: number;
+  pay_on_delivery_only: boolean;
+}
+
+/** The shop's commission to Gadget Galli: what is due, where to pay it, and past payments. */
+export interface ShopCommission {
+  commission_pct: number;
+  due_total: number;
+  due_count: number;
+  held_total: number;
+  paid_30d: number;
+  pending: { id: Uuid; amount: number; order_count: number; ref: string; method: PaymentMethod; submitted_at: string } | null;
+  pay_to: PayTo;
+  payments: { id: Uuid; amount: number; order_count: number; ref: string | null; method: PaymentMethod; status: 'submitted' | 'confirmed' | 'rejected'; reject_reason: string | null; submitted_at: string; decided_at: string | null }[];
+  items: { id: Uuid; order_no: string; grand_total: number; commission_amount: number | null; commission_status: CommissionStatus; in_payment: boolean; delivered_at: string | null }[];
+  /** Older orders paid to Gadget Galli that still owe this shop a payout. */
+  legacy_payouts_due: number;
+}
+
+/** Where the customer pays: the shop's UPI ID, or Gadget Galli's details (older orders, and commission for shops). */
 export interface PayTo {
+  payee?: Payee;
   upi_id: string | null;
   upi_name: string;
-  /** Optional uploaded QR image, in the public `banners` bucket. */
+  /** Optional QR image: the shop's in the public `shop-media` bucket, Gadget Galli's in `banners`. */
   qr_path: string | null;
+  upi_verified?: boolean;
   bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null;
   ready: boolean;
 }
 
+/** Older orders paid to Gadget Galli: not_due until delivery; due once delivered; held while a problem is open; paid once Gadget Galli pays the shop. */
 export type PayoutStatus = 'not_due' | 'due' | 'held' | 'paid';
 
 export interface OrderCard {
@@ -591,6 +662,12 @@ export interface OrderCard {
   delivered_at: string | null;
   has_review: boolean;
   stuck_reason?: string | null;
+  payee?: Payee;
+  payment_mode?: PaymentMode | null;
+  payment_claimed_at?: string | null;
+  dispatch_due_at?: string | null;
+  overdue?: boolean;
+  overdue_reason?: OverdueReason | null;
 }
 
 export type ShopOrderFilter = 'new' | 'confirmed' | 'paid' | 'dispatched' | 'delivered' | 'cancelled' | 'issues' | 'active' | 'all';
@@ -664,6 +741,7 @@ export interface MyShop {
   product_count: number;
   submitted_at: string | null;
   approved_at: string | null;
+  payment_terms: PaymentTerms | null;
 }
 
 export interface ShopDashboard {
@@ -672,6 +750,9 @@ export interface ShopDashboard {
   attention: OrderCard[];
   low_stock: number;
   unread_reviews: number;
+  payment_terms?: PaymentTerms | null;
+  commission_due?: number;
+  overdue?: number;
 }
 
 export interface ShopInsights {

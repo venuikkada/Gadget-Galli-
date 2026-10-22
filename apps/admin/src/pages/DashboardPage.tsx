@@ -36,20 +36,37 @@ export default function DashboardPage() {
       {payInfo.data && !payInfo.data.ready ? (
         isSuper ? (
           <Link to="/payments?tab=settings" className="block rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
-            <strong>Customers cannot pay yet.</strong> Add Gadget Galli's UPI ID, QR or bank account in Payments → Settings.
+            <strong>Shops cannot pay your commission yet.</strong> Add Gadget Galli's UPI ID, QR or bank account in Payments → Settings.
           </Link>
         ) : (
           <div className="rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="dash-payments-not-ready">
-            <strong>Customers cannot pay yet.</strong> Ask a super admin to add Gadget Galli's UPI ID or bank account in Payments → Settings.
+            <strong>Shops cannot pay your commission yet.</strong> Ask a super admin to add Gadget Galli's UPI ID or bank account in Payments → Settings.
           </div>
         )
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
         <Stat hero label="Orders today" value={o?.orders_today ?? '–'} hint={`${o?.delivered_today ?? 0} delivered`} icon={<ReceiptText className="size-5" />} />
-        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Received by Gadget Galli" icon={<Wallet className="size-5" />} />
-        <Stat label="Payments to verify" value={o?.payments_to_verify ?? '–'} tone="warning" hint="Check your bank app, then confirm" onClick={() => navigate('/payments')} icon={<Wallet className="size-5" />} />
-        <Stat label="Payouts due" value={o ? formatINRCompact(o.payouts_due) : '–'} tone="action" hint={`${o?.payouts_due_count ?? 0} shops to pay`} onClick={() => navigate('/payments?tab=due')} icon={<Wallet className="size-5" />} />
+        <Stat label="Paid value today" value={o ? formatINRCompact(o.gmv_today) : '–'} tone="success" hint="Paid to shops" icon={<Wallet className="size-5" />} />
+        <Stat label="Overdue deliveries" value={o?.overdue_orders ?? '–'} tone="error" hint="Paid in advance and late" onClick={() => navigate('/orders?stuck=1')} icon={<Clock className="size-5" />} />
+        <Stat
+          label="Commission due"
+          value={o ? formatINRCompact(o.commission_due) : '–'}
+          tone="action"
+          hint={o?.commission_to_confirm ? `${o.commission_to_confirm} shop payment${o.commission_to_confirm > 1 ? 's' : ''} to check` : 'Shops pay it from the app'}
+          onClick={() => navigate('/payments?tab=commission')}
+          icon={<Wallet className="size-5" />}
+        />
+        {o && (o.payments_to_verify > 0 || o.payouts_due > 0) ? (
+          <Stat
+            label="Older orders"
+            value={o.payments_to_verify}
+            tone="warning"
+            hint={`payments to verify · ${formatINRCompact(o.payouts_due)} payouts due`}
+            onClick={() => navigate(o.payments_to_verify ? '/payments?tab=verify' : '/payments?tab=due')}
+            icon={<Wallet className="size-5" />}
+          />
+        ) : null}
         <Stat label="Active orders" value={o?.active_orders ?? '–'} tone="action" onClick={() => navigate('/orders')} icon={<Bike className="size-5" />} />
         <Stat label="Searches today" value={o?.searches_today ?? '–'} tone="primary" onClick={() => navigate('/reports')} icon={<Search className="size-5" />} />
         <Stat label="Shops to review" value={o?.shops_pending ?? '–'} tone="warning" onClick={() => navigate('/shops?status=under_review')} icon={<Store className="size-5" />} />

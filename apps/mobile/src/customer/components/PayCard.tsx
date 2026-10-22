@@ -15,25 +15,48 @@ import { AppText, Button, Card, Divider, InfoBanner, Input, Row, Segmented, toas
 type Method = 'upi' | 'bank_transfer';
 
 /**
- * How the customer pays Gadget Galli once the shop accepts: UPI (button, QR with the exact amount, or Gadget Galli's
- * own QR image) or bank transfer (NEFT / IMPS). Then they enter the UPI reference or bank UTR (docs/DECISIONS.md #52).
+ * How the customer pays once the shop accepts. Orders paid to the shop (docs/DECISIONS.md #57): the shop's UPI ID (button,
+ * QR with the exact amount, or the shop's own QR image), then the UPI reference, which the shop checks. With `door`, the
+ * same UPI details to pay at the door for an order paid on delivery, without a reference to enter.
+ * Older orders paid to Gadget Galli (#52) can also be paid by bank transfer.
  */
-export function PayCard({ order, submitting, onSubmit }: { order: Order; submitting: boolean; onSubmit: (ref: string, method: Method) => Promise<boolean> }) {
+export function PayCard({
+  order,
+  submitting = false,
+  onSubmit,
+  door = false,
+}: {
+  order: Order;
+  submitting?: boolean;
+  onSubmit?: (ref: string, method: Method) => Promise<boolean>;
+  door?: boolean;
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const payTo = order.pay_to!;
-  const methods: Method[] = [...(payTo.upi_id ? (['upi'] as const) : []), ...(payTo.bank ? (['bank_transfer'] as const) : [])];
+  const toShop = payTo.payee === 'shop';
+  const methods: Method[] = [...(payTo.upi_id ? (['upi'] as const) : []), ...(payTo.bank && !door ? (['bank_transfer'] as const) : [])];
   const [method, setMethod] = useState<Method>(methods[0] ?? 'upi');
   const [ref, setRef] = useState('');
   const upiLink = useMemo(
     () => (payTo.upi_id ? upiPaymentUrl({ upiId: payTo.upi_id, payeeName: payTo.upi_name, amount: order.grand_total, orderNo: order.order_no }) : null),
     [payTo.upi_id, payTo.upi_name, order.grand_total, order.order_no],
   );
-  const qrImage = publicUrl('banners', payTo.qr_path);
+  const qrImage = publicUrl(toShop ? 'shop-media' : 'banners', payTo.qr_path);
   const amount = formatINR(order.grand_total);
+  const shop = order.shop.name;
   // A computer has no UPI app: lead with the QR code to scan from a phone.
   const desktop = isDesktopWeb();
-  const body = methods.length > 1 ? t('order.payBody', { amount }) : methods[0] === 'bank_transfer' ? t('order.payBodyBank', { amount }) : t('order.payBodyUpi', { amount });
+  const title = door ? t('order.payAtDoor') : toShop ? t('order.payTitleShop', { shop }) : t('order.payTitle');
+  const body = door
+    ? t('order.payAtDoorBody', { amount, shop })
+    : toShop
+      ? t('order.payBodyShop', { amount, shop })
+      : methods.length > 1
+        ? t('order.payBody', { amount })
+        : methods[0] === 'bank_transfer'
+          ? t('order.payBodyBank', { amount })
+          : t('order.payBodyUpi', { amount });
 
   const copy = (value: string) => {
     copyText(value);
@@ -43,19 +66,23 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
     if (upiLink && !(await openUpi(upiLink))) toast(t('order.noUpiApp'), 'error');
   };
   const submit = async () => {
-    if (await onSubmit(ref, method)) setRef('');
+    if (onSubmit && (await onSubmit(ref, method))) setRef('');
   };
 
   return (
-    <Card style={{ gap: 12, backgroundColor: colors.accentSoft, borderWidth: 1.5, borderColor: colors.accent }} level={2} testID="pay-card">
+    <Card
+      style={{ gap: 12, backgroundColor: door ? colors.surface : colors.accentSoft, borderWidth: 1.5, borderColor: door ? colors.border : colors.accent }}
+      level={2}
+      testID={door ? 'pay-at-door' : 'pay-card'}
+    >
       <Row gap={10}>
         <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="wallet" size={19} color={colors.onAccent} />
         </View>
-        <AppText variant="h3" style={{ flex: 1 }}>{t('order.payTitle')}</AppText>
+        <AppText variant="h3" style={{ flex: 1 }}>{title}</AppText>
       </Row>
       <AppText variant="bodySmall" color="textMuted">{body}</AppText>
-      {order.payment_rejected_reason ? <InfoBanner tone="error" text={t('order.paymentRejected', { reason: order.payment_rejected_reason })} /> : null}
+      {order.payment_rejected_reason && !door ? <InfoBanner tone="error" text={t('order.paymentRejected', { reason: order.payment_rejected_reason })} /> : null}
 
       {methods.length > 1 ? (
         <Segmented<Method>
@@ -79,7 +106,7 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
                 <AppText variant="caption" color="textMuted">{t('order.upiId')}</AppText>
                 <Row gap={6}>
                   <AppText variant="title" selectable testID="pay-upi-id">{payTo.upi_id}</AppText>
-                  <VerifiedBadge small />
+                  {payTo.upi_verified !== false ? <VerifiedBadge small /> : null}
                 </Row>
                 <AppText variant="caption" color="textMuted">{payTo.upi_name}</AppText>
               </View>
@@ -95,7 +122,7 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
           </View>
           {qrImage ? (
             <View style={{ alignItems: 'center', gap: 8 }}>
-              <AppText variant="caption" color="textMuted" align="center">{t('order.scanOurQr', { amount })}</AppText>
+              <AppText variant="caption" color="textMuted" align="center">{toShop ? t('order.scanShopQr', { amount, shop }) : t('order.scanOurQr', { amount })}</AppText>
               <Image source={{ uri: qrImage }} style={{ width: 180, height: 180, borderRadius: 12, backgroundColor: '#FFFFFF' }} contentFit="contain" cachePolicy="memory-disk" testID="pay-qr-image" />
             </View>
           ) : null}
@@ -128,21 +155,25 @@ export function PayCard({ order, submitting, onSubmit }: { order: Order; submitt
         </View>
       ) : null}
 
-      <Divider />
-      <AppText variant="title">{t('order.afterPaying')}</AppText>
-      <Input
-        testID="payment-ref"
-        label={method === 'bank_transfer' ? t('order.bankUtrLabel') : t('order.utrLabel')}
-        hint={method === 'bank_transfer' ? t('order.bankUtrHint') : t('order.utrHint')}
-        value={ref}
-        onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())}
-        autoCapitalize="characters"
-        keyboardType="default"
-      />
-      <Button testID="payment-done" title={t('order.iPaid')} icon="checkmark-circle" variant="primary" full disabled={ref.length < 6} loading={submitting} onPress={submit} />
+      {!door ? (
+        <>
+          <Divider />
+          <AppText variant="title">{t('order.afterPaying')}</AppText>
+          <Input
+            testID="payment-ref"
+            label={method === 'bank_transfer' ? t('order.bankUtrLabel') : t('order.utrLabel')}
+            hint={method === 'bank_transfer' ? t('order.bankUtrHint') : t('order.utrHint')}
+            value={ref}
+            onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())}
+            autoCapitalize="characters"
+            keyboardType="default"
+          />
+          <Button testID="payment-done" title={t('order.iPaid')} icon="checkmark-circle" variant="primary" full disabled={ref.length < 6} loading={submitting} onPress={submit} />
+        </>
+      ) : null}
       <Row gap={8} align="flex-start">
         <Ionicons name="shield-checkmark" size={16} color={colors.success} style={{ marginTop: 2 }} />
-        <AppText variant="caption" color="textMuted" style={{ flex: 1 }}>{t('order.payTrust')}</AppText>
+        <AppText variant="caption" color="textMuted" style={{ flex: 1 }}>{door ? t('order.payAtDoorTrust') : toShop ? t('order.payTrustShop') : t('order.payTrust')}</AppText>
       </Row>
     </Card>
   );

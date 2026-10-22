@@ -12,11 +12,24 @@ export interface Overview {
   customers: number;
   searches_today: number;
   active_orders: number;
-  /** Customers say they paid Gadget Galli; an admin should check the bank and confirm. */
+  /** Older orders (docs/DECISIONS.md #52): customers say they paid Gadget Galli; an admin should check the bank and confirm. */
   payments_to_verify: number;
-  /** Owed to shops for delivered orders (₹), and how many shops. */
+  /** Older orders: owed to shops for delivered orders (₹), and how many shops. */
   payouts_due: number;
   payouts_due_count: number;
+  /** Advance payments to shops that are late (docs/DECISIONS.md #57). */
+  overdue_orders: number;
+  /** Commission shops owe Gadget Galli (₹), and shop payments waiting to be confirmed. */
+  commission_due: number;
+  commission_to_confirm: number;
+}
+
+/** Commission: shop payments to confirm, what each shop owes, and recent decisions (admin_list_commission). */
+export interface CommissionList {
+  commission_pct: number;
+  submitted: { id: string; shop_id: string; shop_name: string; amount: number; order_count: number; method: 'upi' | 'bank_transfer' | 'cash'; ref: string | null; submitted_at: string; owner_phone: string | null; contact_phone: string | null }[];
+  due: { shop_id: string; shop_name: string; area: string | null; owner_phone: string | null; contact_phone: string | null; total: number; order_count: number; oldest_delivered_at: string }[];
+  recent: { id: string; shop_id: string; shop_name: string; amount: number; order_count: number; method: string; ref: string | null; status: 'confirmed' | 'rejected'; reject_reason: string | null; submitted_at: string; decided_at: string }[];
 }
 
 export interface PaymentToVerify {
@@ -70,6 +83,9 @@ export interface PaymentSettings {
   bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null;
   ready: boolean;
   commission_pct: number | null;
+  /** How much customers may pay a verified / trusted shop in advance (₹). */
+  advance_limit_verified: number | null;
+  advance_limit_trusted: number | null;
 }
 
 export interface AdminShopRow {

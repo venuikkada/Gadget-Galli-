@@ -39,6 +39,7 @@ import {
 } from '@/shared/ui';
 
 import { useOrder, useOrderActions } from '../api';
+import { DeliveryCodeCard, OverdueCard, PayOnDeliveryCard, RefundCard } from '../components/OrderProtection';
 import { PayCard } from '../components/PayCard';
 import { OrderTimeline } from '@/shared/components/OrderTimeline';
 import { RouteFacts, RouteMap } from '@/shared/components/RouteMap';
@@ -81,8 +82,11 @@ export default function OrderScreen() {
 
   const status = effectiveStatus(o.status, o.status_before_issue);
   const shop = o.shop;
-  // Customers pay Gadget Galli, which pays the shop after delivery (docs/DECISIONS.md #52).
+  // Customers pay the shop: in advance by UPI (checked by the shop), or on delivery (docs/DECISIONS.md #57).
+  // Orders placed before that were paid to Gadget Galli (#52).
   const payReady = !!o.pay_to?.ready;
+  const toShop = o.payee === 'shop';
+  const onDelivery = toShop && o.payment_mode === 'on_delivery';
   const waText = buildWhatsAppOrderMessage({
     orderNo: o.order_no,
     shopName: shop.name,
@@ -104,18 +108,20 @@ export default function OrderScreen() {
     o.status === 'REQUESTED'
       ? [t('order.waitingShop'), t('order.waitingShopBody')]
       : o.status === 'DELIVERED'
-        ? [t('order.delivered'), o.delivered_by === 'auto' ? t('order.autoDelivered') : null]
+        ? [t('order.delivered'), o.delivered_by === 'auto' ? t('order.autoDelivered') : o.delivered_by === 'shop' ? t('order.deliveredWithCode') : null]
         : o.status === 'REJECTED'
           ? [`${t('order.rejected')}${o.reject_reason ? ` · ${t(`reject.${o.reject_reason}`)}` : ''}`, null]
           : o.status === 'EXPIRED'
             ? [o.confirmed_at ? t('order.expiredUnpaid') : t('order.expired'), null]
             : o.status === 'CANCELLED'
               ? [t('order.cancelled'), null]
-              : status === 'PAID'
-                ? [t('order.paidWaiting'), null]
-                : status === 'PACKED'
-                  ? [t('order.packedWaiting'), null]
-                  : [null, null];
+              : status === 'CONFIRMED' && onDelivery
+                ? [t('order.codConfirmed'), t('order.codPacking', { shop: shop.name })]
+                : status === 'PAID'
+                  ? [toShop ? t('order.paidWaitingShop', { shop: shop.name }) : t('order.paidWaiting'), null]
+                  : status === 'PACKED'
+                    ? [t('order.packedWaiting'), null]
+                    : [null, null];
   // After dispatch: the shop's ETA if it gave one, otherwise the dispatch time plus the ride and a few minutes' handover.
   const arrival =
     status === 'DISPATCHED' && o.fulfilment === 'delivery'
@@ -126,8 +132,12 @@ export default function OrderScreen() {
           : null
       : null;
   const openIssue = o.issues.find((i) => i.status !== 'resolved');
-  // "I have paid" sent and not yet checked: the order stays as it is until support confirms it (docs/DECISIONS.md #55).
+  // "I have paid" sent and not yet checked: the order stays as it is until the shop (or, for older orders, support)
+  // confirms it (docs/DECISIONS.md #55). After 2 hours unconfirmed it is overdue and the customer can report it.
   const payChecking = o.status === 'CONFIRMED' && !!o.payment_claimed_at;
+  const late = !!o.overdue;
+  // Paid in advance and not sent yet: when it must go out
+  const sendBy = toShop && o.dispatch_due_at && ['PAID', 'PACKED'].includes(o.status) && !late ? tDateTime(o.dispatch_due_at) : null;
   const supportWhatsApp = () => openWhatsApp(process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp, `Hi, about my order ${o.order_no}`);
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
@@ -199,24 +209,37 @@ export default function OrderScreen() {
         {resolvedIssue?.resolution ? <InfoBanner tone="success" text={t('order.issueResolved', { text: resolvedIssue.resolution })} /> : null}
         {o.updated_by_shop && status === 'CONFIRMED' ? <InfoBanner tone="warning" text={t('order.shopUpdated')} /> : null}
 
-        {/* Pay Gadget Galli by UPI or bank transfer, then enter the reference */}
-        {o.status === 'CONFIRMED' && !payReady ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
+        {/* A paid order that is late, a refund, or the send-by time */}
+        {late ? <OverdueCard order={o} onSupport={supportWhatsApp} onReport={!openIssue ? () => router.push(`/report/${o.id}`) : undefined} /> : null}
+        {o.status === 'CANCELLED' && o.refund_ref ? <RefundCard order={o} onSupport={supportWhatsApp} /> : null}
+        {sendBy ? <InfoBanner tone="info" icon="time-outline" text={t('order.sendBy', { shop: shop.name, time: sendBy })} testID="send-by" /> : null}
+
+        {/* Pay the shop in advance by UPI (or, for older orders, Gadget Galli), then enter the reference */}
+        {o.status === 'CONFIRMED' && !payReady && !onDelivery ? <InfoBanner tone="warning" icon="time-outline" text={t('order.paySetupPending')} /> : null}
         {payChecking && payReady ? (
           <Card style={{ gap: 8, backgroundColor: colors.primarySoft, borderWidth: 1.5, borderColor: colors.primary }} level={2} testID="payment-verifying">
             <Row gap={10}>
               <Ionicons name="hourglass-outline" size={22} color={colors.primary} />
               <AppText variant="h3" style={{ flex: 1 }}>{t('order.paymentSent')}</AppText>
             </Row>
-            <AppText variant="bodySmall" color="textMuted">{t('order.paymentVerifying')}</AppText>
+            <AppText variant="bodySmall" color="textMuted">{toShop ? t('order.paymentVerifyingShop', { shop: shop.name }) : t('order.paymentVerifying')}</AppText>
             <AppText variant="caption" color="textMuted">
               {o.payment_method === 'bank_transfer' ? t('order.bankUtrShown', { ref: o.payment_ref ?? '' }) : t('order.utrShown', { ref: o.payment_ref ?? '' })}
             </AppText>
             <Divider />
-            <AppText variant="caption" color="textMuted">{t('order.payCheckHelp')}</AppText>
-            <Button title={t('help.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="sm" onPress={supportWhatsApp} style={{ alignSelf: 'flex-start' }} testID="payment-support" />
+            <AppText variant="caption" color="textMuted">{toShop ? t('order.payCheckHelpShop') : t('order.payCheckHelp')}</AppText>
+            <Row gap={8} wrap>
+              {toShop ? <Button title={t('order.callShop')} icon="call" variant="secondary" size="sm" onPress={() => callPhone(shop.contact_phone)} /> : null}
+              <Button title={t('help.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="sm" onPress={supportWhatsApp} testID="payment-support" />
+            </Row>
           </Card>
         ) : null}
-        {o.status === 'CONFIRMED' && payReady && !o.payment_claimed_at ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
+        {o.status === 'CONFIRMED' && payReady && !o.payment_claimed_at && !onDelivery ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
+        {/* Pay on delivery: no product, no payment */}
+        {onDelivery && ['CONFIRMED', 'PACKED'].includes(status) && !o.paid_at ? <PayOnDeliveryCard order={o} /> : null}
+        {/* On its way: the delivery code, and the shop's UPI to pay at the door */}
+        {status === 'DISPATCHED' && o.delivery_code ? <DeliveryCodeCard code={o.delivery_code} /> : null}
+        {onDelivery && status === 'DISPATCHED' && !o.paid_at && payReady ? <PayCard order={o} door /> : null}
 
         {/* Where the shop and the delivery address are, how far and how long the ride is */}
         {!ended ? (
@@ -361,7 +384,7 @@ export default function OrderScreen() {
 
         <Row gap={10}>
           {customerCanCancel(o.status, o.payment_claimed_at) ? <Button title={t('order.cancel')} variant="danger" icon="close-circle-outline" onPress={cancelOrder} loading={cancel.isPending} style={{ flex: 1 }} /> : null}
-          {canReportIssue(status, o.delivered_at) && !openIssue && !payChecking ? (
+          {canReportIssue(status, o.delivered_at) && !openIssue && (!payChecking || late) ? (
             <Button title={t('order.report')} variant="outline" icon="alert-circle-outline" onPress={() => router.push(`/report/${o.id}`)} style={{ flex: 1 }} testID="report-problem" />
           ) : null}
         </Row>

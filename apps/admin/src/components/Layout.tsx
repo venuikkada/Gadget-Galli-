@@ -88,7 +88,7 @@ export function Layout() {
       <NavItem to="/" end icon={<LayoutDashboard className="size-5" />} label="Dashboard" />
       <NavItem to="/shops" icon={<Store className="size-5" />} label="Shops" count={o?.shops_pending} />
       <NavItem to="/orders" icon={<ReceiptText className="size-5" />} label="Orders" count={o?.stuck_orders} />
-      <NavItem to="/payments" icon={<Wallet className="size-5" />} label="Payments" count={o?.payments_to_verify} />
+      <NavItem to="/payments" icon={<Wallet className="size-5" />} label="Payments" count={o ? o.payments_to_verify + (o.commission_to_confirm ?? 0) : undefined} />
       <NavItem to="/problems" icon={<ShieldAlert className="size-5" />} label="Problems" count={o?.issues_open} />
       <NavItem to="/catalog" icon={<Boxes className="size-5" />} label="Catalog" count={o?.catalog_pending} />
       <NavItem to="/customers" icon={<Users className="size-5" />} label="Customers" />

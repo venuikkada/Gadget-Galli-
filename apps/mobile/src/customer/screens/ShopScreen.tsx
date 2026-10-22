@@ -43,7 +43,7 @@ import {
   VerifiedBadge,
 } from '@/shared/ui';
 
-import { toggleFavourite, track, useShopCatalog, useShopPage, useShopReviews } from '../api';
+import { toggleFavourite, track, useShopCatalog, useShopPage, useShopPaymentTerms, useShopReviews } from '../api';
 import { ReviewItem } from '../components/cards';
 import { StickyCartBar, useAddToCart, useCartQty } from '../components/cartBits';
 
@@ -114,6 +114,8 @@ export default function ShopScreen() {
   const myLocation = useLocationStore((st) => st.location);
   const { id, highlight } = useLocalSearchParams<{ id: string; highlight?: string }>();
   const shop = useShopPage(id);
+  // How customers pay this shop (docs/DECISIONS.md #57): protected advance payment, or on delivery
+  const terms = useShopPaymentTerms(id);
   const [tab, setTab] = useState<'products' | 'reviews' | 'about'>('products');
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -219,6 +221,19 @@ export default function ShopScreen() {
               {d.free_above ? <AppText variant="caption" color="offer" weight="semibold">{t('shop.freeAbove', { amount: formatINR(d.free_above) })}</AppText> : null}
             </View>
           </Row>
+          {terms.data ? (
+            <Row align="flex-start" gap={10} style={{ backgroundColor: colors.successSoft, borderRadius: 14, padding: 12 }} testID="shop-pay-terms">
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={terms.data.pay_on_delivery_only ? 'cash-outline' : 'shield-checkmark'} size={18} color={colors.success} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText variant="label">
+                  {terms.data.pay_on_delivery_only ? t('shop.payOnDelivery') : terms.data.level === 'trusted' ? `${t('shop.trusted')} · ${t('shop.protected')}` : t('shop.protected')}
+                </AppText>
+                <AppText variant="caption" color="textMuted">{terms.data.pay_on_delivery_only ? t('shop.payOnDeliveryBody') : t('shop.protectedBody')}</AppText>
+              </View>
+            </Row>
+          ) : null}
           <Row gap={8}>
             <Button title={t('shop.call')} icon="call" variant="secondary" size="sm" style={{ flex: 1 }} onPress={() => { track.shop(s.id, 'call'); callPhone(s.contact_phone); }} />
             <Button title={t('common.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="sm" style={{ flex: 1 }} onPress={() => { track.shop(s.id, 'whatsapp'); openWhatsApp(s.whatsapp_phone); }} />

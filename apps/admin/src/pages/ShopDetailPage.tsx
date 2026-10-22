@@ -16,7 +16,7 @@ import {
 } from '@gg/shared';
 
 import { MiniMap } from '@/components/MiniMap';
-import { Badge, Button, Card, ErrorBox, PageHeader, ReasonModal, ShopStatusBadge, Spinner, Textarea, toast, Toggle } from '@/components/ui';
+import { Badge, Button, Card, ErrorBox, Field, Input, PageHeader, ReasonModal, ShopStatusBadge, Spinner, Textarea, toast, Toggle } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, signedUrl } from '@/lib/api';
 
 type AdminShop = MyShop & {
@@ -25,6 +25,9 @@ type AdminShop = MyShop & {
   stats: { orders: number; delivered: number; rejected: number; expired: number; issues: number; value: number };
   audit: { action: string; details: Record<string, unknown>; created_at: string; admin: string | null }[];
 };
+
+const TRUST_LABEL = { new: 'New: pay on delivery', verified: 'Verified', trusted: 'Trusted' } as const;
+const PAUSE_LABEL = { strikes: 'Advance off: strike', overdue: 'Advance paused: overdue order', complaint: 'Advance paused: open complaint' } as const;
 
 const DOC_LABEL: Record<string, string> = {
   gst_certificate: 'GST certificate',
@@ -71,12 +74,14 @@ export default function ShopDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['shop', id], queryFn: () => rpc<AdminShop | null>('admin_get_shop', { p_shop_id: id }), enabled: !!id });
-  const [modal, setModal] = useState<null | 'reject' | 'request_changes' | 'suspend' | 'warn'>(null);
+  const [modal, setModal] = useState<null | 'reject' | 'request_changes' | 'suspend' | 'warn' | 'strike'>(null);
+  const [limit, setLimit] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [upiQr, setUpiQr] = useState<string | null>(null);
   const s = q.data;
   useEffect(() => setNotes(s?.admin_notes ?? ''), [s?.admin_notes]);
+  useEffect(() => setLimit(s?.payment_terms?.limit_override != null ? String(s.payment_terms.limit_override) : ''), [s?.payment_terms?.limit_override]);
   useEffect(() => {
     if (s?.upi_qr_path) signedUrl('shop-media', s.upi_qr_path).then((u) => setUpiQr(u ?? publicUrl('shop-media', s.upi_qr_path)));
   }, [s?.upi_qr_path]);
@@ -301,6 +306,64 @@ export default function ShopDetailPage() {
             </div>
           </Card>
 
+          {s.payment_terms ? (
+            <Card title="Advance payments and strikes">
+              {(() => {
+                const pt = s.payment_terms;
+                return (
+                  <div className="space-y-3 text-sm" data-testid="shop-trust">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone={pt.level === 'trusted' ? 'success' : pt.level === 'verified' ? 'primary' : 'neutral'}>{TRUST_LABEL[pt.level]}</Badge>
+                      {pt.paused ? <Badge tone="error">{PAUSE_LABEL[pt.paused]}</Badge> : null}
+                      {pt.strikes ? <Badge tone="error">{pt.strikes} strike{pt.strikes > 1 ? 's' : ''}</Badge> : null}
+                    </div>
+                    <div>
+                      {pt.advance_limit > 0 ? (
+                        <>Customers may pay up to <b>{formatINR(pt.advance_limit)}</b> in advance; bigger orders are paid on delivery.</>
+                      ) : (
+                        <>Customers pay this shop <b>on delivery</b>{!pt.upi_ready ? ' (no checked UPI ID yet)' : ''}.</>
+                      )}
+                    </div>
+                    <div className="text-xs text-ink-muted">
+                      Automatic limits: verified {formatINR(pt.verified_limit)}, trusted {formatINR(pt.trusted_limit)} ({pt.trusted_min_deliveries}+ deliveries, {pt.trusted_min_rating}★, no open complaints).
+                    </div>
+                    <Field label="This shop's own advance limit (₹)" hint="Empty: automatic by trust level. 0 turns advance payments off.">
+                      <div className="flex gap-2">
+                        <Input type="number" min={0} max={100000} step={500} value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="Automatic" className="max-w-40" data-testid="shop-limit" />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          loading={busy === 'limit'}
+                          onClick={() =>
+                            run('limit', () => rpc<AdminShop>('admin_set_shop_trust', { p_shop_id: s.id, p_patch: { advance_limit: limit.trim() === '' ? null : Number(limit) } }), 'Advance limit saved').catch(() => undefined)
+                          }
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </Field>
+                    <div className="flex flex-wrap gap-2 border-t border-line pt-3">
+                      <Button size="sm" variant="danger" disabled={pt.strikes >= 3} onClick={() => setModal('strike')} data-testid="add-strike">
+                        Add a strike
+                      </Button>
+                      {pt.strikes ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          loading={busy === 'strikes'}
+                          onClick={() => run('strikes', () => rpc<AdminShop>('admin_set_shop_trust', { p_shop_id: s.id, p_patch: { strikes: 0 } }), 'Strikes cleared').catch(() => undefined)}
+                        >
+                          Clear strikes
+                        </Button>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-ink-muted">A strike is for a proven "paid but not delivered or refunded". 1 strike: advance payments off. 2 strikes: the shop is suspended.</p>
+                  </div>
+                );
+              })()}
+            </Card>
+          ) : null}
+
           <Card title="Performance">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
@@ -394,6 +457,18 @@ export default function ShopDetailPage() {
         confirmLabel="Suspend"
         danger
         onConfirm={(reason) => run('suspend', () => rpc<AdminShop>('admin_suspend_shop', { p_shop_id: s.id, p_suspend: true, p_reason: reason }), 'Shop suspended')}
+      />
+      <ReasonModal
+        open={modal === 'strike'}
+        onClose={() => setModal(null)}
+        title="Add a strike"
+        description="The owner sees this reason. With one strike the shop takes no advance payments; a second strike suspends it."
+        placeholder="e.g. Order GG-26-001234: paid ₹11,999 in advance, not delivered or refunded in 3 days."
+        confirmLabel="Add strike"
+        danger
+        onConfirm={(reason) =>
+          run('strike', () => rpc<AdminShop>('admin_set_shop_trust', { p_shop_id: s.id, p_patch: { strikes: (s.payment_terms?.strikes ?? 0) + 1, reason } }), 'Strike added')
+        }
       />
       <ReasonModal
         open={modal === 'warn'}

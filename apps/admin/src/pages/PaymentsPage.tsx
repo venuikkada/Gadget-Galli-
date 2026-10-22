@@ -9,50 +9,256 @@ import { UpiQr } from '@/components/UpiQr';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, PageHeader, ReasonModal, Spinner, Table, Tabs, Td, Th, toast, Tr } from '@/components/ui';
 import { errorMessage, publicUrl, rpc, uploadPublic } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import type { PaidPayout, PaymentSettings, PaymentsToVerify, PayoutShop } from '@/lib/types';
+import type { CommissionList, PaidPayout, PaymentSettings, PaymentsToVerify, PayoutShop } from '@/lib/types';
 
-type Tab = 'verify' | 'due' | 'held' | 'paid' | 'settings';
-const TABS: Tab[] = ['verify', 'due', 'held', 'paid', 'settings'];
+type Tab = 'commission' | 'verify' | 'due' | 'held' | 'paid' | 'settings';
+const TABS: Tab[] = ['commission', 'verify', 'due', 'held', 'paid', 'settings'];
 
 /**
- * Customers pay Gadget Galli by UPI or bank transfer and enter the reference; you check your bank app and confirm,
- * and the shop then packs and sends. After delivery you pay each shop by UPI and record the reference
- * (docs/DECISIONS.md #52). Where customers pay (UPI ID, QR image, bank account) is set in the Settings tab.
+ * Customers pay shops directly (docs/DECISIONS.md #57): shops pay Gadget Galli its commission on delivered orders by UPI
+ * and enter the reference; you check your bank app and confirm. Orders placed before that were paid to Gadget Galli
+ * (#52): their payments are checked here and shops are paid after delivery. Where shops pay you (UPI ID, QR image,
+ * bank account), the commission % and the advance-payment limits are set in the Settings tab.
  */
 export default function PaymentsPage() {
   const { isSuper } = useAuth();
   const settings = useQuery({ queryKey: ['payments', 'settings'], queryFn: () => rpc<PaymentSettings>('platform_payment_info'), enabled: isSuper });
   const [tab, setTab] = useState<Tab>(() => {
     const asked = new URLSearchParams(location.search).get('tab') as Tab | null;
-    // Settings is for super admins; an unknown or not-allowed tab falls back to the payments to verify
-    return asked && TABS.includes(asked) && (asked !== 'settings' || isSuper) ? asked : 'verify';
+    // Settings is for super admins; an unknown or not-allowed tab falls back to the commission
+    return asked && TABS.includes(asked) && (asked !== 'settings' || isSuper) ? asked : 'commission';
   });
   const verify = useQuery({ queryKey: ['payments', 'verify'], queryFn: () => rpc<PaymentsToVerify>('admin_list_payments_to_verify'), refetchInterval: 15_000 });
-  // Nothing set up yet: open Settings first, because customers cannot pay until it is filled in
+  const commission = useQuery({ queryKey: ['payments', 'commission'], queryFn: () => rpc<CommissionList>('admin_list_commission'), refetchInterval: 30_000 });
+  // Nothing set up yet: open Settings first, because shops cannot pay the commission until it is filled in
   const notReady = isSuper && settings.data?.ready === false;
   useEffect(() => {
     if (notReady && !new URLSearchParams(location.search).get('tab')) setTab('settings');
   }, [notReady]);
+  const toConfirm = commission.data?.submitted.length ?? 0;
+  const toVerify = verify.data?.items.length ?? 0;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Payments" subtitle="Customers pay Gadget Galli. Shops are paid after the customer receives the order." />
+      <PageHeader title="Payments" subtitle="Customers pay shops directly. Shops pay Gadget Galli its commission on delivered orders." />
       <Tabs
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'verify', label: `To verify${verify.data?.items.length ? ` (${verify.data.items.length})` : ''}` },
-          { value: 'due', label: 'Payouts due' },
+          { value: 'commission', label: `Commission${toConfirm ? ` (${toConfirm})` : ''}` },
+          { value: 'verify', label: `Older: to verify${toVerify ? ` (${toVerify})` : ''}` },
+          { value: 'due', label: 'Older: payouts due' },
           { value: 'held', label: 'On hold' },
-          { value: 'paid', label: 'Paid' },
+          { value: 'paid', label: 'Payouts paid' },
           ...(isSuper ? [{ value: 'settings' as const, label: 'Settings' }] : []),
         ]}
       />
+      {tab === 'commission' ? <CommissionTab q={commission} /> : null}
       {tab === 'verify' ? <VerifyTab q={verify} /> : null}
       {tab === 'due' || tab === 'held' ? <PayoutsTab status={tab} /> : null}
       {tab === 'paid' ? <PaidTab /> : null}
       {tab === 'settings' && isSuper ? <SettingsTab /> : null}
     </div>
+  );
+}
+
+function CommissionTab({ q }: { q: ReturnType<typeof useQuery<CommissionList>> }) {
+  const refresh = useRefresh();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [recording, setRecording] = useState<CommissionList['due'][number] | null>(null);
+
+  if (q.isLoading) return <Spinner />;
+  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  const c = q.data!;
+
+  const confirm = async (id: string) => {
+    setBusy(id);
+    try {
+      await rpc('admin_confirm_commission', { p_payment_id: id });
+      toast('Commission confirmed. The shop has been thanked.');
+      refresh();
+    } catch (e) {
+      toast(errorMessage(e), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-ink-muted">
+        Gadget Galli's commission is <strong>{c.commission_pct}%</strong> of each delivered order paid to a shop. Shops pay it from the Shop Partner app
+        (Payments) to your UPI ID and enter the reference. Change the % in Settings.
+      </p>
+      <Card padded={false} title="Shop payments to check in your bank or UPI app">
+        {!c.submitted.length ? (
+          <Empty title="No commission payments to check" body="When a shop pays its commission and enters the UPI reference, it appears here." />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Shop</Th>
+                <Th>Amount</Th>
+                <Th>Reference</Th>
+                <Th>Sent</Th>
+                <Th className="text-right">Action</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.submitted.map((p) => (
+                <Tr key={p.id}>
+                  <Td>
+                    <Link to={`/shops/${p.shop_id}`} className="font-semibold text-link">{p.shop_name}</Link>
+                    <div className="text-xs text-ink-muted">{p.order_count} delivered order{p.order_count > 1 ? 's' : ''}</div>
+                  </Td>
+                  <Td className="text-base font-bold">{formatINR(Number(p.amount))}</Td>
+                  <Td>
+                    <Badge tone={p.method === 'bank_transfer' ? 'action' : 'primary'}>{p.method === 'bank_transfer' ? 'Bank transfer' : 'UPI'}</Badge>
+                    <div className="mt-1 font-mono text-sm">{p.ref}</div>
+                  </Td>
+                  <Td>{timeAgo(p.submitted_at)}</Td>
+                  <Td className="text-right">
+                    <div className="inline-flex gap-2">
+                      <Button size="sm" variant="success" icon={<CheckCircle2 className="size-4" />} loading={busy === p.id} onClick={() => confirm(p.id)} data-testid={`confirm-commission-${p.shop_name}`}>
+                        Received
+                      </Button>
+                      <Button size="sm" variant="outline" icon={<XCircle className="size-4" />} onClick={() => setRejecting(p.id)}>
+                        Not received
+                      </Button>
+                    </div>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+
+      <Card padded={false} title="Commission due by shop">
+        {!c.due.length ? (
+          <Empty title="No commission due" body={c.commission_pct > 0 ? 'Commission comes due when an order is delivered.' : 'The commission is 0%. Set it in Settings.'} />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Shop</Th>
+                <Th>Orders</Th>
+                <Th>Oldest delivery</Th>
+                <Th className="text-right">Due</Th>
+                <Th className="text-right">Paid outside the app?</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.due.map((d) => (
+                <Tr key={d.shop_id}>
+                  <Td>
+                    <Link to={`/shops/${d.shop_id}`} className="font-semibold text-link">{d.shop_name}</Link>
+                    <div className="text-xs text-ink-muted">{[d.area, d.contact_phone ? formatPhone(d.contact_phone) : null].filter(Boolean).join(' · ')}</div>
+                  </Td>
+                  <Td>{d.order_count}</Td>
+                  <Td>{formatDateTimeIST(d.oldest_delivered_at)}</Td>
+                  <Td className="text-right text-base font-bold">{formatINR(Number(d.total))}</Td>
+                  <Td className="text-right">
+                    <Button size="sm" variant="outline" icon={<Wallet className="size-4" />} onClick={() => setRecording(d)} data-testid={`record-commission-${d.shop_name}`}>
+                      Record payment
+                    </Button>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+
+      {c.recent.length ? (
+        <Card padded={false} title="Recent">
+          <Table>
+            <thead>
+              <tr>
+                <Th>Decided</Th>
+                <Th>Shop</Th>
+                <Th>Reference</Th>
+                <Th>Result</Th>
+                <Th className="text-right">Amount</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.recent.map((r) => (
+                <Tr key={r.id}>
+                  <Td>{formatDateTimeIST(r.decided_at)}</Td>
+                  <Td><Link to={`/shops/${r.shop_id}`} className="text-link">{r.shop_name}</Link></Td>
+                  <Td className="font-mono text-sm">{r.ref}</Td>
+                  <Td>{r.status === 'confirmed' ? <Badge tone="success">Received</Badge> : <Badge tone="error">{r.reject_reason ?? 'Not received'}</Badge>}</Td>
+                  <Td className="text-right font-semibold">{formatINR(Number(r.amount))}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      ) : null}
+
+      <ReasonModal
+        open={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title="Commission not received"
+        description="The shop sees this message and can pay again with the right reference."
+        placeholder="No payment with this reference in the bank statement."
+        confirmLabel="Tell the shop"
+        danger
+        onConfirm={async (reason) => {
+          await rpc('admin_reject_commission', { p_payment_id: rejecting, p_reason: reason });
+          toast('The shop has been told.');
+          refresh();
+        }}
+      />
+      <RecordCommissionModal due={recording} onClose={() => setRecording(null)} onDone={refresh} />
+    </div>
+  );
+}
+
+function RecordCommissionModal({ due, onClose, onDone }: { due: CommissionList['due'][number] | null; onClose: () => void; onDone: () => void }) {
+  const [ref, setRef] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (due) setRef('');
+  }, [due]);
+  return (
+    <Modal
+      open={!!due}
+      onClose={onClose}
+      title={due ? `${due.shop_name} paid ${formatINR(Number(due.total))}` : ''}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="success"
+            loading={busy}
+            disabled={ref.trim().length < 4}
+            onClick={async () => {
+              if (!due) return;
+              setBusy(true);
+              try {
+                await rpc('admin_record_commission', { p_shop_id: due.shop_id, p_ref: ref, p_method: 'upi' });
+                toast('Commission recorded as received.');
+                onDone();
+                onClose();
+              } catch (e) {
+                toast(errorMessage(e), 'error');
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Record as received
+          </Button>
+        </>
+      }
+    >
+      <Field label="UPI reference, bank UTR or receipt number" hint="For commission the shop paid in cash or by bank without entering it in the app. Settles everything due.">
+        <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. 412345678901 or CASH-OCT-01" autoFocus />
+      </Field>
+    </Modal>
   );
 }
 
@@ -373,6 +579,8 @@ function SettingsTab() {
       bank_ifsc: d.bank?.ifsc ?? '',
       bank_name: d.bank?.bank_name ?? '',
       commission_pct: String(d.commission_pct ?? 0),
+      advance_limit_verified: String(d.advance_limit_verified ?? 10000),
+      advance_limit_trusted: String(d.advance_limit_trusted ?? 50000),
     });
     setAccountAgain(d.bank?.account_number ?? '');
   }, [q.data]);
@@ -390,6 +598,10 @@ function SettingsTab() {
     account: bankStarted && !/^\d{9,18}$/.test(accountDigits) ? 'Account numbers have 9 to 18 digits.' : null,
     again: bankStarted && accountAgain.replace(/\s/g, '') !== accountDigits ? 'The two account numbers do not match.' : null,
     ifsc: bankStarted && !IFSC.test(ifsc) ? 'An IFSC has 11 characters, like HDFC0001234 (the 5th is a zero).' : null,
+    limits:
+      Number(f.advance_limit_verified) < 0 || Number(f.advance_limit_trusted) < Number(f.advance_limit_verified) || Number(f.advance_limit_trusted) > 100000
+        ? 'The trusted limit must be at least the verified one, and at most ₹1,00,000.'
+        : null,
   };
   const valid = !Object.values(errs).some(Boolean);
   const ready = valid && (!!f.upi_id || bankStarted);
@@ -399,9 +611,16 @@ function SettingsTab() {
     setBusy(true);
     try {
       await rpc('admin_save_payment_settings', {
-        p_settings: { ...f, bank_account_number: accountDigits, bank_ifsc: ifsc, commission_pct: Number(f.commission_pct || 0) },
+        p_settings: {
+          ...f,
+          bank_account_number: accountDigits,
+          bank_ifsc: ifsc,
+          commission_pct: Number(f.commission_pct || 0),
+          advance_limit_verified: Number(f.advance_limit_verified || 0),
+          advance_limit_trusted: Number(f.advance_limit_trusted || 0),
+        },
       });
-      toast('Payment details saved. Customers see them on every accepted order.');
+      toast('Payment settings saved.');
       qc.invalidateQueries({ queryKey: ['payments'] });
       qc.invalidateQueries({ queryKey: ['overview'] });
     } catch (e) {
@@ -430,13 +649,13 @@ function SettingsTab() {
     <div className="space-y-6">
       {!q.data?.ready ? (
         <div className="rounded-xl border border-error/30 bg-error-soft p-4 text-sm text-error-ink" data-testid="payments-not-ready">
-          <strong>Customers cannot pay yet.</strong> Add your UPI ID or bank account below and save. Until then, accepted orders show
-          "payment details are being set up".
+          <strong>Shops cannot pay your commission yet.</strong> Add your UPI ID or bank account below and save. Customers pay shops directly;
+          these are only where shops pay Gadget Galli (and where older orders were paid).
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          <Card title="UPI (fastest for customers)">
+          <Card title="Gadget Galli UPI (where shops pay your commission)">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Gadget Galli UPI ID" hint="A business / merchant UPI ID is best." error={errs.upi}>
                 <Input value={f.upi_id} onChange={(e) => setF({ ...f, upi_id: e.target.value.trim() })} placeholder="gadgetgalli@ybl" data-testid="settings-upi" />
@@ -448,8 +667,8 @@ function SettingsTab() {
             <div className="mt-5 space-y-2">
               <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Your QR image (optional)</div>
               <p className="text-xs text-ink-muted">
-                Upload the QR from your bank or PhonePe / Paytm Business. Customers see it as a second option, under the QR the app makes with
-                the exact order amount.
+                Upload the QR from your bank or PhonePe / Paytm Business. Shops see it as a second option, under the QR the app makes with the
+                exact commission amount.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 {qrUrl ? (
@@ -478,7 +697,7 @@ function SettingsTab() {
           </Card>
 
           <Card title="Bank account (NEFT / IMPS)">
-            <p className="mb-4 text-xs text-ink-muted">For big orders above a customer's UPI limit. Customers see these details with copy buttons.</p>
+            <p className="mb-4 text-xs text-ink-muted">For older orders paid to Gadget Galli by bank transfer, and shops paying a large commission.</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Account holder name" error={errs.accName}>
                 <Input value={f.bank_account_name} onChange={set('bank_account_name')} placeholder="Gadget Galli Technologies" data-testid="settings-bank-holder" />
@@ -498,21 +717,33 @@ function SettingsTab() {
             </div>
           </Card>
 
-          <Card title="Shop payouts">
-            <Field label="Commission kept from each payout (%)" hint="0 means shops get the full order amount. You can change this later.">
-              <Input type="number" min={0} max={50} step={0.5} value={f.commission_pct} onChange={set('commission_pct')} className="max-w-32" />
-            </Field>
+          <Card title="Commission and advance payments">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Commission on each delivered order (%)" hint="0 for a free launch. You can change this later.">
+                <Input type="number" min={0} max={50} step={0.5} value={f.commission_pct} onChange={set('commission_pct')} data-testid="settings-commission" />
+              </Field>
+              <Field label="Advance limit, verified shops (₹)" hint="Customers may pay a verified shop up to this before delivery." error={errs.limits}>
+                <Input type="number" min={0} max={100000} step={500} value={f.advance_limit_verified} onChange={set('advance_limit_verified')} data-testid="settings-limit-verified" />
+              </Field>
+              <Field label="Advance limit, trusted shops (₹)" hint="Trusted: 25+ deliveries, 4.3★ or better, no open complaints.">
+                <Input type="number" min={0} max={100000} step={500} value={f.advance_limit_trusted} onChange={set('advance_limit_trusted')} data-testid="settings-limit-trusted" />
+              </Field>
+            </div>
+            <p className="mt-3 text-xs text-ink-muted">
+              New shops, bigger orders and pickups are paid on delivery. A shop with an overdue order, an open "paid but not sent" complaint or a
+              strike takes no advance payments until it is sorted out. Set a limit for one shop on its page.
+            </p>
           </Card>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button loading={busy} disabled={!valid} onClick={save} data-testid="settings-save">
               Save payment details
             </Button>
-            {!ready ? <span className="text-sm text-ink-muted">Add a UPI ID or a bank account so customers can pay.</span> : null}
+            {!ready ? <span className="text-sm text-ink-muted">Add a UPI ID or a bank account so shops can pay the commission.</span> : null}
           </div>
         </div>
 
-        <Card title="What customers see">
+        <Card title="What shops see">
           <div className="flex flex-col items-center gap-3 text-center">
             {f.upi_id && !errs.upi ? (
               <>
@@ -549,6 +780,8 @@ interface SettingsForm {
   bank_ifsc: string;
   bank_name: string;
   commission_pct: string;
+  advance_limit_verified: string;
+  advance_limit_trusted: string;
 }
 
 const EMPTY_SETTINGS: SettingsForm = {
@@ -560,6 +793,8 @@ const EMPTY_SETTINGS: SettingsForm = {
   bank_ifsc: '',
   bank_name: '',
   commission_pct: '0',
+  advance_limit_verified: '10000',
+  advance_limit_trusted: '50000',
 };
 
 const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;

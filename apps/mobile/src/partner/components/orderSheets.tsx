@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { formatINR, REJECT_REASONS, type DeliveryService, type Order } from '@gg/shared';
+import { expectedPaymentMode, formatINR, REJECT_REASONS, type DeliveryService, type Order, type PaymentMethod, type PaymentMode } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { signedUrl } from '@/shared/api/storage';
@@ -10,7 +10,7 @@ import { PhotoPicker } from '@/shared/components/PhotoPicker';
 import { useTranslation } from '@/shared/i18n';
 import { openDeliveryApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
-import { AppText, Button, Chip, Divider, IconButton, InfoBanner, Input, QtyStepper, Row, Sheet, toast } from '@/shared/ui';
+import { AppText, Button, Chip, Divider, IconButton, InfoBanner, Input, QtyStepper, Row, Segmented, Sheet, toast } from '@/shared/ui';
 
 import { orderActions, useMyListings } from '../api';
 
@@ -33,7 +33,11 @@ export function ConfirmSheet({ order, visible, onClose }: { order: Order; visibl
   const [busy, setBusy] = useState(false);
   const [picker, setPicker] = useState(false);
   const [query, setQuery] = useState('');
+  // How the customer pays (docs/DECISIONS.md #57): advance only within the shop's limit; the shop may always choose
+  // pay on delivery. null: not chosen yet, so it follows the total.
+  const [mode, setMode] = useState<PaymentMode | null>(null);
   const listings = useMyListings(picker ? order.shop.id : undefined, query);
+  const terms = order.payment_terms;
 
   useEffect(() => {
     if (!visible) return;
@@ -50,6 +54,7 @@ export function ConfirmSheet({ order, visible, onClose }: { order: Order; visibl
     );
     setCharge(String(order.delivery_charge));
     setNote('');
+    setMode(null);
   }, [visible, order]);
 
   const total = useMemo(
@@ -58,6 +63,10 @@ export function ConfirmSheet({ order, visible, onClose }: { order: Order; visibl
       (order.fulfilment === 'delivery' ? Number(charge || 0) : 0),
     [lines, charge, order.fulfilment],
   );
+
+  const auto = expectedPaymentMode(terms, total, order.fulfilment);
+  const advanceOk = auto === 'advance';
+  const payMode: PaymentMode = mode === 'advance' && !advanceOk ? 'on_delivery' : (mode ?? auto);
 
   const changed =
     Number(charge || 0) !== order.delivery_charge ||
@@ -73,6 +82,7 @@ export function ConfirmSheet({ order, visible, onClose }: { order: Order; visibl
         changed ? lines.map((l) => ({ shop_product_id: l.shop_product_id, name: l.name, qty: l.qty, price: Number(l.price || 0), with_installation: l.with_installation, installation_charge: l.installation_charge })) : null,
         changed ? Number(charge || 0) : null,
         note || null,
+        order.payee === 'gadget_galli' ? null : payMode,
       );
       onClose();
     } catch (e) {
@@ -156,6 +166,40 @@ export function ConfirmSheet({ order, visible, onClose }: { order: Order; visibl
         <AppText variant="title">{t('p.confirm.total')}</AppText>
         <AppText variant="priceLarge">{formatINR(total)}</AppText>
       </Row>
+      {order.payee !== 'gadget_galli' ? (
+        <View style={{ gap: 8 }} testID="confirm-payment-mode">
+          <AppText variant="label" color="textMuted">{t('p.confirm.payHow')}</AppText>
+          {advanceOk ? (
+            <Segmented<PaymentMode>
+              value={payMode}
+              onChange={setMode}
+              options={[
+                { value: 'advance', label: t('p.confirm.advance') },
+                { value: 'on_delivery', label: t('p.confirm.onDelivery') },
+              ]}
+            />
+          ) : null}
+          <InfoBanner
+            tone={payMode === 'advance' ? 'success' : 'info'}
+            icon={payMode === 'advance' ? 'shield-checkmark' : 'cash-outline'}
+            text={
+              payMode === 'advance'
+                ? t('p.confirm.advanceBody', { limit: formatINR(terms?.advance_limit ?? 0) })
+                : !terms?.upi_ready
+                  ? t('p.confirm.codNoUpi')
+                  : terms.paused
+                    ? t(`p.confirm.codPaused_${terms.paused}`)
+                    : terms.advance_limit <= 0
+                      ? t('p.confirm.codNew')
+                      : order.fulfilment === 'pickup'
+                        ? t('p.confirm.codPickup')
+                        : total > terms.advance_limit
+                          ? t('p.confirm.codAboveLimit', { limit: formatINR(terms.advance_limit) })
+                          : t('p.confirm.codChosen')
+            }
+          />
+        </View>
+      ) : null}
     </Sheet>
   );
 }
@@ -358,6 +402,174 @@ export function DispatchSheet({ order, visible, onClose, update }: { order: Orde
           </Row>
         </>
       )}
+    </Sheet>
+  );
+}
+
+const NOT_RECEIVED = ['noPayment', 'wrongAmount', 'wrongRef'] as const;
+
+/** The customer says they paid: confirm it after checking the UPI app, or say it has not arrived. */
+export function CheckPaymentSheet({ order, visible, onClose }: { order: Order; visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState<(typeof NOT_RECEIVED)[number]>('noPayment');
+  const [busy, setBusy] = useState(false);
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title={t('p.check.notReceivedTitle')}
+      footer={
+        <Button
+          testID="reject-payment"
+          title={t('p.check.notReceived')}
+          variant="danger"
+          size="lg"
+          full
+          loading={busy}
+          onPress={async () => {
+            setBusy(true);
+            try {
+              await orderActions.rejectPayment(order.id, t(`p.check.reason_${reason}`));
+              onClose();
+            } catch (e) {
+              toast(errorText(e, t), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      }
+    >
+      <InfoBanner text={t('p.check.notReceivedBody', { ref: order.payment_ref ?? '', amount: formatINR(order.grand_total) })} />
+      <Row wrap gap={8}>
+        {NOT_RECEIVED.map((r) => (
+          <Chip key={r} label={t(`p.check.reason_${r}`)} selected={reason === r} onPress={() => setReason(r)} />
+        ))}
+      </Row>
+    </Sheet>
+  );
+}
+
+const DOOR_METHODS: PaymentMethod[] = ['upi', 'cash', 'bank_transfer'];
+
+/** Handover: the customer's delivery code (and, for pay on delivery, how they paid) completes the order. */
+export function HandoverSheet({ order, visible, onClose }: { order: Order; visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [code, setCode] = useState('');
+  const [method, setMethod] = useState<PaymentMethod>('upi');
+  const [ref, setRef] = useState('');
+  const [error, setError] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const collect = order.payment_mode === 'on_delivery' && !order.paid_at;
+  useEffect(() => {
+    if (!visible) return;
+    setCode('');
+    setRef('');
+    setError(undefined);
+  }, [visible]);
+
+  const done = async () => {
+    setBusy(true);
+    try {
+      const r = await orderActions.handover(order.id, code, collect ? method : null, collect && ref ? ref : null);
+      if ('error' in r) setError(r.attempts_left > 0 ? t('p.handover.wrongCode', { n: r.attempts_left }) : t('error.CODE_LOCKED'));
+      else onClose();
+    } catch (e) {
+      setError(errorText(e, t));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title={t('p.handover.title')}
+      footer={<Button testID="handover-done" title={t('p.handover.done')} icon="checkmark-done" variant="success" size="lg" full disabled={code.length !== 4} loading={busy} onPress={done} />}
+    >
+      <InfoBanner icon="key-outline" text={order.fulfilment === 'pickup' ? t('p.handover.bodyPickup') : t('p.handover.body')} />
+      <Input
+        testID="handover-code"
+        label={t('p.handover.code')}
+        value={code}
+        onChangeText={(v) => {
+          setCode(v.replace(/\D/g, '').slice(0, 4));
+          setError(undefined);
+        }}
+        keyboardType="number-pad"
+        error={error}
+        maxLength={4}
+      />
+      {collect ? (
+        <View style={{ gap: 8 }}>
+          <AppText variant="label" color="textMuted">{t('p.handover.paidBy', { amount: formatINR(order.grand_total) })}</AppText>
+          <Row wrap gap={8}>
+            {DOOR_METHODS.map((m) => (
+              <Chip key={m} testID={`handover-${m}`} label={t(`payment.${m}`)} selected={method === m} onPress={() => setMethod(m)} />
+            ))}
+          </Row>
+          {method !== 'cash' ? (
+            <Input label={t('p.handover.ref')} value={ref} onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())} autoCapitalize="characters" />
+          ) : null}
+        </View>
+      ) : null}
+    </Sheet>
+  );
+}
+
+/** The shop cannot deliver: refund a paid order (with the reference) or cancel one paid on delivery. */
+export function CancelSheet({ order, visible, onClose }: { order: Order; visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState('');
+  const [ref, setRef] = useState('');
+  const [busy, setBusy] = useState(false);
+  const paid = !!order.paid_at;
+  useEffect(() => {
+    if (!visible) return;
+    setReason('');
+    setRef('');
+  }, [visible]);
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title={paid ? t('p.cancel.refundTitle') : t('p.cancel.title')}
+      footer={
+        <Button
+          testID="cancel-order"
+          title={paid ? t('p.cancel.refundDone') : t('p.cancel.title')}
+          variant="danger"
+          size="lg"
+          full
+          disabled={!reason.trim() || (paid && ref.length < 6)}
+          loading={busy}
+          onPress={async () => {
+            setBusy(true);
+            try {
+              await orderActions.cancel(order.id, reason, paid ? ref : null);
+              onClose();
+            } catch (e) {
+              toast(errorText(e, t), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      }
+    >
+      <InfoBanner tone="warning" text={paid ? t('p.cancel.refundBody', { amount: formatINR(order.grand_total) }) : t('p.cancel.body')} />
+      <Input testID="cancel-reason" label={t('p.cancel.reason')} value={reason} onChangeText={setReason} />
+      {paid ? (
+        <Input
+          testID="refund-ref"
+          label={t('p.cancel.refundRef')}
+          hint={t('p.cancel.refundRefHint')}
+          value={ref}
+          onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())}
+          autoCapitalize="characters"
+        />
+      ) : null}
     </Sheet>
   );
 }
