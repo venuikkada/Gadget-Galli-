@@ -559,7 +559,7 @@ export const en = {
     call: 'Call support',
     faq: 'Common questions',
     q1: 'How do I pay?',
-    a1: 'After the shop confirms your order, pay the shop by UPI in the app (scan the QR or tap to open any UPI app) and enter the UPI reference; the shop checks it and sends your order. For bigger orders and new shops, you pay on delivery instead.',
+    a1: 'After the shop confirms your order, the app shows how to pay that shop: by UPI (tap to open any UPI app, or scan the QR) or by bank transfer. When you pay in advance, enter the UPI reference or bank UTR; the shop checks it and sends your order. For bigger orders and new shops, you pay on delivery instead, once the product is in your hands.',
     q2: 'Who delivers my order?',
     a2: 'The shop sends it by Porter, Rapido, Uber or its own delivery person. You can see the rider details in the app.',
     q3: 'What if something is wrong?',

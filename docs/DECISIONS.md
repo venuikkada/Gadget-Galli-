@@ -238,3 +238,15 @@ The brief said "if something is unclear, make a sensible choice and list your ch
       - `production`: demo logins off.
     - **Push on Android** needs Firebase's `google-services.json`, read from the EAS file variable `GOOGLE_SERVICES_JSON` (or `apps/mobile/google-services.json` for local builds).
     - **Support contacts** come from `EXPO_PUBLIC_SUPPORT_*` in builds and `supportPhone` / `supportWhatsapp` / `supportEmail` in the websites' `config.js`, so the number can change without a new app build.
+
+59. **The shop's UPI QR and bank account at every step** (migration 0019; the founder's request after a test order showed no way to pay).
+    - **Before:** pay-on-delivery orders said only "pay when it arrives" until dispatch, and shops had no bank account. Customers could pay a shop only by UPI, which most banks cap at about ₹1 lakh a day.
+    - **Customers** see how to pay from the moment the shop accepts:
+      - **Advance orders:** UPI (one tap, a QR with the exact amount, the shop's own QR image, the UPI ID) or **bank transfer** (account, IFSC, amount and remark to copy), then the UPI reference or bank UTR for the shop to check.
+      - **Pay on delivery:** the same details, with "pay only when the product is in your hands" and nothing to enter; the shop records the payment at handover. Pickups say "pay at the shop".
+    - **Shops** add an optional bank account in registration step 6 or shop details:
+      - the account number is typed twice; the IFSC and the number are checked in the app and in the database;
+      - at handover, **Show payment QR** puts a QR with the exact amount and the bank account on the shop's phone for the customer.
+    - **Privacy:** bank details live in `shop_private`, which only the owner and admins can read. A customer gets them only for their own order, once the shop has accepted it. The public shop page never shows them.
+    - **Checks:** approving a shop checks its bank account as well as its UPI ID. Admins can tick "Bank account checked" on the shop page. Any change by the shop needs a new check, and customers see a "verified" tick only on checked details.
+    - The money still goes straight to the shop, never through Gadget Galli (#57). Advance payments still need a checked UPI ID; the bank account is an extra way to pay.
