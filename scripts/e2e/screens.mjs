@@ -177,8 +177,35 @@ await step('customer: profile, settings (dark mode), help, terms, privacy', asyn
   await c.goto(`${MOBILE}/settings`);
   await c.getByTestId('theme-system').click();
   await visit(c, '/help', 'c-20-help');
-  await visit(c, '/legal?doc=terms', 'c-21-terms');
-  await visit(c, '/legal?doc=privacy', 'c-22-privacy');
+  await visit(c, '/terms', 'c-21-terms');
+  await visit(c, '/privacy', 'c-22-privacy');
+  await visit(c, '/delete-account', 'c-22b-delete-account');
+});
+await step('public pages open without logging in (Play Store privacy and account deletion links)', async () => {
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => pageErrors.push(`public: ${e.message}`));
+  await page.goto(`${MOBILE}/privacy`);
+  await page.getByText('What we collect', { exact: false }).first().waitFor({ timeout: 15000 });
+  await page.getByText('venuikkada@gmail.com', { exact: false }).first().waitFor();
+  await page.screenshot({ path: join(OUT, 'c-22c-public-privacy.png') });
+  await page.getByTestId('public-doc-deletion').click();
+  await page.getByText('Delete my account', { exact: false }).first().waitFor({ timeout: 10000 });
+  await page.getByText('తెలుగు', { exact: true }).click();
+  await page.getByText('మేము తొలగించేవి', { exact: false }).first().waitFor({ timeout: 10000 });
+  await page.screenshot({ path: join(OUT, 'c-22d-public-delete-te.png') });
+  await page.goto(`${MOBILE}/terms`);
+  await page.getByTestId('public-doc-body').waitFor({ timeout: 10000 });
+  await ctx.close();
+  // The Shop Partner website (app: 'partner') used to bounce the legal pages back to /partner
+  const pctx = await browser.newContext(phone);
+  await pctx.addInitScript(() => { window.GG_CONFIG = { app: 'partner' }; });
+  const ppage = await pctx.newPage();
+  ppage.on('pageerror', (e) => pageErrors.push(`public (partner site): ${e.message}`));
+  await ppage.goto(`${MOBILE}/privacy`);
+  await ppage.getByTestId('public-doc-body').waitFor({ timeout: 15000 });
+  if (!ppage.url().endsWith('/privacy')) throw new Error(`partner site redirected to ${ppage.url()}`);
+  await pctx.close();
 });
 await step('customer: outside Hyderabad → "Notify me" waitlist', async () => {
   await visit(c, '/not-served', 'c-23-not-served');
@@ -297,6 +324,9 @@ await step('partner: insights (month), QR page, more, status', async () => {
   await s.getByTestId('shop-qr').waitFor();
   await s.goto(`${MOBILE}/partner/more`);
   await s.getByTestId('more-shop').waitFor();
+  // Terms and privacy are public pages, so they open on the Shop Partner side too
+  await s.getByText('Privacy policy', { exact: true }).click();
+  await s.getByTestId('public-doc-body').waitFor({ timeout: 10000 });
   await s.goto(`${MOBILE}/partner/status`);
   await s.getByTestId('shop-status').waitFor();
   await s.screenshot({ path: join(OUT, 'p-09-status.png') });

@@ -78,9 +78,9 @@ export default function ProfileScreen() {
         <Divider />
         <ListItem icon="help-buoy-outline" title={t('profile.help')} onPress={() => router.push('/help')} />
         <Divider />
-        <ListItem icon="document-text-outline" title={t('profile.terms')} onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} />
+        <ListItem icon="document-text-outline" title={t('profile.terms')} onPress={() => router.push('/terms')} />
         <Divider />
-        <ListItem icon="lock-closed-outline" title={t('profile.privacy')} onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} />
+        <ListItem icon="lock-closed-outline" title={t('profile.privacy')} onPress={() => router.push('/privacy')} />
       </Card>
 
       {config.app === 'all' || config.partnerAppUrl ? (

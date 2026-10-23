@@ -8,6 +8,7 @@
 //   SUPABASE_URL, SUPABASE_ANON_KEY        Supabase → Project Settings → API
 //   CUSTOMER_URL, PARTNER_URL, ADMIN_URL   the three website addresses, e.g. https://xyz.hostingersite.com
 //   DEMO=0                                 hide the demo phone numbers on the login screens (real launch)
+//   SUPPORT_PHONE, SUPPORT_WHATSAPP, SUPPORT_EMAIL   your support contacts (else the app's built-in ones)
 //
 // Output in deploy/hostinger/ (not committed):
 //   gadget-galli-customer.zip   customer app                → the customer website's public_html
@@ -34,6 +35,9 @@ const settings = {
   demo: process.env.DEMO !== '0',
   mapTileUrl: (process.env.MAP_TILE_URL ?? '').trim(),
   mapAttribution: (process.env.MAP_ATTRIBUTION ?? '').trim(),
+  supportPhone: (process.env.SUPPORT_PHONE ?? '').trim(),
+  supportWhatsapp: (process.env.SUPPORT_WHATSAPP ?? '').trim(),
+  supportEmail: (process.env.SUPPORT_EMAIL ?? '').trim(),
 };
 const run = (cwd, cmd, args, env) => execFileSync(cmd, args, { cwd: join(ROOT, cwd), stdio: 'inherit', env: { ...process.env, ...env } });
 
@@ -112,6 +116,12 @@ ${
   app: ${q(app)},
   // true shows the demo phone numbers on the login screen. Set it to false for a real launch.
   demo: ${settings.demo},
+
+  // Gadget Galli's support line (Help, order help) and email (privacy and account deletion pages), e.g. "+919876543210".
+  // Empty uses the ones built into the app.
+  supportPhone: ${q(settings.supportPhone)},
+  supportWhatsapp: ${q(settings.supportWhatsapp)},
+  supportEmail: ${q(settings.supportEmail)},
 `
     : ''
 }};

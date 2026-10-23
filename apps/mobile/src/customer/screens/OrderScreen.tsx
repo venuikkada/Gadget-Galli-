@@ -5,11 +5,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, SUPPORT, variantText } from '@gg/shared';
+import { buildWhatsAppOrderMessage, canReportIssue, customerCanCancel, effectiveStatus, formatINR, formatPhone, formatTimeIST, rideMins, variantText } from '@gg/shared';
 import { directionsUrl } from '@gg/shared/map';
 
 import { errorText } from '@/shared/api/rpc';
 import { signedUrl } from '@/shared/api/storage';
+import { config } from '@/shared/config';
 import { useRealtime } from '@/shared/hooks/realtime';
 import { useTranslation } from '@/shared/i18n';
 import { tDateTime } from '@/shared/i18n/format';
@@ -138,7 +139,7 @@ export default function OrderScreen() {
   const late = !!o.overdue;
   // Paid in advance and not sent yet: when it must go out
   const sendBy = toShop && o.dispatch_due_at && ['PAID', 'PACKED'].includes(o.status) && !late ? tDateTime(o.dispatch_due_at) : null;
-  const supportWhatsApp = () => openWhatsApp(process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp, `Hi, about my order ${o.order_no}`);
+  const supportWhatsApp = () => openWhatsApp(config.support.whatsapp, `Hi, about my order ${o.order_no}`);
   const resolvedIssue = !openIssue ? o.issues.find((i) => i.status === 'resolved') : null;
 
   const sendPaymentRef = async (ref: string, method: 'upi' | 'bank_transfer') => {

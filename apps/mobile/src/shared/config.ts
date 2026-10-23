@@ -6,6 +6,8 @@
  * once and pointed at a server afterwards, and one build serves both the customer site and the Shop Partner
  * site (see docs/DEPLOY-HOSTINGER.md). Values in config.js win over the built-in ones.
  */
+import { SUPPORT } from '@gg/shared';
+
 export type AppSide = 'all' | 'customer' | 'partner';
 
 type RuntimeConfig = {
@@ -22,6 +24,10 @@ type RuntimeConfig = {
   /** Map tiles; empty means OpenStreetMap's own (see docs/DEPLOY-HOSTINGER.md before traffic grows). */
   mapTileUrl?: string;
   mapAttribution?: string;
+  /** Gadget Galli's own support contacts (Help, order help, privacy and account deletion pages). */
+  supportPhone?: string;
+  supportWhatsapp?: string;
+  supportEmail?: string;
 };
 
 const runtime: RuntimeConfig = (globalThis as { GG_CONFIG?: RuntimeConfig }).GG_CONFIG ?? {};
@@ -45,4 +51,9 @@ export const config = {
   /** Map tiles and their credit line; empty means OpenStreetMap's own tiles. */
   mapTileUrl: (runtime.mapTileUrl || process.env.EXPO_PUBLIC_MAP_TILE_URL || '').trim(),
   mapAttribution: (runtime.mapAttribution || process.env.EXPO_PUBLIC_MAP_ATTRIBUTION || '').trim(),
+  support: {
+    phone: (runtime.supportPhone || process.env.EXPO_PUBLIC_SUPPORT_PHONE || SUPPORT.phone).trim(),
+    whatsapp: (runtime.supportWhatsapp || process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp).trim(),
+    email: (runtime.supportEmail || process.env.EXPO_PUBLIC_SUPPORT_EMAIL || SUPPORT.email).trim(),
+  },
 };

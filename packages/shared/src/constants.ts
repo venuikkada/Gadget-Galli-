@@ -143,10 +143,11 @@ export const MAX_PRODUCT_PHOTOS = 8;
 export const MAX_SHOP_INSIDE_PHOTOS = 10;
 export const MAX_IMAGE_BYTES = 300 * 1024;
 
+/** Defaults only: builds set EXPO_PUBLIC_SUPPORT_*, websites can set supportPhone / supportWhatsapp / supportEmail in config.js. */
 export const SUPPORT = {
   phone: '+919000000000',
   whatsapp: '+919000000000',
-  email: 'support@gadgetgalli.in',
+  email: 'venuikkada@gmail.com',
 };
 
 export const DELIVERY_APPS: Record<'porter' | 'rapido' | 'uber', { name: string; android: string; ios: string; web: string; scheme: string }> = {

@@ -2,15 +2,11 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SUPPORT } from '@gg/shared';
-
+import { config } from '@/shared/config';
 import { useTranslation } from '@/shared/i18n';
 import { callPhone, openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Card, Divider, Header, Row, Screen } from '@/shared/ui';
-
-const SUPPORT_PHONE = process.env.EXPO_PUBLIC_SUPPORT_PHONE || SUPPORT.phone;
-const SUPPORT_WHATSAPP = process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp;
 
 export default function HelpScreen() {
   const { t } = useTranslation();
@@ -21,8 +17,8 @@ export default function HelpScreen() {
     <Screen header={<Header title={t('help.title')} />}>
       <Card style={{ gap: 10 }}>
         <AppText variant="bodySmall" color="textMuted">{t('help.body')}</AppText>
-        <Button title={t('help.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="lg" full onPress={() => openWhatsApp(SUPPORT_WHATSAPP, 'Hi Gadget Galli support')} />
-        <Button title={t('help.call')} icon="call" variant="secondary" size="lg" full onPress={() => callPhone(SUPPORT_PHONE)} />
+        <Button title={t('help.whatsapp')} icon="logo-whatsapp" variant="whatsapp" size="lg" full onPress={() => openWhatsApp(config.support.whatsapp, 'Hi Gadget Galli support')} />
+        <Button title={t('help.call')} icon="call" variant="secondary" size="lg" full onPress={() => callPhone(config.support.phone)} />
       </Card>
       <AppText variant="h3">{t('help.faq')}</AppText>
       <Card padded={false} style={{ paddingHorizontal: 14 }}>

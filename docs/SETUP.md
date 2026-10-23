@@ -91,7 +91,7 @@ Customers and shop owners log in with their phone number and a 6-digit code. Sup
   - Public: `shop-media`, `product-photos`, `review-photos`, `banners`.
   - Private: `shop-documents` (admins only) and `order-media` (only the customer, the shop and admins).
 - **Realtime** for `orders`, `order_events` and `notifications` is also turned on by the migrations. It drives the live order timeline and the shop's loud new-order alert. The app also polls every 30–45 seconds, so it keeps working if realtime drops.
-- **Scheduled order jobs** run every 5 minutes through `pg_cron`. They expire requests that get no reply in 2 hours, remind customers about orders that have been on the way for 24 hours, and mark orders delivered automatically after 72 hours. If `pg_cron` was not enabled before `db push`, either re-run the last migration or schedule the `order-jobs` edge function (below) every 5 minutes.
+- **Scheduled order jobs** run every 5 minutes through `pg_cron`. They expire requests that get no reply in 2 hours, remind customers about orders that have been on the way for 24 hours, and raise the overdue alerts for orders paid to a shop (DECISIONS #57). Only older orders paid to Gadget Galli are still marked delivered automatically, 72 hours after sending. If `pg_cron` was not enabled before `db push`, either re-run the last migration or schedule the `order-jobs` edge function (below) every 5 minutes.
 
 ### Edge functions
 ```bash
@@ -113,10 +113,12 @@ Every new row in `notifications` (order updates, the new-order alert for shops, 
 
 ## 4. Mobile app (Android & iOS)
 
+**Publishing on Google Play** (accounts, build profiles, Firebase push, store texts and Google's forms): see [PLAY-STORE.md](PLAY-STORE.md). The steps below are the technical reference.
+
 1. `cp apps/mobile/.env.example apps/mobile/.env`, then fill in:
    - `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`: from step 1.
    - `EXPO_PUBLIC_SHARE_BASE_URL`: where the admin panel is hosted, e.g. `https://gadgetgalli.in`. Shared links look like `https://gadgetgalli.in/s/product/<id>`.
-   - `EXPO_PUBLIC_SUPPORT_PHONE`, `EXPO_PUBLIC_SUPPORT_WHATSAPP`: your support line, shown in Help.
+   - `EXPO_PUBLIC_SUPPORT_PHONE`, `EXPO_PUBLIC_SUPPORT_WHATSAPP`, `EXPO_PUBLIC_SUPPORT_EMAIL`: your support line (Help, order help) and email (privacy and account deletion pages). The websites can set them in `config.js` instead.
    - Maps need no key: they use OpenStreetMap. When traffic grows, set `EXPO_PUBLIC_MAP_TILE_URL` and `EXPO_PUBLIC_MAP_ATTRIBUTION` to a tile provider's free tier (for example MapTiler).
 2. Link the app to EAS:
    ```bash
@@ -125,12 +127,13 @@ Every new row in `notifications` (order updates, the new-order alert for shops, 
    eas init                     # creates the project; put the id in .env as EAS_PROJECT_ID (and EXPO_OWNER)
    ```
 3. Set up push credentials:
-   - **Android**: create a Firebase project, add an Android app with package `in.gadgetgalli.app` and upload the FCM V1 service-account key with `eas credentials`.
+   - **Android**: create a Firebase project and add an Android app with package `in.gadgetgalli.app`. Upload its `google-services.json` to EAS as the file variable `GOOGLE_SERVICES_JSON` (or put the file in `apps/mobile/` for a local build), and upload the FCM V1 service-account key with `eas credentials`.
    - **iOS**: EAS creates the APNs key for you during the first build.
 4. Build:
    ```bash
    eas build --profile preview --platform android      # installable APK for testing with shops
-   eas build --profile production --platform android   # AAB for Google Play
+   eas build --profile beta --platform android         # AAB for Play closed testing (demo logins on)
+   eas build --profile production --platform android   # AAB for the public release (demo logins off)
    eas build --profile production --platform ios
    eas submit --platform android                       # or upload in Play Console
    ```

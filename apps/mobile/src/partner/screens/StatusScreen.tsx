@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
-import { SUPPORT } from '@gg/shared';
-
+import { config } from '@/shared/config';
 import { useTranslation } from '@/shared/i18n';
 import { openWhatsApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
@@ -40,7 +39,7 @@ export default function StatusScreen() {
       ) : null}
       {s !== 'draft' ? <Button title={t('p.status.addProducts')} icon="add-circle-outline" variant="secondary" size="lg" full onPress={() => router.replace('/partner/products')} /> : null}
       {s === 'approved' ? <Button title={t('p.tabs.dashboard')} variant="primary" size="lg" full onPress={() => router.replace('/partner/dashboard')} /> : null}
-      <Button title={t('p.status.contact')} icon="logo-whatsapp" variant="outline" full onPress={() => openWhatsApp(process.env.EXPO_PUBLIC_SUPPORT_WHATSAPP || SUPPORT.whatsapp, `Hi, about my shop ${shop.name}`)} />
+      <Button title={t('p.status.contact')} icon="logo-whatsapp" variant="outline" full onPress={() => openWhatsApp(config.support.whatsapp, `Hi, about my shop ${shop.name}`)} />
     </Screen>
   );
 }
