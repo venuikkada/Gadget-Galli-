@@ -225,3 +225,16 @@ The brief said "if something is unclear, make a sensible choice and list your ch
     - **Older orders** placed before 0018 were paid to Gadget Galli (#52) and finish that way: admin payment check, payouts to shops, delivery 72 hours after sending. Requests no shop had accepted yet switched to the new flow.
     - Code: `supabase/migrations/20261024000018_pay_the_shop.sql` (tests `11_pay_the_shop.test.sql`); customer `OrderScreen.tsx`, `PayCard.tsx`, `OrderProtection.tsx`; partner `OrderScreen.tsx`, `orderSheets.tsx`, `PayoutsScreen.tsx`; admin `PaymentsPage.tsx`, `ShopDetailPage.tsx`.
 
+
+## Android release
+
+58. **Ready for Google Play** (see [PLAY-STORE.md](PLAY-STORE.md)).
+    - **Expo SDK 57** (React Native 0.86). Expo SDK 56's JavaScript engine (Hermes V1) has a known memory regression, fixed in SDK 57.0.9. Shop owners keep the Shop Partner app open all day for the new-order alarm, so a slow leak would end in crashes and missed orders. Switching the engine off on SDK 56 would have meant compiling React Native from source on every build, which is slower and more fragile.
+    - **No background audio.** `expo-audio` adds a media-playback foreground service by default, and Google Play asks apps to justify that permission with a video. The new-order alarm plays while the app is open; with the phone locked, the push notification's loud `new-orders` channel rings instead.
+    - **Public legal pages:** `/privacy`, `/terms` and `/delete-account` need no login, because Play needs public privacy policy and account deletion links. Moving them out of the customer-only section also fixed Terms and Privacy on the Shop Partner website, which used to bounce shop owners back to the partner home.
+    - **Build profiles** (`apps/mobile/eas.json`):
+      - `preview`: an APK for shops to install directly, with the demo logins.
+      - `beta`: the bundle for Play's closed test, with the demo logins, because real SMS login needs DLT approval first.
+      - `production`: demo logins off.
+    - **Push on Android** needs Firebase's `google-services.json`, read from the EAS file variable `GOOGLE_SERVICES_JSON` (or `apps/mobile/google-services.json` for local builds).
+    - **Support contacts** come from `EXPO_PUBLIC_SUPPORT_*` in builds and `supportPhone` / `supportWhatsapp` / `supportEmail` in the websites' `config.js`, so the number can change without a new app build.

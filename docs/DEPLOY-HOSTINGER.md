@@ -95,6 +95,7 @@ Other demo numbers: customers `+91 90000 00002` to `00012`, shop owners `+91 900
 - **Supabase's free projects pause after a week with no activity.** Open the Supabase dashboard to wake the project up.
 - **The web Shop Partner app rings for new orders only while it is open in the browser.** For the loud alarm with the phone locked, shops need the Android app (see [SETUP.md](SETUP.md), section 4).
 - **Share links** from the customer app open on the admin website (`/s/product/…`), which offers "Open in your browser".
+- **Public pages for Google Play:** the customer website serves `/privacy`, `/terms` and `/delete-account` without login (English, Telugu, Hindi). Put your support phone, WhatsApp and email in `config.js` (`supportPhone`, `supportWhatsapp`, `supportEmail`); they show in Help, on late or refunded orders and on these pages. See [PLAY-STORE.md](PLAY-STORE.md).
 - **Maps** need no key. Customers drop an exact pin when they save an address (GPS, dragging the map or searching a place); shops see it on every order with the distance, ride time, "Directions" and "Send location to rider".
 
 ## Going live for real later

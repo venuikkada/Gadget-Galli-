@@ -15,7 +15,9 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const OUT = join(ROOT, 'test-results', 'screenshots');
+// PLAY=1: Google Play phone screenshots (1080 × 1920, at most 2:1) in test-results/play, without the desktop admin tour.
+const PLAY = process.env.PLAY === '1';
+const OUT = join(ROOT, 'test-results', PLAY ? 'play' : 'screenshots');
 const MOBILE = process.env.GG_MOBILE_URL ?? 'http://localhost:8081';
 const ADMIN = process.env.GG_ADMIN_URL ?? 'http://localhost:4173';
 const PHOTO = join(ROOT, 'apps', 'mobile', 'assets', 'images', 'icon.png');
@@ -61,7 +63,7 @@ const india = { locale: 'en-IN', timezoneId: 'Asia/Kolkata' };
 // Location is allowed and set to Kukatpally, so "Use my current location" can place an address pin.
 // A phone browser: the apps show UPI buttons only where a UPI app can open
 const PHONE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
-const phone = { userAgent: PHONE_UA, ...india, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
+const phone = { userAgent: PHONE_UA, ...india, viewport: PLAY ? { width: 360, height: 640 } : { width: 390, height: 844 }, deviceScaleFactor: PLAY ? 3 : 2, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: { latitude: 17.4948, longitude: 78.3996 } };
 // Map tiles come from OpenStreetMap, which this machine may not reach: serve a stand-in tile (real streets show live).
 const TILE = readFileSync(join(ROOT, 'scripts', 'e2e', 'fixtures', 'map-tile.png'));
 const stubTiles = (ctx) => ctx.route(/tile\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'image/png', body: TILE }));
@@ -388,7 +390,7 @@ await step('new shop registration', async () => {
 // ---------------------------------------------------------------------------
 // Admin panel tour
 // ---------------------------------------------------------------------------
-await step('admin tour', async () => {
+if (!PLAY) await step('admin tour', async () => {
   const actx = await browser.newContext({ ...india, viewport: { width: 1440, height: 900 } });
   await stubTiles(actx);
   const admin = await actx.newPage();
