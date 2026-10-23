@@ -236,11 +236,11 @@ export default function OrderScreen() {
           </Card>
         ) : null}
         {o.status === 'CONFIRMED' && payReady && !o.payment_claimed_at && !onDelivery ? <PayCard order={o} submitting={submitPayment.isPending} onSubmit={sendPaymentRef} /> : null}
-        {/* Pay on delivery: no product, no payment */}
-        {onDelivery && ['CONFIRMED', 'PACKED'].includes(status) && !o.paid_at ? <PayOnDeliveryCard order={o} /> : null}
-        {/* On its way: the delivery code, and the shop's UPI to pay at the door */}
+        {/* Pay on delivery: how to pay the shop (UPI QR, UPI ID, bank account) from the moment it accepts. No product, no payment */}
+        {onDelivery && ['CONFIRMED', 'PACKED'].includes(status) && !o.paid_at ? payReady ? <PayCard order={o} door /> : <PayOnDeliveryCard order={o} /> : null}
+        {/* On its way: the delivery code, then how to pay at the door */}
         {status === 'DISPATCHED' && o.delivery_code ? <DeliveryCodeCard code={o.delivery_code} /> : null}
-        {onDelivery && status === 'DISPATCHED' && !o.paid_at && payReady ? <PayCard order={o} door /> : null}
+        {onDelivery && status === 'DISPATCHED' && !o.paid_at ? payReady ? <PayCard order={o} door /> : <PayOnDeliveryCard order={o} /> : null}
 
         {/* Where the shop and the delivery address are, how far and how long the ride is */}
         {!ended ? (
@@ -361,7 +361,7 @@ export default function OrderScreen() {
             ]}
           />
           {o.payments.map((p, i) => (
-            <Tag key={i} tone="success" icon="checkmark-circle" label={t('order.paidVia', { method: t(`payment.${p.method}`) })} />
+            <Tag key={i} tone="success" icon="checkmark-circle" label={`${t('order.paidVia', { method: t(`payment.${p.method}`) })}${p.upi_txn_id ? ` · ${p.upi_txn_id}` : ''}`} testID="paid-via" />
           ))}
         </Card>
 

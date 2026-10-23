@@ -170,11 +170,19 @@ try {
     await shop.getByTestId('cod-pack').waitFor({ timeout: 15000 });
   });
 
-  await step('customer sees pay on delivery: nothing to pay now', async () => {
+  await step('customer sees how to pay on delivery: the shop\'s UPI QR and bank account, nothing to enter now', async () => {
     await customer.goto(`${MOBILE}/order/${orderId}`);
-    await customer.getByTestId('pay-on-delivery').waitFor({ timeout: 15000 });
-    if (await customer.getByTestId('pay-card').count()) throw new Error('a pay-on-delivery order asks for payment now');
+    const door = customer.getByTestId('pay-at-door');
+    await door.waitFor({ timeout: 15000 });
+    await door.getByText('cyberzonesystems@okaxis').waitFor();
+    await door.getByTestId('pay-qr').waitFor();
     await shot(customer, '06-customer-pay-on-delivery');
+    await door.getByText('Bank transfer', { exact: true }).click();
+    await door.getByTestId('bank-account').waitFor({ timeout: 10000 });
+    if (!/^UTIB0/.test((await door.getByTestId('bank-ifsc').innerText()).trim())) throw new Error('the shop\'s IFSC is missing');
+    await shot(customer, '06b-customer-pay-on-delivery-bank');
+    if (await customer.getByTestId('pay-card').count()) throw new Error('a pay-on-delivery order asks for payment now');
+    if (await customer.getByTestId('payment-ref').count()) throw new Error('a pay-on-delivery order asks for a payment reference');
   });
 
   const adminCtx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
@@ -226,6 +234,11 @@ try {
     await shop.getByTestId('handover-done').click();
     await shop.getByText('Wrong code', { exact: false }).waitFor({ timeout: 10000 });
     await shop.getByTestId('handover-code').fill(deliveryCode);
+    // The shop can show the customer a UPI QR with the exact amount, and its bank account
+    await shop.getByTestId('handover-show-pay').click();
+    await shop.getByTestId('handover-qr').waitFor({ timeout: 10000 });
+    await shop.getByTestId('handover-bank').waitFor();
+    await shot(shop, '11a-shop-handover-pay-qr');
     await shop.getByTestId('handover-upi').click();
     await shot(shop, '11b-shop-handover');
     await shop.getByTestId('handover-done').click();
@@ -283,6 +296,16 @@ try {
     await addPhoto(owner, 0); // shop front (required)
     await owner.getByTestId('wizard-next').click();
     await owner.getByTestId('upi-id').fill('lakshmimobiles@ybl');
+    // Optional bank account: both account numbers must match, and the IFSC is checked
+    await owner.getByTestId('bank-holder').fill('Lakshmi Mobiles');
+    await owner.getByTestId('bank-account').fill('50100123456789');
+    await owner.getByTestId('bank-account-again').fill('50100123456780');
+    await owner.getByTestId('wizard-next').click();
+    await owner.getByText("The account numbers don't match").waitFor({ timeout: 10000 });
+    await owner.getByTestId('bank-account-again').fill('50100123456789');
+    await owner.getByTestId('bank-ifsc').fill('hdfc0001234');
+    await owner.getByTestId('bank-name').fill('HDFC Bank');
+    await shot(owner, '19b-register-bank');
     await owner.getByTestId('wizard-next').click();
     for (const id of ['upload-licence', 'upload-id']) {
       const [chooser] = await Promise.all([owner.waitForEvent('filechooser'), owner.getByTestId(id).click()]);

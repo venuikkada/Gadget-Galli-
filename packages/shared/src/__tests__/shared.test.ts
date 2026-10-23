@@ -19,6 +19,8 @@ import {
   highlightParts,
   hoursTable,
   isShopOpenNow,
+  isValidBankAccountNumber,
+  isValidIfsc,
   isValidUpiId,
   nextShopStep,
   normalizeIndianPhone,
@@ -192,6 +194,13 @@ describe('orders', () => {
     );
     expect(isValidUpiId('shop.name@okhdfcbank')).toBe(true);
     expect(isValidUpiId('not-a-upi')).toBe(false);
+    expect(isValidIfsc('HDFC0001234')).toBe(true);
+    expect(isValidIfsc('icic0a12b3c')).toBe(true);
+    expect(isValidIfsc('HDFC1001234')).toBe(false);
+    expect(isValidIfsc('HDF0001234')).toBe(false);
+    expect(isValidBankAccountNumber('1234 5678 9012')).toBe(true);
+    expect(isValidBankAccountNumber('12345678')).toBe(false);
+    expect(isValidBankAccountNumber('12AB56789012')).toBe(false);
   });
 });
 

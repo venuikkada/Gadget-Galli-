@@ -15,10 +15,11 @@ import { AppText, Button, Card, Divider, InfoBanner, Input, Row, Segmented, toas
 type Method = 'upi' | 'bank_transfer';
 
 /**
- * How the customer pays once the shop accepts. Orders paid to the shop (docs/DECISIONS.md #57): the shop's UPI ID (button,
- * QR with the exact amount, or the shop's own QR image), then the UPI reference, which the shop checks. With `door`, the
- * same UPI details to pay at the door for an order paid on delivery, without a reference to enter.
- * Older orders paid to Gadget Galli (#52) can also be paid by bank transfer.
+ * How the customer pays once the shop accepts. Orders paid to the shop (docs/DECISIONS.md #57, #59): the shop's UPI ID
+ * (button, QR with the exact amount, or the shop's own QR image) or its bank account, then the UPI reference or bank UTR,
+ * which the shop checks. With `door`, the same details for an order paid on delivery (or at the shop, for a pickup),
+ * shown from the moment the shop accepts, without a reference to enter: the shop records the payment at handover.
+ * Older orders paid to Gadget Galli (#52) are paid the same way to Gadget Galli's UPI ID or bank account.
  */
 export function PayCard({
   order,
@@ -35,7 +36,7 @@ export function PayCard({
   const { colors } = useTheme();
   const payTo = order.pay_to!;
   const toShop = payTo.payee === 'shop';
-  const methods: Method[] = [...(payTo.upi_id ? (['upi'] as const) : []), ...(payTo.bank && !door ? (['bank_transfer'] as const) : [])];
+  const methods: Method[] = [...(payTo.upi_id ? (['upi'] as const) : []), ...(payTo.bank ? (['bank_transfer'] as const) : [])];
   const [method, setMethod] = useState<Method>(methods[0] ?? 'upi');
   const [ref, setRef] = useState('');
   const upiLink = useMemo(
@@ -47,9 +48,12 @@ export function PayCard({
   const shop = order.shop.name;
   // A computer has no UPI app: lead with the QR code to scan from a phone.
   const desktop = isDesktopWeb();
-  const title = door ? t('order.payAtDoor') : toShop ? t('order.payTitleShop', { shop }) : t('order.payTitle');
+  const pickup = order.fulfilment === 'pickup';
+  const title = door ? (pickup ? t('order.payAtShop') : t('order.payAtDoor')) : toShop ? t('order.payTitleShop', { shop }) : t('order.payTitle');
   const body = door
-    ? t('order.payAtDoorBody', { amount, shop })
+    ? pickup
+      ? t('order.payAtShopBody', { amount, shop })
+      : t('order.payAtDoorBody', { amount, shop })
     : toShop
       ? t('order.payBodyShop', { amount, shop })
       : methods.length > 1
@@ -134,7 +138,7 @@ export function PayCard({
           <View style={{ backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12 }}>
             {[
               { label: t('order.bankAmount'), value: String(order.grand_total), shown: amount, id: 'bank-amount' },
-              { label: t('order.bankAccountName'), value: payTo.bank.account_name, id: 'bank-holder' },
+              { label: t('order.bankAccountName'), value: payTo.bank.account_name, id: 'bank-holder', checked: payTo.bank.verified !== false },
               { label: t('order.bankAccountNumber'), value: payTo.bank.account_number, id: 'bank-account' },
               { label: t('order.bankIfsc'), value: payTo.bank.ifsc, id: 'bank-ifsc' },
               { label: t('order.bankRemark'), value: order.order_no, id: 'bank-remark' },
@@ -143,7 +147,10 @@ export function PayCard({
                 <Row justify="space-between" style={{ paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
                   <View style={{ flex: 1 }}>
                     <AppText variant="caption" color="textMuted">{r.label}</AppText>
-                    <AppText variant="title" selectable testID={r.id}>{r.shown ?? r.value}</AppText>
+                    <Row gap={6}>
+                      <AppText variant="title" selectable testID={r.id} style={{ flexShrink: 1 }}>{r.shown ?? r.value}</AppText>
+                      {r.checked ? <VerifiedBadge small /> : null}
+                    </Row>
                   </View>
                   <Ionicons name="copy-outline" size={18} color={colors.primary} />
                 </Row>

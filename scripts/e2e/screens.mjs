@@ -494,6 +494,13 @@ await step('admin: shop page — verified badge toggle and notes', async () => {
   await a.getByRole('switch').first().click();
   await a.getByText(/Verified badge (added|removed)/).waitFor({ timeout: 10000 });
   await a.getByRole('switch').first().click();
+  // The shop's bank account, and its "checked" switch (third, after Verified and UPI)
+  await a.getByTestId('shop-bank').getByText('Checked', { exact: true }).waitFor();
+  await a.getByRole('switch').nth(2).click();
+  await a.getByText('Bank account check saved').waitFor({ timeout: 10000 });
+  await a.getByTestId('shop-bank').getByText('Not checked', { exact: true }).waitFor();
+  await a.getByRole('switch').nth(2).click();
+  await a.getByTestId('shop-bank').getByText('Checked', { exact: true }).waitFor({ timeout: 10000 });
   await a.getByPlaceholder(/Visit notes/).fill('Visited on launch week. Strong GPU stock, owner very responsive.');
   await a.getByRole('button', { name: 'Save notes' }).click();
   await a.getByText('Notes saved').waitFor({ timeout: 10000 });

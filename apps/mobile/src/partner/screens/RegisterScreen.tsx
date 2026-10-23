@@ -5,6 +5,8 @@ import { Modal, View } from 'react-native';
 
 import {
   DEFAULT_HOURS,
+  isValidBankAccountNumber,
+  isValidIfsc,
   isValidUpiId,
   normalizeIndianPhone,
   SHOP_TYPES,
@@ -88,6 +90,12 @@ export default function RegisterScreen() {
   const [upi, setUpi] = useState('');
   const [upiName, setUpiName] = useState('');
   const [upiQr, setUpiQr] = useState<string[]>([]);
+  // Step 6: bank account for customers who pay by bank transfer (optional)
+  const [bankHolder, setBankHolder] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankAccountAgain, setBankAccountAgain] = useState('');
+  const [bankIfsc, setBankIfsc] = useState('');
+  const [bankName, setBankName] = useState('');
   // Step 7
   const [gst, setGst] = useState('');
 
@@ -125,6 +133,11 @@ export default function RegisterScreen() {
     setUpi(shop.upi_id ?? '');
     setUpiName(shop.upi_name ?? '');
     setUpiQr(shop.upi_qr_path ? [shop.upi_qr_path] : []);
+    setBankHolder(shop.bank?.account_name ?? '');
+    setBankAccount(shop.bank?.account_number ?? '');
+    setBankAccountAgain(shop.bank?.account_number ?? '');
+    setBankIfsc(shop.bank?.ifsc ?? '');
+    setBankName(shop.bank?.bank_name ?? '');
     setGst(shop.gst_number ?? '');
     const s = params.step ? Number(params.step) : editing ? 1 : Math.min(Math.max(shop.registration_step, 1), 8);
     setStep(s);
@@ -160,6 +173,13 @@ export default function RegisterScreen() {
     }
     if (step === 5 && !front.length) e.front = t('common.required');
     if (step === 6 && !isValidUpiId(upi)) e.upi = t('error.INVALID_UPI_ID');
+    // The bank account is optional, but complete when given
+    if (step === 6 && (bankHolder.trim() || bankAccount || bankIfsc || bankName.trim())) {
+      if (!bankHolder.trim()) e.bankHolder = t('error.INVALID_BANK_ACCOUNT_NAME');
+      if (!isValidBankAccountNumber(bankAccount)) e.bankAccount = t('error.INVALID_BANK_ACCOUNT_NUMBER');
+      else if (bankAccountAgain !== bankAccount) e.bankAccountAgain = t('p.reg.bankMismatch');
+      if (!isValidIfsc(bankIfsc)) e.bankIfsc = t('error.INVALID_IFSC');
+    }
     return e;
   };
 
@@ -186,7 +206,17 @@ export default function RegisterScreen() {
         });
       }
       if (step === 5 || step === 7) await shopUpsert({ ...base, ...(step === 7 ? { gst_number: gst } : {}) });
-      if (step === 6) await shopUpsert({ ...base, upi_id: upi, upi_name: upiName || name, upi_qr_path: upiQr[0] ?? null });
+      if (step === 6)
+        await shopUpsert({
+          ...base,
+          upi_id: upi,
+          upi_name: upiName || name,
+          upi_qr_path: upiQr[0] ?? null,
+          bank_account_name: bankHolder,
+          bank_account_number: bankAccount,
+          bank_ifsc: bankIfsc,
+          bank_name: bankName,
+        });
       return true;
     } catch (err) {
       toast(errorText(err, t), 'error');
@@ -418,6 +448,40 @@ export default function RegisterScreen() {
           <Input testID="upi-id" label={t('p.reg.upiId')} placeholder="shopname@okhdfcbank" autoCapitalize="none" value={upi} onChangeText={setUpi} error={errors.upi} />
           <Input label={t('p.reg.upiName')} value={upiName} onChangeText={setUpiName} placeholder={name} />
           <PhotoPicker bucket="shop-media" folder={shop.id} label={t('p.reg.upiQr')} value={upiQr} onChange={setUpiQr} max={1} size={120} />
+          <View style={{ gap: 4, marginTop: 8 }}>
+            <Row gap={8} wrap>
+              <AppText variant="title">{t('p.reg.bankTitle')}</AppText>
+              {shop.bank?.verified ? <Tag label={t('p.reg.bankChecked')} tone="success" icon="checkmark-circle" /> : null}
+            </Row>
+            <AppText variant="caption" color="textMuted">{t('p.reg.bankHint')}</AppText>
+          </View>
+          <Input testID="bank-holder" label={t('p.reg.bankAccountName')} value={bankHolder} onChangeText={setBankHolder} placeholder={name} error={errors.bankHolder} />
+          <Input
+            testID="bank-account"
+            label={t('p.reg.bankAccountNumber')}
+            value={bankAccount}
+            onChangeText={(v) => setBankAccount(v.replace(/\D/g, '').slice(0, 18))}
+            keyboardType="number-pad"
+            error={errors.bankAccount}
+          />
+          <Input
+            testID="bank-account-again"
+            label={t('p.reg.bankAccountAgain')}
+            value={bankAccountAgain}
+            onChangeText={(v) => setBankAccountAgain(v.replace(/\D/g, '').slice(0, 18))}
+            keyboardType="number-pad"
+            error={errors.bankAccountAgain}
+          />
+          <Input
+            testID="bank-ifsc"
+            label={t('p.reg.bankIfsc')}
+            hint={t('p.reg.bankIfscHint')}
+            value={bankIfsc}
+            onChangeText={(v) => setBankIfsc(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 11).toUpperCase())}
+            autoCapitalize="characters"
+            error={errors.bankIfsc}
+          />
+          <Input testID="bank-name" label={t('p.reg.bankName')} value={bankName} onChangeText={setBankName} placeholder={t('common.optional')} />
         </>
       ) : null}
 

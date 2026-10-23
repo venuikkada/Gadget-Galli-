@@ -632,8 +632,17 @@ export interface PayTo {
   /** Optional QR image: the shop's in the public `shop-media` bucket, Gadget Galli's in `banners`. */
   qr_path: string | null;
   upi_verified?: boolean;
-  bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null;
+  bank: BankAccount | null;
   ready: boolean;
+}
+
+/** A bank account customers can pay by bank transfer (a shop's, or Gadget Galli's). `verified`: checked by Gadget Galli. */
+export interface BankAccount {
+  account_name: string;
+  account_number: string;
+  ifsc: string;
+  bank_name: string | null;
+  verified?: boolean;
 }
 
 /** Older orders paid to Gadget Galli: not_due until delivery; due once delivered; held while a problem is open; paid once Gadget Galli pays the shop. */
@@ -742,6 +751,8 @@ export interface MyShop {
   submitted_at: string | null;
   approved_at: string | null;
   payment_terms: PaymentTerms | null;
+  /** The shop's bank account, for customers who pay by bank transfer (owner and admins only). */
+  bank: BankAccount | null;
 }
 
 export interface ShopDashboard {

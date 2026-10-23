@@ -58,7 +58,7 @@ export default function PartnerOrderScreen() {
   const paymentReceived = async () => {
     const ok = await confirmDialog({
       title: t('p.step.paymentReceived'),
-      message: t('p.check.confirmBody', { amount, ref: o.payment_ref ?? '-' }),
+      message: t(o.payment_method === 'bank_transfer' ? 'p.check.confirmBodyBank' : 'p.check.confirmBody', { amount, ref: o.payment_ref ?? '-' }),
       confirmText: t('p.check.yesReceived'),
       cancelText: t('common.cancel'),
       icon: 'checkmark-circle',
@@ -130,7 +130,7 @@ export default function PartnerOrderScreen() {
         ) : step === 'check_payment' ? (
           // The customer says they paid: check the UPI app, then confirm (or say it is not there)
           <View style={{ gap: 10 }}>
-            <InfoBanner testID="payment-claimed" tone={o.overdue ? 'error' : 'info'} icon="wallet-outline" text={t('p.order.claimedShop', { amount, ref: o.payment_ref ?? '' })} />
+            <InfoBanner testID="payment-claimed" tone={o.overdue ? 'error' : 'info'} icon="wallet-outline" text={t(o.payment_method === 'bank_transfer' ? 'p.order.claimedShopBank' : 'p.order.claimedShop', { amount, ref: o.payment_ref ?? '' })} />
             <Button testID="step-payment-received" title={t('p.step.paymentReceived')} icon="checkmark-circle" variant="success" size="xl" full loading={confirming} onPress={paymentReceived} />
             <Button testID="step-not-received" title={t('p.check.notReceived')} icon="close-circle-outline" variant="outline" full onPress={() => setSheet('notReceived')} />
           </View>

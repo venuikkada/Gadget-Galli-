@@ -233,6 +233,19 @@ export default function ShopDetailPage() {
                   ) : null}
                 </div>
               </Row>
+              <Row label="Bank account">
+                {s.bank ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="shop-bank">
+                    <span>{s.bank.account_name}</span>
+                    <span className="font-mono">{s.bank.account_number}</span>
+                    <span className="font-mono">{s.bank.ifsc}</span>
+                    {s.bank.bank_name ? <span className="text-ink-muted">{s.bank.bank_name}</span> : null}
+                    {s.bank.verified ? <Badge tone="success">Checked</Badge> : <Badge tone="warning">Not checked</Badge>}
+                  </div>
+                ) : (
+                  '—'
+                )}
+              </Row>
               <Row label="GST">{s.gst_number ?? '—'}</Row>
               <Row label="Products">{s.product_count} active listings</Row>
             </div>
@@ -300,6 +313,19 @@ export default function ShopDetailPage() {
                   <span>
                     <span className="font-semibold">UPI ID checked</span>
                     <span className="block text-xs text-ink-muted">The UPI name matches the shop or owner.</span>
+                  </span>
+                }
+              />
+              <Toggle
+                checked={!!s.bank?.verified}
+                disabled={busy === 'flags' || !s.bank}
+                onChange={(v) => run('flags', () => rpc<AdminShop>('admin_set_shop_flags', { p_shop_id: s.id, p_bank_verified: v }), 'Bank account check saved').catch(() => undefined)}
+                label={
+                  <span>
+                    <span className="font-semibold">Bank account checked</span>
+                    <span className="block text-xs text-ink-muted">
+                      {s.bank ? 'The account holder matches the shop or owner (e.g. a cancelled cheque or passbook photo).' : 'The shop has not added a bank account.'}
+                    </span>
                   </span>
                 }
               />

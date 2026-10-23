@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
-import { expectedPaymentMode, formatINR, REJECT_REASONS, type DeliveryService, type Order, type PaymentMethod, type PaymentMode } from '@gg/shared';
+import { expectedPaymentMode, formatINR, REJECT_REASONS, upiPaymentUrl, type DeliveryService, type Order, type PaymentMethod, type PaymentMode } from '@gg/shared';
 
 import { errorText } from '@/shared/api/rpc';
 import { signedUrl } from '@/shared/api/storage';
@@ -12,7 +13,7 @@ import { openDeliveryApp } from '@/shared/lib/linking';
 import { useTheme } from '@/shared/theme/ThemeProvider';
 import { AppText, Button, Chip, Divider, IconButton, InfoBanner, Input, QtyStepper, Row, Segmented, Sheet, toast } from '@/shared/ui';
 
-import { orderActions, useMyListings } from '../api';
+import { orderActions, useMyListings, useMyShop } from '../api';
 
 interface Line {
   key: string;
@@ -440,7 +441,7 @@ export function CheckPaymentSheet({ order, visible, onClose }: { order: Order; v
         />
       }
     >
-      <InfoBanner text={t('p.check.notReceivedBody', { ref: order.payment_ref ?? '', amount: formatINR(order.grand_total) })} />
+      <InfoBanner text={t(order.payment_method === 'bank_transfer' ? 'p.check.notReceivedBodyBank' : 'p.check.notReceivedBody', { ref: order.payment_ref ?? '', amount: formatINR(order.grand_total) })} />
       <Row wrap gap={8}>
         {NOT_RECEIVED.map((r) => (
           <Chip key={r} label={t(`p.check.reason_${r}`)} selected={reason === r} onPress={() => setReason(r)} />
@@ -455,17 +456,26 @@ const DOOR_METHODS: PaymentMethod[] = ['upi', 'cash', 'bank_transfer'];
 /** Handover: the customer's delivery code (and, for pay on delivery, how they paid) completes the order. */
 export function HandoverSheet({ order, visible, onClose }: { order: Order; visible: boolean; onClose: () => void }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const [code, setCode] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('upi');
   const [ref, setRef] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [showPay, setShowPay] = useState(false);
   const collect = order.payment_mode === 'on_delivery' && !order.paid_at;
+  // How the customer can pay at the door: a UPI QR with the exact amount, and the shop's bank account
+  const bank = useMyShop().data?.bank ?? null;
+  const upiLink = useMemo(
+    () => (order.shop.upi_id ? upiPaymentUrl({ upiId: order.shop.upi_id, payeeName: order.shop.upi_name ?? order.shop.name, amount: order.grand_total, orderNo: order.order_no }) : null),
+    [order.shop.upi_id, order.shop.upi_name, order.shop.name, order.grand_total, order.order_no],
+  );
   useEffect(() => {
     if (!visible) return;
     setCode('');
     setRef('');
     setError(undefined);
+    setShowPay(false);
   }, [visible]);
 
   const done = async () => {
@@ -503,6 +513,40 @@ export function HandoverSheet({ order, visible, onClose }: { order: Order; visib
       />
       {collect ? (
         <View style={{ gap: 8 }}>
+          <Button
+            testID="handover-show-pay"
+            title={showPay ? t('p.handover.hidePay') : t('p.handover.showPay')}
+            icon="qr-code-outline"
+            variant="outline"
+            full
+            onPress={() => setShowPay((v) => !v)}
+          />
+          {showPay ? (
+            <View style={{ gap: 10, alignItems: 'center' }} testID="handover-pay">
+              {upiLink ? (
+                <>
+                  <AppText variant="h3" align="center">{t('p.handover.scanToPay', { amount: formatINR(order.grand_total) })}</AppText>
+                  <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 12 }} testID="handover-qr">
+                    <QRCode value={upiLink} size={200} />
+                  </View>
+                  <AppText variant="bodySmall" color="textMuted" selectable>{order.shop.upi_id}</AppText>
+                </>
+              ) : null}
+              {bank ? (
+                <View style={{ alignSelf: 'stretch', gap: 2, backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 12 }} testID="handover-bank">
+                  <AppText variant="label">{t('p.handover.orBank')}</AppText>
+                  <AppText variant="bodySmall" selectable>{bank.account_name}</AppText>
+                  <AppText variant="bodySmall" selectable>{`${t('order.bankAccountNumber')}: ${bank.account_number}`}</AppText>
+                  <AppText variant="bodySmall" selectable>{`${t('order.bankIfsc')}: ${bank.ifsc}${bank.bank_name ? ` · ${bank.bank_name}` : ''}`}</AppText>
+                </View>
+              ) : null}
+              {upiLink || bank ? (
+                <AppText variant="caption" color="textMuted" align="center">{t('p.handover.checkMoney')}</AppText>
+              ) : (
+                <InfoBanner tone="warning" text={t('p.handover.noPayDetails')} />
+              )}
+            </View>
+          ) : null}
           <AppText variant="label" color="textMuted">{t('p.handover.paidBy', { amount: formatINR(order.grand_total) })}</AppText>
           <Row wrap gap={8}>
             {DOOR_METHODS.map((m) => (
@@ -510,7 +554,7 @@ export function HandoverSheet({ order, visible, onClose }: { order: Order; visib
             ))}
           </Row>
           {method !== 'cash' ? (
-            <Input label={t('p.handover.ref')} value={ref} onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())} autoCapitalize="characters" />
+            <Input testID="handover-ref" label={method === 'bank_transfer' ? t('p.handover.refBank') : t('p.handover.ref')} value={ref} onChangeText={(v) => setRef(v.replace(/[^0-9A-Za-z]/g, '').slice(0, 30).toUpperCase())} autoCapitalize="characters" />
           ) : null}
         </View>
       ) : null}

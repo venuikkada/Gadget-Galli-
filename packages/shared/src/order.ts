@@ -234,6 +234,16 @@ export function isValidUpiId(upi: string | null | undefined): boolean {
   return !!upi && /^[a-zA-Z0-9.\-_]{2,64}@[a-zA-Z][a-zA-Z0-9]{1,64}$/.test(upi.trim());
 }
 
+/** IFSC: the bank's 4 letters, a 0, then the branch's 6 letters or digits (HDFC0001234). Same rule as the database. */
+export function isValidIfsc(ifsc: string | null | undefined): boolean {
+  return /^[A-Z]{4}0[A-Z0-9]{6}$/.test((ifsc ?? '').trim().toUpperCase());
+}
+
+/** Indian bank account numbers have 9 to 18 digits (spaces ignored). */
+export function isValidBankAccountNumber(account: string | null | undefined): boolean {
+  return /^[0-9]{9,18}$/.test((account ?? '').replace(/\s/g, ''));
+}
+
 export function mapsUrl(lat: number | null | undefined, lng: number | null | undefined, label?: string): string {
   if (lat != null && lng != null) {
     return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
