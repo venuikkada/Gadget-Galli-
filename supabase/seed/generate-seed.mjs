@@ -363,9 +363,25 @@ for (const s of [...SHOPS, PENDING_SHOP]) {
 emit(`insert into public.shops (id, owner_id, slug, name, shop_types, description, hours, owner_name, owner_phone, contact_phone, whatsapp_phone, address_line, area_id, pincode, landmark, lat, lng, delivery_mode, delivery_radius_km, delivery_charge_type, delivery_charge, free_delivery_above, min_order, usual_delivery_mins, store_pickup, upi_id, upi_name, upi_verified, status, verified, registration_step, approved_at, submitted_at) values\n${shopRows.join(',\n')};`);
 emit(`insert into public.delivery_areas (shop_id, zone_id, area_id) values\n${daRows.join(',\n')};`);
 emit(`insert into public.shop_products (id, shop_id, catalog_product_id, condition, price, mrp, warranty_months, warranty_type, stock_qty, in_stock, installation_available, installation_charge) values\n${listingRows.join(',\n')};`);
-emit(`insert into public.shop_private (shop_id, gst_number) values
-  (${q(shopById.kphb.id)}, '36ABCPR1234K1Z5'), (${q(shopById.deccan.id)}, '36AAKFD5678M1Z2'), (${q(shopById.abids.id)}, '36BXYPS4321L1Z9'),
-  (${q(shopById.banjara.id)}, '36AAHCB9876Q1Z1'), (${q(PENDING_SHOP.id)}, null);`);
+// GST numbers and fictional bank accounts (demo only: never send money to them). The account digits come from each
+// shop's key, not rnd(), so the rest of the demo data stays the same.
+const GST = { kphb: '36ABCPR1234K1Z5', deccan: '36AAKFD5678M1Z2', abids: '36BXYPS4321L1Z9', banjara: '36AAHCB9876Q1Z1' };
+const BANKS = { okhdfcbank: ['HDFC Bank', 'HDFC'], okicici: ['ICICI Bank', 'ICIC'], ybl: ['Kotak Mahindra Bank', 'KKBK'], okaxis: ['Axis Bank', 'UTIB'], paytm: ['State Bank of India', 'SBIN'] };
+function digitsFor(key, n) {
+  let h = 2166136261;
+  for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  let out = '';
+  while (out.length < n) {
+    h = Math.imul(h ^ (h >>> 13), 2246822519) >>> 0;
+    out += String(h % 10);
+  }
+  return out;
+}
+const privateRows = [...SHOPS, PENDING_SHOP].map((s) => {
+  const [bank, code] = BANKS[s.upi.split('@')[1]];
+  return `  (${q(s.id)}, ${q(GST[s.key])}, ${q(s.name)}, ${q(`5${digitsFor(s.key, 13)}`)}, ${q(`${code}0${digitsFor(`${s.key}-branch`, 6)}`)}, ${q(bank)}, ${s !== PENDING_SHOP})`;
+});
+emit(`insert into public.shop_private (shop_id, gst_number, bank_account_name, bank_account_number, bank_ifsc, bank_name, bank_verified) values\n${privateRows.join(',\n')};`);
 emit(`insert into public.shop_documents (shop_id, doc_type, path, doc_number, status) values
   (${q(PENDING_SHOP.id)}, 'owner_id_proof', ${q(`${PENDING_SHOP.id}/aadhaar-demo.jpg`)}, 'XXXX XXXX 4821', 'submitted'),
   (${q(PENDING_SHOP.id)}, 'udyam_certificate', ${q(`${PENDING_SHOP.id}/udyam-demo.pdf`)}, 'UDYAM-TS-02-0012345', 'submitted'),

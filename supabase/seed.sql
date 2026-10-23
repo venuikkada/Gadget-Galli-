@@ -1175,9 +1175,23 @@ insert into public.shop_products (id, shop_id, catalog_product_id, condition, pr
   ('44444444-0000-4000-8000-00000000026e', '22222222-0000-4000-8000-000000000010', '33333333-0000-4000-8000-000000000032', 'new', 349, 999, 12, 'brand', null, true, false, null),
   ('44444444-0000-4000-8000-00000000026f', '22222222-0000-4000-8000-000000000010', '33333333-0000-4000-8000-00000000001e', 'new', 33199, 34900, 12, 'brand', null, true, false, null);
 
-insert into public.shop_private (shop_id, gst_number) values
-  ('22222222-0000-4000-8000-000000000002', '36ABCPR1234K1Z5'), ('22222222-0000-4000-8000-000000000007', '36AAKFD5678M1Z2'), ('22222222-0000-4000-8000-000000000008', '36BXYPS4321L1Z9'),
-  ('22222222-0000-4000-8000-00000000000d', '36AAHCB9876Q1Z1'), ('22222222-0000-4000-8000-000000000010', null);
+insert into public.shop_private (shop_id, gst_number, bank_account_name, bank_account_number, bank_ifsc, bank_name, bank_verified) values
+  ('22222222-0000-4000-8000-000000000001', null, 'Sri Sai Mobiles & Accessories', '54980193055171', 'HDFC0254926', 'HDFC Bank', true),
+  ('22222222-0000-4000-8000-000000000002', '36ABCPR1234K1Z5', 'KPHB Computer World', '55035410545340', 'ICIC0202572', 'ICICI Bank', true),
+  ('22222222-0000-4000-8000-000000000003', null, 'Hitech Gadget Hub', '56957704946211', 'KKBK0856946', 'Kotak Mahindra Bank', true),
+  ('22222222-0000-4000-8000-000000000004', null, 'Cyber Zone Systems', '50668438487709', 'UTIB0507078', 'Axis Bank', true),
+  ('22222222-0000-4000-8000-000000000005', null, 'Kondapur Laptop Point', '52937359585250', 'SBIN0921819', 'State Bank of India', true),
+  ('22222222-0000-4000-8000-000000000006', null, 'Miyapur Mobile Bazaar', '53420110689908', 'KKBK0833894', 'Kotak Mahindra Bank', true),
+  ('22222222-0000-4000-8000-000000000007', '36AAKFD5678M1Z2', 'Deccan PC Components', '55042105268347', 'HDFC0690033', 'HDFC Bank', true),
+  ('22222222-0000-4000-8000-000000000008', '36BXYPS4321L1Z9', 'Abids CCTV & Electronics', '54638804912005', 'ICIC0767320', 'ICICI Bank', true),
+  ('22222222-0000-4000-8000-000000000009', null, 'Koti Mobile Galaxy', '59534323286892', 'KKBK0246271', 'Kotak Mahindra Bank', true),
+  ('22222222-0000-4000-8000-00000000000a', null, 'Dilsukhnagar Digital Store', '51214347220774', 'UTIB0485077', 'Axis Bank', true),
+  ('22222222-0000-4000-8000-00000000000b', null, 'SecureEye CCTV Solutions', '59826483910334', 'SBIN0965526', 'State Bank of India', true),
+  ('22222222-0000-4000-8000-00000000000c', null, 'Begumpet PC Builders', '59357147507631', 'HDFC0626025', 'HDFC Bank', true),
+  ('22222222-0000-4000-8000-00000000000d', '36AAHCB9876Q1Z1', 'Banjara Premium Gadgets', '52468123968309', 'ICIC0658717', 'ICICI Bank', true),
+  ('22222222-0000-4000-8000-00000000000e', null, 'Uppal Tech Point', '56701539061020', 'KKBK0497607', 'Kotak Mahindra Bank', true),
+  ('22222222-0000-4000-8000-00000000000f', null, 'Mehdipatnam Systems & Security', '55746032812637', 'UTIB0298138', 'Axis Bank', true),
+  ('22222222-0000-4000-8000-000000000010', null, 'Sai Ganesh Electronics', '57551671735940', 'KKBK0307362', 'Kotak Mahindra Bank', false);
 
 insert into public.shop_documents (shop_id, doc_type, path, doc_number, status) values
   ('22222222-0000-4000-8000-000000000010', 'owner_id_proof', '22222222-0000-4000-8000-000000000010/aadhaar-demo.jpg', 'XXXX XXXX 4821', 'submitted'),

@@ -96,7 +96,7 @@ begin
     format('customer should pay the shop, got %s', o->'pay_to');
   assert o->>'delivery_code' is null, 'the code is shown only once the order is on its way';
   perform pg_temp.expect_error(format('select public.customer_submit_payment(%L, %L)', oid, '12'), 'PAYMENT_REF_INVALID%');
-  perform pg_temp.expect_error(format('select public.customer_submit_payment(%L, %L, %L)', oid, '412345678901', 'bank_transfer'), 'PAYMENT_METHOD_UNAVAILABLE%');
+  assert o->'pay_to'->'bank'->>'ifsc' is not null, 'the shop''s bank account is offered too (bank transfers: 12_shop_bank)';
   o := public.customer_submit_payment(oid, '4123 4567 8901');
   assert o->>'payment_ref' = '412345678901' and o->>'payment_claimed_at' is not null, 'payment claim not saved';
   assert o->>'status' = 'CONFIRMED', 'claiming a payment must not mark it paid';
