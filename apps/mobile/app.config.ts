@@ -1,9 +1,18 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Values come from apps/mobile/.env (see .env.example). EXPO_PUBLIC_* are inlined into the app bundle.
+// Values come from apps/mobile/.env (see .env.example) or the build profile in eas.json. EXPO_PUBLIC_* are inlined
+// into the app bundle.
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? '';
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+// Firebase settings for Android push (docs/PLAY-STORE.md): an EAS file variable on build servers, or the file itself
+// next to this config for local builds. Without it the app still runs, but Android phones get no push notifications.
+const googleServicesFile = (projectRoot: string) =>
+  process.env.GOOGLE_SERVICES_JSON || (existsSync(join(projectRoot, 'google-services.json')) ? './google-services.json' : undefined);
+
+export default ({ config, projectRoot }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Gadget Galli',
   slug: 'gadget-galli',
@@ -26,6 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: 'in.gadgetgalli.app',
+    googleServicesFile: googleServicesFile(projectRoot),
     adaptiveIcon: {
       backgroundColor: '#08656B',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -74,7 +84,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-image-picker', { photosPermission: 'Choose photos of your shop, products and reviews.', cameraPermission: 'Take photos of your shop, products and packages.' }],
     'expo-font',
     'expo-localization',
-    'expo-audio',
+    // The new-order alarm plays while the app is open; with the phone locked the push notification's channel sound
+    // rings instead. So no background playback: that would add a media foreground service Google Play asks to justify.
+    ['expo-audio', { enableBackgroundPlayback: false, recordAudioAndroid: false, microphonePermission: false }],
   ],
   experiments: {
     typedRoutes: false,

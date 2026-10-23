@@ -332,7 +332,7 @@ export function Chip({ label, selected, onPress, icon, count, testID, tone = 'de
   );
 }
 
-export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'accent' | 'action'; icon?: IoniconName }) {
+export function Tag({ label, tone = 'neutral', icon, testID }: { label: string; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'accent' | 'action'; icon?: IoniconName; testID?: string }) {
   const { colors } = useTheme();
   const ff = useFont();
   const map = {
@@ -346,7 +346,7 @@ export function Tag({ label, tone = 'neutral', icon }: { label: string; tone?: '
   } as const;
   const [bg, fg] = map[tone];
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' }}>
+    <View testID={testID} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' }}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
       <Text style={{ color: fg, fontFamily: ff(fonts.bodySemi), fontSize: 11.5 }}>{label}</Text>
     </View>
